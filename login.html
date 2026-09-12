@@ -130,6 +130,13 @@ function openPayment(packageName, price, packageId)
     document.getElementById("phoneNumber").value = "";
     document.getElementById("payStatus").textContent = "";
 
+    var card = document.querySelector('[data-package-id="' + packageId + '"]');
+    if (card && card.dataset.available === 'false')
+    {
+        ShowMessage("WarningDialog", "This package is currently unavailable. Please choose another package.");
+        return;
+    }
+
     document.getElementById("paymentModal").style.display = "flex";
 
     document.body.classList.add("modal-open");
@@ -202,15 +209,36 @@ async function payWithMPEsa()
 
         if (!response.ok)
         {
+            if (result.error === 'PACKAGE_UNAVAILABLE')
+            {
+                var unavailableCard = document.querySelector('[data-package-id="' + selectedPackageId + '"]');
+                if (unavailableCard)
+                {
+                    unavailableCard.classList.add('unavailable');
+                    unavailableCard.disabled = true;
+                    unavailableCard.dataset.available = 'false';
+                    var unavailableCta = unavailableCard.querySelector('.package-cta');
+                    if (unavailableCta) unavailableCta.textContent = 'Not available';
+                }
+            }
             throw new Error(result.message || 'Unable to create order.');
         }
 
         status.textContent = result.order.message || "STK Push accepted. Complete the M-PESA prompt on your phone.";
 
         document.getElementById("orderReference").textContent = "Order: " + result.order.reference;
-        document.getElementById("voucherResult").textContent = "Waiting for payment confirmation...";
 
-        pollForVoucher(result.order.id || result.order.reference, status);
+        if (result.voucher && result.voucher.code)
+        {
+            document.getElementById("voucherResult").textContent = "Voucher: " + result.voucher.code;
+            status.textContent = "Payment verified. Your Wi-Fi voucher is ready.";
+            button.disabled = false;
+        }
+        else
+        {
+            document.getElementById("voucherResult").textContent = "Waiting for payment confirmation...";
+            pollForVoucher(result.order.id || result.order.reference, status);
+        }
     }
     catch (err)
     {
@@ -387,13 +415,58 @@ function closeContact()
 }
 
 
+async function loadPackageAvailability()
+{
+    try
+    {
+        var response = await fetch('/api/packages', { cache: 'no-store' });
+        var result = await response.json();
+        if (!response.ok || !Array.isArray(result.packages)) return;
+
+        var availableCount = 0;
+        result.packages.forEach(function(pkg)
+        {
+            var card = document.querySelector('[data-package-id="' + pkg.id + '"]');
+            if (!card) return;
+
+            var cta = card.querySelector('.package-cta');
+            var available = Boolean(pkg.available) && Number(pkg.available_vouchers) > 0;
+            if (available) availableCount++;
+            card.dataset.available = available ? 'true' : 'false';
+            card.setAttribute('aria-disabled', available ? 'false' : 'true');
+
+            if (!available)
+            {
+                card.classList.add('unavailable');
+                card.disabled = true;
+                if (cta) cta.textContent = 'Not available';
+            }
+            else if (cta)
+            {
+                cta.textContent = 'Get this package →';
+            }
+        });
+
+        var availabilityStatus = document.getElementById('packageAvailabilityStatus');
+        if (availabilityStatus)
+        {
+            availabilityStatus.textContent = availableCount + ' package' + (availableCount === 1 ? '' : 's') + ' ready for instant activation.';
+            availabilityStatus.classList.add('loaded');
+        }
+    }
+    catch (error)
+    {
+        console.warn('[v0] Package availability could not be loaded:', error.message);
+    }
+}
+
 /* =========================================================
    DOCUMENT READY
    ========================================================= */
 
 $(document).ready(function()
 {
-    // ANONYMIKETECH SUPA LAN
+    loadPackageAvailability();
 });
 
 
@@ -646,6 +719,8 @@ $(document).ready(function()
 
     <section id="packages" class="packages-section">
 
+        <div id="packageAvailabilityStatus" class="package-availability-status" role="status" aria-live="polite">Checking package availability...</div>
+
         <div class="packages-heading">
 
             <span class="eyebrow">
@@ -669,6 +744,7 @@ $(document).ready(function()
         <button
             type="button"
             class="package-card featured"
+            data-package-id="monthly_unlimited"
             onclick="openPayment('Monthly Unlimited', '600', 'monthly_unlimited');">
 
             <div class="package-top">
@@ -708,6 +784,7 @@ $(document).ready(function()
         <button
             type="button"
             class="package-card"
+            data-package-id="monthly_100gb"
             onclick="openPayment('Monthly 100 GB', '400', 'monthly_100gb');">
 
             <div class="package-top">
@@ -747,6 +824,7 @@ $(document).ready(function()
         <button
             type="button"
             class="package-card"
+            data-package-id="weekly_unlimited"
             onclick="openPayment('7 Days Unlimited', '150', 'weekly_unlimited');">
 
             <div class="package-top">
@@ -786,6 +864,7 @@ $(document).ready(function()
         <button
             type="button"
             class="package-card"
+            data-package-id="daily_pro"
             onclick="openPayment('Daily Unlimited Pro', '50', 'daily_pro');">
 
             <div class="package-top">
@@ -825,6 +904,7 @@ $(document).ready(function()
         <button
             type="button"
             class="package-card"
+            data-package-id="daily_standard"
             onclick="openPayment('Daily Unlimited Standard', '30', 'daily_standard');">
 
             <div class="package-top">
@@ -864,6 +944,7 @@ $(document).ready(function()
         <button
             type="button"
             class="package-card"
+            data-package-id="hours_12"
             onclick="openPayment('12 Hours Unlimited', '20', 'hours_12');">
 
             <div class="package-top">
@@ -899,6 +980,7 @@ $(document).ready(function()
         <button
             type="button"
             class="package-card"
+            data-package-id="hours_5"
             onclick="openPayment('5 Hours Unlimited', '10', 'hours_5');">
 
             <div class="package-top">

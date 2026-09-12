@@ -52,15 +52,19 @@ app.get('/api/packages', async (req, res) => {
   try {
     const result = await db.query(`
       select
-        id,
-        name,
-        price,
-        duration,
-        bandwidth,
-        data,
-        label
-      from packages
-      order by id asc
+        p.id,
+        p.name,
+        p.price,
+        p.duration,
+        p.bandwidth,
+        p.data,
+        p.label,
+        count(v.id) filter (where v.status = 'AVAILABLE')::int as available_vouchers,
+        (count(v.id) filter (where v.status = 'AVAILABLE') > 0) as available
+      from packages p
+      left join vouchers v on v.package_id = p.id
+      group by p.id, p.name, p.price, p.duration, p.bandwidth, p.data, p.label
+      order by p.id asc
     `);
 
     return res.json({
@@ -279,6 +283,20 @@ app.post('/api/orders', async (req, res) => {
     }
 
     const pkg = packageResult.rows[0];
+    const inventoryResult = await db.query(
+      `select count(*)::int as available
+       from vouchers
+       where package_id = $1 and status = 'AVAILABLE'`,
+      [pkg.id]
+    );
+
+    if (inventoryResult.rows[0].available < 1) {
+      return res.status(409).json({
+        error: 'PACKAGE_UNAVAILABLE',
+        message: 'This package is currently unavailable. Please choose another package.'
+      });
+    }
+
     const reference = `SUPA-${crypto.randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase()}`;
     const provider = (process.env.PAYMENT_PROVIDER || 'PALPLUSS').toUpperCase();
 
@@ -334,6 +352,38 @@ app.post('/api/orders', async (req, res) => {
       [provider, providerRequestId, order.id]
     );
 
+    let responseStatus = order.status;
+    let assignedVoucher = null;
+
+    if (testMode) {
+      const fulfillmentResult = await db.query(
+        `with next_voucher as (
+           select id, code
+           from vouchers
+           where package_id = $1 and status = 'AVAILABLE'
+           order by created_at asc
+           limit 1
+           for update skip locked
+         ), claimed as (
+           update vouchers v
+           set status = 'ASSIGNED', order_id = $2, assigned_at = now()
+           from next_voucher n
+           where v.id = n.id and v.status = 'AVAILABLE'
+           returning v.id, v.code
+         )
+         update orders o
+         set status = 'VOUCHER_ASSIGNED', voucher_id = claimed.id, paid_at = now(), updated_at = now()
+         from claimed
+         where o.id = $2 and o.voucher_id is null
+         returning claimed.code`,
+        [pkg.id, order.id]
+      );
+      if (fulfillmentResult.rowCount > 0) {
+        responseStatus = 'VOUCHER_ASSIGNED';
+        assignedVoucher = fulfillmentResult.rows[0].code;
+      }
+    }
+
     return res.status(201).json({
       success: true,
       order: {
@@ -342,14 +392,16 @@ app.post('/api/orders', async (req, res) => {
         package_id: order.package_id,
         package_name: pkg.name,
         amount: order.amount,
-        status: order.status,
+        status: responseStatus,
         created_at: order.created_at,
-        message: 'STK Push accepted. Payment is still pending provider confirmation.'
+        message: assignedVoucher
+          ? 'TEST MODE: payment verified and voucher assigned.'
+          : 'STK Push accepted. Complete the M-PESA prompt on your phone.'
       },
       provider: stkResult.provider || 'PALPLUSS',
       providerRequestId,
       transactionId: stkResult.transactionId || null,
-      voucher: null
+      voucher: assignedVoucher ? { code: assignedVoucher } : null
     });
   } catch (err) {
     console.error('POST /api/orders error:', err.message);
