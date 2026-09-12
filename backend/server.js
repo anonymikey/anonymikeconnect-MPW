@@ -111,64 +111,56 @@ function normalizePalPlussState(status) {
   return map[status] || 'PENDING';
 }
 
-app.post('/api/payments/stk', async (req, res) => {
+function getDefaultCallbackUrl() {
+  if (process.env.CALLBACK_URL) {
+    return process.env.CALLBACK_URL;
+  }
+
+  if (process.env.PALPLUSS_CALLBACK_URL) {
+    return process.env.PALPLUSS_CALLBACK_URL;
+  }
+
+  return 'https://supalan.anonymiketech.space/api/webhooks/palpluss';
+}
+
+async function sendPalPlussStk(payload) {
   const provider = (process.env.PAYMENT_PROVIDER || 'TEST').toUpperCase();
 
-  const body = req.body || {};
-  const amount = Number(body.amount || 0);
-  const phone = normalizePhone(body.phone || body.phonenumber || body.phone_number);
-  const accountReference = String(body.accountReference || body.reference || body.account_reference || '').trim();
-  const transactionDesc = String(body.transactionDesc || body.transaction_desc || 'Payment').trim();
-  const callbackUrl = String(body.callbackUrl || body.callback_url || '').trim();
-  const channelId = body.channelId || body.channel_id || null;
-  const credentialId = body.credential_id || null;
-
   if (provider === 'TEST' || testMode) {
-    if (!amount || amount < 1 || !phone || !accountReference || !transactionDesc || !callbackUrl) {
-      return res.status(400).json({
-        error: 'VALIDATION_ERROR',
-        message: 'amount, phone, accountReference, transactionDesc, and callbackUrl are required'
-      });
-    }
-
     const transactionId = crypto.randomUUID();
     const providerRequestId = `TEST-${crypto.randomUUID().replace(/-/g, '').slice(0, 14).toUpperCase()}`;
 
-    return res.status(200).json({
+    return {
+      statusCode: 200,
       success: true,
       provider: 'TEST',
       testMode: true,
       data: {
         transactionId,
         tenantId: null,
-        channelId: channelId || null,
+        channelId: payload.channelId || null,
         type: 'STK',
         status: 'PENDING',
-        amount,
+        amount: payload.amount,
         currency: 'KES',
-        phone,
+        phone: payload.phone,
         providerRequestId,
         providerCheckoutId: providerRequestId,
-        accountReference,
-        transactionDesc,
-        callbackUrl
+        accountReference: payload.accountReference,
+        transactionDesc: payload.transactionDesc,
+        callbackUrl: payload.callbackUrl
       },
       message: 'TEST MODE: PalPluss STK simulation accepted. No real provider request was executed.'
-    });
-  }
-
-  if (!amount || amount < 1 || !phone || !accountReference || !transactionDesc || !callbackUrl) {
-    return res.status(400).json({
-      error: 'VALIDATION_ERROR',
-      message: 'amount, phone, accountReference, transactionDesc, and callbackUrl are required'
-    });
+    };
   }
 
   if (!process.env.PALPLUSS_BASE_URL || !process.env.PALPLUSS_API_KEY) {
-    return res.status(503).json({
+    return {
+      statusCode: 503,
+      success: false,
       error: 'PAYMENT_API_NOT_READY',
       message: 'PalPluss base URL and API key are not configured.'
-    });
+    };
   }
 
   try {
@@ -180,45 +172,84 @@ app.post('/api/payments/stk', async (req, res) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        amount,
-        phone,
-        accountReference,
-        transactionDesc,
-        callbackUrl,
-        channelId,
-        credential_id: credentialId
+        amount: payload.amount,
+        phone: payload.phone,
+        accountReference: payload.accountReference,
+        transactionDesc: payload.transactionDesc,
+        callbackUrl: payload.callbackUrl,
+        channelId: payload.channelId || null
       })
     });
 
-    const payload = await response.json().catch(() => ({}));
+    const raw = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      return res.status(response.status).json({
+      return {
+        statusCode: response.status,
         success: false,
-        error: payload.error || payload,
-        requestId: payload.requestId || null
-      });
+        error: raw.error || raw,
+        requestId: raw.requestId || null
+      };
     }
 
-    const transactionId = payload.data?.transactionId || payload.transactionId || null;
-    const providerRequestId = payload.data?.providerRequestId || payload.providerRequestId || null;
+    const transactionId = raw.data?.transactionId || raw.transactionId || null;
+    const providerRequestId = raw.data?.providerRequestId || raw.providerRequestId || null;
 
-    return res.status(200).json({
+    return {
+      statusCode: 200,
       success: true,
       provider: 'PALPLUSS',
-      data: payload.data || payload,
+      data: raw.data || raw,
       transactionId,
       providerRequestId,
-      callbackUrl,
+      callbackUrl: payload.callbackUrl,
       status: 'PENDING'
-    });
+    };
   } catch (err) {
-    console.error('POST /api/payments/stk error:', err.message);
-    return res.status(500).json({
+    console.error('PalPluss STK helper error:', err.message);
+    return {
+      statusCode: 500,
+      success: false,
       error: 'PALPLUSS_STK_INIT_FAILED',
       message: 'Unable to reach the PalPluss STK endpoint.'
+    };
+  }
+}
+
+app.post('/api/payments/stk', async (req, res) => {
+  const body = req.body || {};
+  const amount = Number(body.amount || 0);
+  const phone = normalizePhone(body.phone || body.phonenumber || body.phone_number);
+  const accountReference = String(body.accountReference || body.reference || body.account_reference || '').trim();
+  const transactionDesc = String(body.transactionDesc || body.transaction_desc || 'Payment').trim();
+  const callbackUrl = String(body.callbackUrl || body.callback_url || getDefaultCallbackUrl()).trim();
+  const channelId = body.channelId || body.channel_id || null;
+
+  if (!amount || amount < 1 || !phone || !accountReference || !transactionDesc || !callbackUrl) {
+    return res.status(400).json({
+      error: 'VALIDATION_ERROR',
+      message: 'amount, phone, accountReference, transactionDesc, and callbackUrl are required'
     });
   }
+
+  const result = await sendPalPlussStk({
+    amount,
+    phone,
+    accountReference,
+    transactionDesc,
+    callbackUrl,
+    channelId
+  });
+
+  if (!result.success) {
+    return res.status(result.statusCode || 500).json({
+      success: false,
+      error: result.error || 'PAYMENT_FAILED',
+      message: result.message || 'Unable to initiate STK request.'
+    });
+  }
+
+  return res.status(result.statusCode || 200).json(result);
 });
 
 app.post('/api/orders', async (req, res) => {
@@ -229,13 +260,6 @@ app.post('/api/orders', async (req, res) => {
     return res.status(400).json({
       error: 'VALIDATION_ERROR',
       message: 'packageId and phone are required'
-    });
-  }
-
-  if (!testMode) {
-    return res.status(503).json({
-      error: 'PAYMENT_API_NOT_READY',
-      message: 'Real payment provider is not enabled in this build'
     });
   }
 
@@ -256,37 +280,58 @@ app.post('/api/orders', async (req, res) => {
 
     const pkg = packageResult.rows[0];
     const reference = `SUPA-${crypto.randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase()}`;
+    const provider = (process.env.PAYMENT_PROVIDER || 'PALPLUSS').toUpperCase();
 
     const orderInsert = await db.query(
       `insert into orders
         (reference, package_id, amount, phone, status, payment_provider, provider_transaction_id, voucher_id, created_at, paid_at, updated_at)
        values
-        ($1, $2, $3, $4, 'PENDING', 'TEST', $5, null, now(), null, now())
+        ($1, $2, $3, $4, 'PENDING', $5, null, null, now(), null, now())
        returning
         id, reference, package_id, amount, phone, status, payment_provider, provider_transaction_id, voucher_id, created_at, paid_at, updated_at`,
-      [reference, pkg.id, pkg.price, phone, `TEST-${crypto.randomUUID().replace(/-/g, '').slice(0, 10).toUpperCase()}`]
+      [reference, pkg.id, pkg.price, phone, provider]
     );
 
     const order = orderInsert.rows[0];
 
-    const voucherId = crypto.randomUUID();
-    const voucherCode = `SUPA-${crypto.randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase()}`;
+    const callbackUrl = getDefaultCallbackUrl();
+    const transactionDesc = `Payment for ${pkg.name}`;
 
-    await db.query(
-      `insert into vouchers
-        (id, code, package_id, status, order_id, created_at, assigned_at, used_at)
-       values
-        ($1, $2, $3, 'AVAILABLE', $4, now(), now(), null)
-       on conflict (code) do nothing`,
-      [voucherId, voucherCode, pkg.id, order.id]
-    );
+    const stkResult = await sendPalPlussStk({
+      amount: pkg.price,
+      phone,
+      accountReference: order.reference,
+      transactionDesc,
+      callbackUrl,
+      channelId: req.body.channelId || req.body.channel_id || null
+    });
+
+    if (!stkResult.success) {
+      await db.query(
+        `update orders
+         set status = 'FAILED',
+             payment_provider = $1,
+             updated_at = now()
+         where id = $2`,
+        [provider, order.id]
+      );
+
+      return res.status(stkResult.statusCode || 500).json({
+        success: false,
+        error: stkResult.error || 'PAYMENT_INIT_FAILED',
+        message: stkResult.message || 'Unable to initialize PalPluss STK push.'
+      });
+    }
+
+    const providerRequestId = stkResult.providerRequestId || stkResult.transactionId || null;
 
     await db.query(
       `update orders
-       set voucher_id = $1,
+       set payment_provider = $1,
+           provider_transaction_id = $2,
            updated_at = now()
-       where id = $2`,
-      [voucherId, order.id]
+       where id = $3`,
+      [provider, providerRequestId, order.id]
     );
 
     return res.status(201).json({
@@ -299,21 +344,18 @@ app.post('/api/orders', async (req, res) => {
         amount: order.amount,
         status: order.status,
         created_at: order.created_at,
-        message: 'TEST MODE: STK Push accepted. No real PalPluss payment executed.'
+        message: 'STK Push accepted. Payment is still pending provider confirmation.'
       },
-      voucher: {
-        id: voucherId,
-        code: voucherCode,
-        package_id: pkg.id,
-        status: 'AVAILABLE',
-        assigned_at: new Date().toISOString()
-      }
+      provider: stkResult.provider || 'PALPLUSS',
+      providerRequestId,
+      transactionId: stkResult.transactionId || null,
+      voucher: null
     });
   } catch (err) {
     console.error('POST /api/orders error:', err.message);
     return res.status(500).json({
       error: 'ORDER_CREATE_FAILED',
-      message: 'Unable to create test order.'
+      message: 'Unable to create order.'
     });
   }
 });
@@ -398,6 +440,23 @@ app.post('/api/webhooks/palpluss', async (req, res) => {
     const paymentProvider = process.env.PAYMENT_PROVIDER || 'PALPLUSS';
     const providerTransactionId = transaction.provider_request_id || transaction.providerRequestId || transaction.id;
 
+    const orderResult = await db.query(
+      `select id, reference, package_id, voucher_id
+       from orders
+       where reference = $1
+       limit 1`,
+      [externalReference]
+    );
+
+    if (orderResult.rowCount === 0) {
+      return res.status(404).json({
+        error: 'ORDER_NOT_FOUND',
+        message: 'Order reference from PalPluss callback was not found locally.'
+      });
+    }
+
+    const order = orderResult.rows[0];
+
     await db.query(
       `update orders
        set status = $1,
@@ -406,10 +465,43 @@ app.post('/api/webhooks/palpluss', async (req, res) => {
            amount = coalesce($4, amount),
            updated_at = now(),
            paid_at = case when $1 = 'PAID' then now() else paid_at end
-       where reference = $5
-       or reference = $6`,
-      [status, paymentProvider, providerTransactionId, amount || null, externalReference, transaction.external_reference]
+       where reference = $5`,
+      [status, paymentProvider, providerTransactionId, amount || null, externalReference]
     );
+
+    if (status === 'PAID') {
+      const availableVoucher = await db.query(
+        `select id, code, package_id, status
+         from vouchers
+         where package_id = $1 and status = 'AVAILABLE'
+         order by created_at asc
+         limit 1 for update skip locked`,
+        [order.package_id]
+      );
+
+      if (availableVoucher.rowCount > 0) {
+        const voucher = availableVoucher.rows[0];
+
+        await db.query(
+          `update vouchers
+           set status = 'ASSIGNED',
+               order_id = $1,
+               assigned_at = now(),
+               used_at = null
+           where id = $2`,
+          [order.id, voucher.id]
+        );
+
+        await db.query(
+          `update orders
+           set voucher_id = $2,
+               status = 'VOUCHER_ASSIGNED',
+               updated_at = now()
+           where id = $1`,
+          [order.id, voucher.id]
+        );
+      }
+    }
 
     return res.status(200).json({
       success: true,
