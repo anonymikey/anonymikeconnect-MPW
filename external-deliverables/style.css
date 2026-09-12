@@ -635,6 +635,37 @@ body::after {
 .portal-status.online { color: #86efac; }
 .portal-status.offline { color: #fde68a; }
 
+.portal-open-button {
+    display: block;
+    width: min(100%, 330px);
+    margin: 14px auto 0;
+    padding: 12px 16px;
+    border: 1px solid #67e8f9;
+    border-radius: 10px;
+    color: #06283d;
+    background: linear-gradient(135deg, #67e8f9, #38bdf8);
+    box-shadow: 0 8px 18px rgba(14, 165, 233, .18);
+    font-size: 13px;
+    font-weight: 900;
+    line-height: 1.2;
+    text-align: center;
+    text-decoration: none;
+    transition: transform .18s ease, filter .18s ease, box-shadow .18s ease;
+}
+
+.portal-open-button:hover,
+.portal-open-button:focus-visible {
+    color: #031923;
+    filter: brightness(1.08);
+    box-shadow: 0 10px 24px rgba(14, 165, 233, .3);
+    transform: translateY(-1px);
+}
+
+.portal-open-button:focus-visible {
+    outline: 3px solid rgba(254, 240, 138, .9);
+    outline-offset: 3px;
+}
+
 .portal-spinner {
     width: 17px;
     height: 17px;
@@ -658,6 +689,7 @@ body::after {
 @media (max-width: 480px) {
     .portal-access-card { margin: 14px 0; padding: 13px; }
     .portal-loader, .portal-status { font-size: 12px; }
+    .portal-open-button { width: 100%; padding: 11px 12px; font-size: 12px; }
 }
 
 /* ---------------------------------------------------------
