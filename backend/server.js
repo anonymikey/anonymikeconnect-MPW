@@ -80,13 +80,119 @@ function normalizePhone(phone) {
     return null;
   }
 
-  const cleaned = phone.replace(/\s|\-/g, '').trim();
+  let cleaned = phone.replace(/\s|\-/g, '').trim();
   if (!/^\+?[0-9]{9,13}$/.test(cleaned)) {
     return null;
   }
 
-  return cleaned.startsWith('+') ? cleaned : cleaned;
+  if (cleaned.startsWith('+254')) {
+    return '254' + cleaned.slice(4);
+  }
+
+  if (cleaned.startsWith('254')) {
+    return cleaned;
+  }
+
+  if (cleaned.startsWith('0')) {
+    return '254' + cleaned.slice(1);
+  }
+
+  return cleaned;
 }
+
+function normalizePalPlussState(status) {
+  const map = {
+    SUCCESS: 'PAID',
+    FAILED: 'FAILED',
+    CANCELLED: 'FAILED',
+    EXPIRED: 'EXPIRED'
+  };
+
+  return map[status] || 'PENDING';
+}
+
+app.post('/api/payments/stk', async (req, res) => {
+  const provider = (process.env.PAYMENT_PROVIDER || 'TEST').toUpperCase();
+
+  if (provider === 'TEST' || testMode) {
+    return res.status(503).json({
+      error: 'PAYMENT_API_NOT_READY',
+      message: 'PalPluss STK flow is not enabled in TEST_MODE.'
+    });
+  }
+
+  const body = req.body || {};
+  const amount = Number(body.amount || 0);
+  const phone = normalizePhone(body.phone || body.phonenumber || body.phone_number);
+  const accountReference = String(body.accountReference || body.reference || body.account_reference || '').trim();
+  const transactionDesc = String(body.transactionDesc || body.transaction_desc || 'Payment').trim();
+  const callbackUrl = String(body.callbackUrl || body.callback_url || '').trim();
+  const channelId = body.channelId || body.channel_id || null;
+  const credentialId = body.credential_id || null;
+
+  if (!amount || amount < 1 || !phone || !accountReference || !transactionDesc || !callbackUrl) {
+    return res.status(400).json({
+      error: 'VALIDATION_ERROR',
+      message: 'amount, phone, accountReference, transactionDesc, and callbackUrl are required'
+    });
+  }
+
+  if (!process.env.PALPLUSS_BASE_URL || !process.env.PALPLUSS_API_KEY) {
+    return res.status(503).json({
+      error: 'PAYMENT_API_NOT_READY',
+      message: 'PalPluss base URL and API key are not configured.'
+    });
+  }
+
+  try {
+    const base = process.env.PALPLUSS_BASE_URL.replace(/\/$/, '');
+    const response = await fetch(`${base}/payments/stk`, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Basic ' + process.env.PALPLUSS_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        amount,
+        phone,
+        accountReference,
+        transactionDesc,
+        callbackUrl,
+        channelId,
+        credential_id: credentialId
+      })
+    });
+
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      return res.status(response.status).json({
+        success: false,
+        error: payload.error || payload,
+        requestId: payload.requestId || null
+      });
+    }
+
+    const transactionId = payload.data?.transactionId || payload.transactionId || null;
+    const providerRequestId = payload.data?.providerRequestId || payload.providerRequestId || null;
+
+    return res.status(200).json({
+      success: true,
+      provider: 'PALPLUSS',
+      data: payload.data || payload,
+      transactionId,
+      providerRequestId,
+      callbackUrl,
+      status: 'PENDING'
+    });
+  } catch (err) {
+    console.error('POST /api/payments/stk error:', err.message);
+    return res.status(500).json({
+      error: 'PALPLUSS_STK_INIT_FAILED',
+      message: 'Unable to reach the PalPluss STK endpoint.'
+    });
+  }
+});
 
 app.post('/api/orders', async (req, res) => {
   const packageId = req.body.packageId || req.body.package_id;
@@ -205,12 +311,66 @@ app.get('/api/orders/:id', async (req, res) => {
   }
 });
 
-app.post('/api/webhooks/palpluss', (req, res) => {
-  return res.status(202).json({
-    success: true,
-    message: 'PalPluss webhook endpoint is ready for Phase 2 integration.',
-    received: req.body || {}
-  });
+app.post('/api/webhooks/palpluss', async (req, res) => {
+  const body = req.body || {};
+  const eventType = body.event_type || body.event || 'transaction.updated';
+  const transaction = body.transaction || {};
+  const transactionId = transaction.id || null;
+  const externalReference = transaction.external_reference || transaction.accountReference || transaction.reference || null;
+
+  if (!transactionId) {
+    return res.status(400).json({
+      error: 'WEBHOOK_VALIDATION_ERROR',
+      message: 'transaction.id is required for idempotent processing.'
+    });
+  }
+
+  try {
+    const existing = await db.query(
+      `select id from orders where provider_transaction_id = $1 limit 1`,
+      [transactionId]
+    );
+
+    if (existing.rowCount > 0) {
+      return res.status(200).json({
+        success: true,
+        message: 'Duplicate PalPluss callback received and ignored.',
+        idempotent: true
+      });
+    }
+
+    const status = normalizePalPlussState(transaction.status || 'SUCCESS');
+    const amount = Number(transaction.amount || 0);
+    const paymentProvider = process.env.PAYMENT_PROVIDER || 'PALPLUSS';
+    const providerTransactionId = transaction.provider_request_id || transaction.providerRequestId || transaction.id;
+
+    await db.query(
+      `update orders
+       set status = $1,
+           payment_provider = $2,
+           provider_transaction_id = $3,
+           amount = coalesce($4, amount),
+           updated_at = now(),
+           paid_at = case when $1 = 'PAID' then now() else paid_at end
+       where reference = $5
+       or reference = $6`,
+      [status, paymentProvider, providerTransactionId, amount || null, externalReference, transaction.external_reference]
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'PalPluss webhook accepted and processed.',
+      eventType,
+      transactionId,
+      status
+    });
+  } catch (err) {
+    console.error('POST /api/webhooks/palpluss error:', err.message);
+    return res.status(500).json({
+      error: 'WEBHOOK_PROCESSING_FAILED',
+      message: 'Unable to process PalPluss callback.'
+    });
+  }
 });
 
 app.listen(PORT, () => {
