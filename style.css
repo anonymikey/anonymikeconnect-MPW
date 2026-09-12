@@ -617,6 +617,8 @@ body.modal-open {
 
 
 .package-card {
+    position: relative;
+    overflow: hidden;
     width: 100%;
 
     display: block;
@@ -682,7 +684,28 @@ body.modal-open {
   }
 
   .package-card.unavailable .package-cta {
-    color: #94a3b8;
+    color: #cbd5e1;
+    font-weight: 900;
+  }
+
+  .package-card.unavailable::after {
+    content: "NOT AVAILABLE";
+    position: absolute;
+    top: 14px;
+    right: -42px;
+    z-index: 3;
+    width: 150px;
+    padding: 7px 8px;
+    color: #fff7ed;
+    background: linear-gradient(135deg, #b45309, #ea580c);
+    box-shadow: 0 5px 16px rgba(124, 45, 18, .32);
+    font-size: 9px;
+    font-weight: 950;
+    letter-spacing: .1em;
+    line-height: 1.2;
+    text-align: center;
+    transform: rotate(32deg);
+    pointer-events: none;
   }
 
   .package-card.featured {
@@ -1691,14 +1714,22 @@ body.modal-open {
     }
 
 
-    .package-card {
-        padding: 17px;
+  .package-card {
+    padding: 17px;
 
-        border-radius: 17px;
-    }
+    border-radius: 17px;
+  }
+
+  .package-card.unavailable::after {
+    top: 11px;
+    right: -45px;
+    width: 138px;
+    padding: 6px 7px;
+    font-size: 8px;
+  }
 
 
-    .payment-modal,
+  .payment-modal,
     .contact-modal {
         padding: 22px;
 
