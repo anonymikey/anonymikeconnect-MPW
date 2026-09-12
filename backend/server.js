@@ -421,31 +421,24 @@ app.post('/api/webhooks/palpluss', async (req, res) => {
   const transactionId = transaction.id || null;
   const externalReference = transaction.external_reference || transaction.accountReference || transaction.reference || null;
 
-  if (!transactionId) {
+  if (!transactionId || !externalReference) {
     return res.status(400).json({
       error: 'WEBHOOK_VALIDATION_ERROR',
-      message: 'transaction.id is required for idempotent processing.'
+      message: 'transaction.id and transaction.external_reference are required.'
     });
   }
 
   try {
-    const existing = await db.query(
-      `select id from orders where provider_transaction_id = $1 limit 1`,
-      [transactionId]
+    // Do not use provider_transaction_id as the duplicate guard here. The initial
+    // order stores PalPluss provider_request_id, while callbacks identify the
+    // transaction with a different UUID. The locked order lookup below is the
+    // authoritative idempotency check and also handles callback races safely.
+    const status = normalizePalPlussState(
+      transaction.status || (eventType === 'transaction.success' ? 'SUCCESS' : 'PENDING')
     );
-
-    if (existing.rowCount > 0) {
-      return res.status(200).json({
-        success: true,
-        message: 'Duplicate PalPluss callback received and ignored.',
-        idempotent: true
-      });
-    }
-
-    const status = normalizePalPlussState(transaction.status || 'SUCCESS');
     const amount = Number(transaction.amount || 0);
     const paymentProvider = process.env.PAYMENT_PROVIDER || 'PALPLUSS';
-    const providerTransactionId = transaction.provider_request_id || transaction.providerRequestId || transaction.id;
+    const providerTransactionId = transaction.id;
 
     // All state changes run inside one transaction with the order row locked,
     // so concurrent or replayed callbacks can never assign more than one voucher.
