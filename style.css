@@ -1144,6 +1144,11 @@ body.modal-open {
 .login-till-row strong { color: #f8fafc; font-size: 18px; letter-spacing: .8px; }
 .login-till-row button { padding: 6px 8px; border: 1px solid rgba(103, 232, 249, .2); border-radius: 8px; color: #a5f3fc; background: rgba(34, 211, 238, .08); font-size: 8px; font-weight: 850; cursor: pointer; }
 .login-transaction-input { margin-top: 12px; }
+.login-stk-button { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 46px; margin-top: 11px; border: 0; border-radius: 11px; color: #082f49; background: linear-gradient(135deg, #67e8f9, #38bdf8); font-weight: 900; cursor: pointer; }
+.login-fallback-actions { display: flex; gap: 7px; margin-top: 11px; }
+.login-fallback-actions button { flex: 1; min-height: 32px; padding: 7px 8px; border: 0; border-radius: 8px; color: #fff; font-size: 9px; font-weight: 850; cursor: pointer; }
+.login-fallback-actions .whatsapp-button { background: #16a34a; }
+.login-fallback-actions .sms-button { color: #bae6fd; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); }
 @media (max-width: 430px) { .login-fallback-grid { grid-template-columns: 1fr; } }
 
 /* =========================================================

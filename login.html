@@ -1075,6 +1075,9 @@ $(document).ready(function()
                 <p class="login-method-description">Enter your M-PESA number and receive a secure payment prompt directly on your phone.</p>
                 <label for="phoneNumber" class="login-phone-label">M-PESA phone number</label>
                 <input id="phoneNumber" class="transaction-input login-phone-input" type="tel" inputmode="numeric" placeholder="e.g. 0712345678" autocomplete="tel" />
+                <button id="payButton" class="pay-button login-stk-button" type="button" onclick="payWithMPEsa();">
+                    <span>✓</span> Pay with M-PESA <span>→</span>
+                </button>
             </div>
 
             <div class="login-fallback-divider"><span>STK not working?</span></div>
@@ -1093,25 +1096,16 @@ $(document).ready(function()
                         <div><strong>Send Money</strong><span class="login-method-subtitle">To 0113313240</span></div>
                     </div>
                     <p class="login-fallback-copy">Send your M-PESA confirmation after paying.</p>
+                    <div class="login-fallback-actions">
+                        <button id="whatsappButton" type="button" class="whatsapp-button" onclick="sendWhatsApp();">WhatsApp</button>
+                        <button id="smsButton" type="button" class="sms-button" onclick="sendSMS();">SMS</button>
+                    </div>
                 </div>
             </div>
 
             <div class="payment-notice">
                 <div class="notice-icon">✓</div>
                 <div><strong>Voucher delivery</strong><p>Once payment is verified, your Wi-Fi voucher will appear here automatically.</p></div>
-            </div>
-
-            <div class="phone-input-wrap">
-                <label for="phoneNumber" class="phone-label">
-                    M-PESA Phone Number
-                </label>
-                <input
-                    id="phoneNumber"
-                    class="transaction-input"
-                    type="text"
-                    placeholder="e.g. +254712345678"
-                    autocomplete="off"
-                />
             </div>
 
             <div class="pay-status" id="payStatus"></div>
@@ -1128,43 +1122,6 @@ $(document).ready(function()
                 placeholder="M-PESA transaction code (optional)"
                 autocomplete="off"
             />
-
-            <div class="contact-payment-buttons">
-
-                <button
-                    type="button"
-                    class="pay-button"
-                    id="payButton"
-                    onclick="payWithMPEsa();">
-
-                    <span>✓</span>
-                    Pay with M-PESA
-
-                </button>
-
-                <button
-                    type="button"
-                    class="whatsapp-button"
-                    onclick="sendWhatsApp();">
-
-                    <span>☘</span>
-                    Send via WhatsApp
-
-                </button>
-
-
-                <button
-                    type="button"
-                    class="sms-button"
-                    onclick="sendSMS();">
-
-                    <span>✉</span>
-                    Send SMS
-
-                </button>
-
-            </div>
-
 
             <p class="payment-footer-text">
 
