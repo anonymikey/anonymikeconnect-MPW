@@ -565,6 +565,232 @@ app.post('/api/webhooks/palpluss', async (req, res) => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// Admin: voucher inventory management
+// ---------------------------------------------------------------------------
+
+// Constant-time comparison so the admin token cannot be guessed via timing.
+function safeEqual(a, b) {
+  const bufA = Buffer.from(String(a));
+  const bufB = Buffer.from(String(b));
+  if (bufA.length !== bufB.length) {
+    return false;
+  }
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+function requireAdmin(req, res, next) {
+  const expected = process.env.ADMIN_TOKEN || '';
+  if (!expected) {
+    return res.status(503).json({
+      error: 'ADMIN_NOT_CONFIGURED',
+      message: 'ADMIN_TOKEN is not set on the server. Add it in Render environment settings.'
+    });
+  }
+
+  const provided = req.get('x-admin-token') || '';
+  if (!provided || !safeEqual(provided, expected)) {
+    return res.status(401).json({ error: 'UNAUTHORIZED', message: 'Invalid or missing admin token.' });
+  }
+
+  return next();
+}
+
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(rootDir, 'admin.html'));
+});
+
+// Lightweight probe the admin page uses to validate the token before loading.
+app.get('/api/admin/session', requireAdmin, (req, res) => {
+  return res.json({ ok: true });
+});
+
+// Inventory summary grouped by package, plus the package list for the form.
+app.get('/api/admin/summary', requireAdmin, async (req, res) => {
+  try {
+    const result = await db.query(`
+      select
+        p.id,
+        p.name,
+        p.price,
+        count(v.id) filter (where v.status = 'AVAILABLE')       as available,
+        count(v.id) filter (where v.status = 'ASSIGNED')        as assigned,
+        count(v.id) filter (where v.status = 'USED')            as used,
+        count(v.id) filter (where v.status = 'BLOCKED')         as blocked,
+        count(v.id)                                             as total
+      from packages p
+      left join vouchers v on v.package_id = p.id
+      group by p.id, p.name, p.price
+      order by p.price desc
+    `);
+
+    return res.json({
+      packages: result.rows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        price: Number(row.price),
+        available: Number(row.available),
+        assigned: Number(row.assigned),
+        used: Number(row.used),
+        blocked: Number(row.blocked),
+        total: Number(row.total)
+      })),
+      updatedAt: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error('GET /api/admin/summary error:', err.message);
+    return res.status(500).json({ error: 'SUMMARY_FAILED', message: 'Unable to load voucher inventory.' });
+  }
+});
+
+// Recent vouchers, optionally filtered by package and/or status.
+app.get('/api/admin/vouchers', requireAdmin, async (req, res) => {
+  const packageId = (req.query.packageId || '').toString().trim();
+  const status = (req.query.status || '').toString().trim().toUpperCase();
+  const limit = Math.min(Math.max(Number(req.query.limit) || 100, 1), 500);
+
+  const conditions = [];
+  const params = [];
+  let i = 1;
+
+  if (packageId) {
+    conditions.push(`v.package_id = $${i++}`);
+    params.push(packageId);
+  }
+  if (status) {
+    conditions.push(`v.status = $${i++}`);
+    params.push(status);
+  }
+
+  const where = conditions.length ? `where ${conditions.join(' and ')}` : '';
+  params.push(limit);
+
+  try {
+    const result = await db.query(
+      `select
+         v.id,
+         v.code,
+         v.package_id,
+         p.name as package_name,
+         v.status,
+         v.order_id,
+         o.reference as order_reference,
+         v.created_at,
+         v.assigned_at,
+         v.used_at
+       from vouchers v
+       join packages p on p.id = v.package_id
+       left join orders o on o.id = v.order_id
+       ${where}
+       order by v.created_at desc
+       limit $${i}`,
+      params
+    );
+
+    return res.json({ vouchers: result.rows });
+  } catch (err) {
+    console.error('GET /api/admin/vouchers error:', err.message);
+    return res.status(500).json({ error: 'VOUCHER_LIST_FAILED', message: 'Unable to load vouchers.' });
+  }
+});
+
+// Bulk import voucher codes for a specific package.
+// Codes exported from MyPublicWiFi are pasted or uploaded, deduped, and inserted.
+app.post('/api/admin/vouchers', requireAdmin, async (req, res) => {
+  const packageId = (req.body.packageId || req.body.package_id || '').toString().trim();
+  const rawCodes = Array.isArray(req.body.codes) ? req.body.codes : [];
+
+  if (!packageId) {
+    return res.status(400).json({ error: 'VALIDATION_ERROR', message: 'packageId is required.' });
+  }
+
+  // Normalize: trim, drop empties, uppercase, and dedupe within the request.
+  const seen = new Set();
+  const codes = [];
+  for (const entry of rawCodes) {
+    const code = String(entry || '').trim();
+    if (!code) continue;
+    const key = code.toUpperCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    codes.push(code);
+  }
+
+  if (codes.length === 0) {
+    return res.status(400).json({ error: 'VALIDATION_ERROR', message: 'At least one voucher code is required.' });
+  }
+
+  if (codes.length > 5000) {
+    return res.status(400).json({ error: 'TOO_MANY_CODES', message: 'Import at most 5000 codes per request.' });
+  }
+
+  try {
+    const pkg = await db.query('select id, name from packages where id = $1', [packageId]);
+    if (pkg.rowCount === 0) {
+      return res.status(404).json({ error: 'PACKAGE_NOT_FOUND', message: 'Unknown package selected.' });
+    }
+
+    const valuePlaceholders = [];
+    const values = [];
+    let i = 1;
+    for (const code of codes) {
+      valuePlaceholders.push(`($${i++}, $${i++}, $${i++}, 'AVAILABLE', now())`);
+      values.push(crypto.randomUUID(), code, packageId);
+    }
+
+    // Codes already present (any package) are skipped via the unique(code) constraint.
+    const insertResult = await db.query(
+      `insert into vouchers (id, code, package_id, status, created_at)
+       values ${valuePlaceholders.join(', ')}
+       on conflict (code) do nothing
+       returning code`,
+      values
+    );
+
+    const inserted = insertResult.rowCount;
+    const skipped = codes.length - inserted;
+
+    return res.status(201).json({
+      success: true,
+      packageId,
+      packageName: pkg.rows[0].name,
+      received: codes.length,
+      inserted,
+      skipped,
+      message: `${inserted} voucher(s) added to ${pkg.rows[0].name}. ${skipped} duplicate(s) skipped.`
+    });
+  } catch (err) {
+    console.error('POST /api/admin/vouchers error:', err.message);
+    return res.status(500).json({ error: 'VOUCHER_IMPORT_FAILED', message: 'Unable to import vouchers.' });
+  }
+});
+
+// Remove a voucher that has not yet been assigned (for correcting bad imports).
+app.delete('/api/admin/vouchers/:id', requireAdmin, async (req, res) => {
+  const id = req.params.id.trim();
+
+  try {
+    const result = await db.query(
+      `delete from vouchers
+       where id::text = $1 and status = 'AVAILABLE'
+       returning id`,
+      [id]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(409).json({
+        error: 'DELETE_BLOCKED',
+        message: 'Only AVAILABLE (unassigned) vouchers can be deleted.'
+      });
+    }
+
+    return res.json({ success: true, deleted: id });
+  } catch (err) {
+    console.error('DELETE /api/admin/vouchers/:id error:', err.message);
+    return res.status(500).json({ error: 'VOUCHER_DELETE_FAILED', message: 'Unable to delete voucher.' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`ANONYMIKECONNECT Phase 1 test backend running on http://localhost:${PORT}`);
   console.log(`TEST_MODE=${testMode}`);
