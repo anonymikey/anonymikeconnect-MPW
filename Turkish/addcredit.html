@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<!--
+Design by TRUE Software
+https://www.mypublicwifi.com
+-->
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="expires" content="0" />
+<meta http-equiv="pragma" content="no-cache" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="format-detection" content="telephone=no" />
+<meta name="HandheldFriendly" content="True" />
+<meta name="MobileOptimized" content="320" />
+<title>MyPublicWiFi - Hesabınıza Yükleme Yapın</title>
+<script type="text/javascript" src="jquery-1.4.3.min.js"></script>
+<link rel="stylesheet"  type="text/css"  href="style.css" />
+<script type="text/javascript">
+        /*<![CDATA[*/
+
+
+function HideDialog(DialogId)
+{
+  const MessageDialog = document.getElementById(DialogId);
+  MessageDialog.style.display = 'none';
+
+}
+
+function ShowMessage(DialogId, Msg)
+{
+   const MessageDialog = document.getElementById(DialogId);
+   MessageDialog.style.display = 'block';
+   MessageDialog.offsetHeight; // Ein erzwungener Reflow
+   MessageDialog.style.display = 'flex';
+   MessageDialog.textContent = Msg;
+
+}
+
+function ShowErrorMessage(Error)
+
+{
+  HideDialog("InfoDialog");
+  HideDialog("WarningDialog");
+  ShowMessage("ErrorDialog", document.getElementById(Error).textContent);
+
+}
+
+function ShowInfoMessage(Info)
+
+{
+  HideDialog("ErrorDialog");
+  HideDialog("WarningDialog");
+  ShowMessage("InfoDialog", document.getElementById(Info).textContent);
+ }
+
+function ShowWarningMessage(Warning)
+
+{
+  HideDialog("ErrorDialog");
+  HideDialog("InfoDialog");
+  ShowMessage("WarningDialog", document.getElementById(Warning).textContent);
+ }
+
+function VoucherAccountCheck()
+  {
+   var chk = false;
+   if (document.getElementById("Voucher").value == '')
+   {
+     ShowErrorMessage("VoucherInvalid")
+   }
+   else
+   chk=true;
+   return(chk);
+  }
+
+function UserAccountCheck()
+  {
+   var chk = false;
+   if (document.getElementById("Username").value == '')
+   {
+     ShowErrorMessage("UsernameInvalid")
+   }
+   else
+   chk=true;
+   return(chk);
+  }
+
+function ToggleCheckbox(element)
+  {
+    document.getElementById("TOCLoginButton").disabled = !element.checked;
+  }
+
+
+
+  $(document).ready(function() {
+                            //6F143793-ACE5-4C04-93EA-C593CD76DC47
+                          });
+
+
+
+    /*]]>*/
+</script>
+</head>
+
+<body>
+
+   <div class="wrap" >
+
+      <div class="page-header">
+           <div class="page-logo background-hotspot"></div>
+           <div class="page-description">ANONYMIKETECH SUPA LAN</div>
+           <div class="language-container" >
+             <div class="popup-menu">
+               <a  class="popup-menu-item"  style="background-image:url('img/Turkish.png');" >Turkish</a>
+               <div  class="popup-sub-items display-none" >
+                 <ul>
+                                       <li>
+                     <a  style="background-image:url('img/Arabic.png');"   href="?lang=Arabic">Arabic</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Bengali.png');"   href="?lang=Bengali">Bengali</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/ChineseS.png');"   href="?lang=ChineseS">ChineseS</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/ChineseT.png');"   href="?lang=ChineseT">ChineseT</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/English.png');"   href="?lang=English">English</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Filipino.png');"   href="?lang=Filipino">Filipino</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/French.png');"   href="?lang=French">French</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/German.png');"   href="?lang=German">German</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Hindi.png');"   href="?lang=Hindi">Hindi</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Indonesia.png');"   href="?lang=Indonesia">Indonesia</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Italian.png');"   href="?lang=Italian">Italian</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Japanese.png');"   href="?lang=Japanese">Japanese</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Polish.png');"   href="?lang=Polish">Polish</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Portuguese.png');"   href="?lang=Portuguese">Portuguese</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Russian.png');"   href="?lang=Russian">Russian</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Spanish.png');"   href="?lang=Spanish">Spanish</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Urdu.png');"   href="?lang=Urdu">Urdu</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Vietnamese.png');"   href="?lang=Vietnamese">Vietnamese</a>
+                   </li>
+
+
+                 </ul>
+               </div>
+             </div>
+
+
+
+             <script type="text/javascript">
+                      /*<![CDATA[*/
+                   $(document).ready(function() {
+                       $('.popup-menu-item').click(function(){
+                             $(this).parent().find('.popup-sub-items').toggleClass('display-none');
+                            });
+                      $('.popup-menu').mouseleave(function() {
+                         $(this).find('.popup-sub-items').addClass('display-none');
+                       });
+                     });
+                   /*]]>*/
+             </script>
+           </div>
+
+        </div>
+
+        <div id="ErrorDialog" class="container message-dialog background-error margin-top--17px text-justify-bold color-red"  style="display: none;">
+           &nbsp;
+        </div>
+
+        <div id="WarningDialog" class="container message-dialog background-warning margin-top--17px text-justify-bold color-red"  style="display: none;">
+           &nbsp;
+        </div>
+
+        <div id="InfoDialog" class="container message-dialog background-info margin-top--17px text-justify-bold"  style="display: none;">
+           &nbsp;
+        </div>
+
+        <noscript>
+           <div  class="container message-dialog background-warning margin-top--17px text-justify-bold color-red">
+              Bu sayfa yalnızca JavaScript ile doğru şekilde görüntülenir. Lütfen tarayıcınızda JavaScript'i etkinleştirin!
+           </div>
+        </noscript>
+
+
+      <div class="container">
+         <div class="container-header">
+            Hesabınıza Yükleme Yapın
+         </div>
+         <div class="container-description background-voucher text-justify-bold" >
+            Geçerli bir kupon kodu kullanarak hesabınıza yükleme yapabilirsiniz.
+        </div>
+        <div class="container-body">
+           <form  action="./" method="post"  onsubmit="return VoucherAccountCheck();">
+              <div><input type="hidden" name="_action" value="AddCredit" /></div>
+              <div>
+                 <input  tabindex="1" id="Voucher"  class="icon-text-input background-voucher-16" placeholder="Kupon"  name="Voucher"    value="" autocomplete="off" type="text"/>
+              </div>
+              <div>
+                 <table>
+                    <tr>
+                       <td><input tabindex="2"  value="Yükleme Yap" type="submit"  /> </td>
+                       <td  class="padding-left-5px"><a href="./"><button tabindex="2" type="button" >İptal</button></a></td>
+                    </tr>
+                 </table>
+              </div>
+           </form>
+        </div>
+      </div>
+           <div class="page-footer">
+          Giriş yaparak, bizim <a href="termsofuse.html">Kullanım Koşullarımızı</a>
+     </div>
+
+   </div>
+
+       <div style="display: none;">
+      <p id="ServiceDisabled">Üzgünüz, bu hizmet şu anda seçilen işlem için kullanılamıyor.</p>
+      <p id="UsernameInvalid">Girilen kullanıcı adı geçersiz. Lütfen tekrar deneyin.</p>
+      <p id="VoucherInvalid">Girilen kupon geçersiz. Lütfen tekrar deneyin.</p>
+      <p id="UserPasswordInvalid">Girilen kullanıcı şifresi geçersiz. Lütfen tekrar deneyin.</p>
+      <p id="GuestPasswordInvalid">Girilen erişim şifresi geçersiz. Lütfen tekrar deneyin.</p>
+      <p id="MaxDailyLoginsExceeded">Bu yöntemle günlük maksimum giriş sayısına ulaştınız. Lütfen yarın tekrar deneyin veya başka bir giriş yöntemi seçin.</p>
+      <p id="UserAccountDisabled">Belirtilen kullanıcı hesabı şu anda engellenmiş. Lütfen destekle iletişime geçin.</p>
+      <p id="UserAccountExpired">Belirtilen kullanıcı hesabının süresi dolmuş. Lütfen destekle iletişime geçin.</p>
+      <p id="UserTimeCreditNotEnough">Belirtilen kullanıcı hesabında yeterli zaman kredisi yok. Lütfen hesabınıza yükleme yapın.</p>
+      <p id="UserTrafficCreditNotEnough">Belirtilen kullanıcı hesabında yeterli veri hacmi kredisi yok. Lütfen hesabınıza yükleme yapın.</p>
+      <p id="NoUserCredit">Belirtilen kullanıcı hesabı için zaman ve veri hacmi kredisi tükenmiş. Lütfen başka bir hesap deneyin.</p>
+      <p id="DailyUserQuotaExceeded">Belirtilen kullanıcı hesabı için günlük zaman veya veri limitine ulaşıldı. Lütfen yarın tekrar deneyin.</p>
+      <p id="MonthlyUserQuotaExceeded">Belirtilen kullanıcı hesabı için aylık zaman veya veri limitine ulaşıldı. Lütfen gelecek ay tekrar deneyin.</p>
+      <p id="UserAccountUsed">Belirtilen kullanıcı hesabı zaten kullanılmış. Lütfen başka bir hesap deneyin.</p>
+      <p id="MaxUserConcurrentLoginsExceeded">Bu kullanıcı hesabı için maksimum eşzamanlı giriş sayısına ulaşıldı. Lütfen daha sonra tekrar deneyin.</p>
+      <p id="VoucherDisabled">Belirtilen kupon şu anda engellenmiş. Lütfen destekle iletişime geçin.</p>
+      <p id="VoucherExpired">Belirtilen kuponun süresi dolmuş. Lütfen destekle iletişime geçin.</p>
+      <p id="VoucherTimeCreditNotEnough">Belirtilen kupon yeterli zaman kredisine sahip değil. Lütfen hesabınıza yükleme yapın.</p>
+      <p id="VoucherTrafficCreditNotEnough">Belirtilen kupon yeterli veri hacmi kredisine sahip değil. Lütfen hesabınıza yükleme yapın.</p>
+      <p id="NoVoucherCredit">Belirtilen kupon için zaman ve veri hacmi kredisi tükenmiş. Lütfen başka bir kupon deneyin.</p>
+      <p id="DailyVoucherQuotaExceeded">Belirtilen kupon için günlük zaman veya veri limitine ulaşıldı. Lütfen yarın tekrar deneyin.</p>
+      <p id="MonthlyVoucherQuotaExceeded">Belirtilen kupon için aylık zaman veya veri limitine ulaşıldı. Lütfen gelecek ay tekrar deneyin.</p>
+      <p id="VoucherUsed">Belirtilen kupon zaten kullanılmış. Lütfen başka bir kupon deneyin.</p>
+      <p id="MaxVoucherConcurrentLoginsExceeded">Bu kupon için maksimum eşzamanlı giriş sayısına ulaşıldı. Lütfen daha sonra tekrar deneyin.</p>
+      <p id="PasswordConfirmInvalid">Girilen iki şifre eşleşmiyor. Lütfen tekrar deneyin.</p>
+      <p id="NewPasswordEmpty">Boş şifrelere izin verilmez. Lütfen bir şifre girin.</p>
+      <p id="MaxUploadSizeExceeded">Verileriniz aktarılamadı. İzin verilen maksimum dosya boyutu aşıldı.</p>
+      <p id="FilesUploadRejected">Verileriniz aktarılamadı. Sunucu yüklemeyi reddetti.</p>
+      <p id="FilesUploadAborted">Verileriniz aktarılamadı. Yükleme iptal edildi.</p>
+      <p id="GeneralFilesUploadError">Verileriniz aktarılamadı. Bir hata oluştu.</p>
+      <p id="AccountRecharged">Hesabınız başarıyla yüklendi. Güveniniz için teşekkür ederiz!</p>
+      <p id="PasswordChanged">Şifreniz başarıyla değiştirildi.</p>
+      <p id="LoginSuccessful">Başarıyla giriş yaptınız.</p>
+      <p id="LogoutSuccessful">Başarıyla çıkış yaptınız.</p>
+      <p id="FilesUploadSuccessful">Verileriniz başarıyla aktarıldı. Lütfen dosyalarınızın doğru şekilde kaydedilip kaydedilmediğini kontrol edin.</p>
+      <p id="UserType">Kullanıcı:</p>
+      <p id="VoucherType">Kupon:</p>
+      <p id="GuestType">Misafir</p>
+    </div>
+
+
+</body>
+</html>

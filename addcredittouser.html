@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<!--
+    ANONYMIKETECH SUPA LAN
+    MyPublicWiFi - Extend Your Plan
+    Backend structure preserved for MyPublicWiFi.
+-->
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="expires" content="0" />
+<meta http-equiv="pragma" content="no-cache" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="format-detection" content="telephone=no" />
+<meta name="HandheldFriendly" content="True" />
+<meta name="MobileOptimized" content="320" />
+
+<title>ANONYMIKETECH SUPA LAN - Extend Your Plan</title>
+
+<script type="text/javascript" src="jquery-1.4.3.min.js"></script>
+<link rel="stylesheet" type="text/css" href="style.css" />
+
+<style>
+
+/* =========================================================
+   ANONYMIKETECH SUPA LAN
+   EXTEND YOUR PLAN UI
+   ========================================================= */
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    min-height: 100%;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #ffffff;
+    background:
+        radial-gradient(circle at 15% 15%, rgba(0, 255, 200, 0.16), transparent 30%),
+        radial-gradient(circle at 85% 20%, rgba(80, 100, 255, 0.18), transparent 32%),
+        radial-gradient(circle at 50% 90%, rgba(0, 220, 255, 0.12), transparent 35%),
+        #050811;
+    overflow-x: hidden;
+}
+
+/* Animated background particles */
+
+body::before,
+body::after {
+    content: "";
+    position: fixed;
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.22;
+    pointer-events: none;
+    z-index: -1;
+}
+
+body::before {
+    background: #00ffd5;
+    top: 10%;
+    left: -100px;
+    animation: floatOne 8s ease-in-out infinite alternate;
+}
+
+body::after {
+    background: #5267ff;
+    right: -100px;
+    bottom: 5%;
+    animation: floatTwo 10s ease-in-out infinite alternate;
+}
+
+@keyframes floatOne {
+    from {
+        transform: translateY(0);
+    }
+    to {
+        transform: translateY(80px);
+    }
+}
+
+@keyframes floatTwo {
+    from {
+        transform: translateY(0);
+    }
+    to {
+        transform: translateY(-90px);
+    }
+}
+
+.wrap {
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 18px 14px 35px;
+}
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.page-header {
+    position: relative;
+    text-align: center;
+    padding: 15px 10px 25px;
+}
+
+.page-logo {
+    width: 76px;
+    height: 76px;
+    margin: 0 auto 14px;
+    border-radius: 22px;
+
+    background-image: url("img/hotspot.png");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 46px;
+
+    background-color: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.15);
+
+    box-shadow:
+        0 15px 40px rgba(0,0,0,0.35),
+        inset 0 1px rgba(255,255,255,0.15);
+}
+
+.page-description {
+    font-size: 25px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    color: #ffffff;
+}
+
+.page-description::after {
+    content: "HIGH-SPEED RESIDENTIAL INTERNET";
+    display: block;
+    margin-top: 7px;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: rgba(255,255,255,0.55);
+    font-weight: 500;
+}
+
+/* =========================================================
+   MAIN CARD
+   ========================================================= */
+
+.extend-card {
+    position: relative;
+    overflow: hidden;
+
+    background: rgba(255,255,255,0.075);
+    border: 1px solid rgba(255,255,255,0.13);
+
+    border-radius: 28px;
+    padding: 25px;
+
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+
+    box-shadow:
+        0 25px 70px rgba(0,0,0,0.38),
+        inset 0 1px rgba(255,255,255,0.08);
+}
+
+.extend-card::before {
+    content: "";
+    position: absolute;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: rgba(0,255,210,0.10);
+    top: -90px;
+    right: -80px;
+    pointer-events: none;
+}
+
+/* =========================================================
+   TITLE
+   ========================================================= */
+
+.hero-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 15px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 20px;
+
+    background: linear-gradient(
+        135deg,
+        rgba(0,255,204,0.20),
+        rgba(80,100,255,0.18)
+    );
+
+    border: 1px solid rgba(255,255,255,0.15);
+
+    font-size: 30px;
+
+    box-shadow:
+        0 12px 35px rgba(0,0,0,0.25),
+        inset 0 1px rgba(255,255,255,0.12);
+}
+
+.title {
+    text-align: center;
+    font-size: 27px;
+    font-weight: 800;
+    margin-bottom: 8px;
+}
+
+.subtitle {
+    text-align: center;
+    color: rgba(255,255,255,0.62);
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 24px;
+}
+
+/* =========================================================
+   PAYMENT NOTICE
+   ========================================================= */
+
+.payment-box {
+    border-radius: 20px;
+    padding: 19px;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(0,255,180,0.13),
+            rgba(0,150,120,0.05)
+        );
+
+    border: 1px solid rgba(0,255,190,0.18);
+
+    margin-bottom: 22px;
+}
+
+.payment-label {
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 7px;
+}
+
+.till {
+    font-size: 27px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: #ffffff;
+}
+
+.payment-number {
+    margin-top: 7px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.68);
+}
+
+.payment-number strong {
+    color: #ffffff;
+}
+
+/* =========================================================
+   STEPS
+   ========================================================= */
+
+.steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 25px;
+}
+
+.step {
+    padding: 13px 8px;
+    text-align: center;
+    border-radius: 16px;
+
+    background: rgba(255,255,255,0.045);
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+.step-number {
+    width: 28px;
+    height: 28px;
+    margin: 0 auto 7px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background: rgba(0,255,200,0.13);
+    border: 1px solid rgba(0,255,200,0.20);
+
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.step-text {
+    font-size: 10px;
+    line-height: 1.4;
+    color: rgba(255,255,255,0.62);
+}
+
+/* =========================================================
+   FORM
+   ========================================================= */
+
+.form-section {
+    margin-top: 8px;
+}
+
+.section-title {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: rgba(255,255,255,0.9);
+}
+
+input[type="text"],
+input[type="password"] {
+    width: 100%;
+    height: 50px;
+    margin-bottom: 10px;
+
+    padding: 0 15px;
+
+    color: #ffffff;
+    background: rgba(0,0,0,0.22);
+
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+
+    outline: none;
+
+    font-size: 14px;
+
+    transition:
+        border-color 0.2s ease,
+        background 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+    background: rgba(0,0,0,0.30);
+
+    border-color: rgba(0,255,210,0.55);
+
+    box-shadow:
+        0 0 0 3px rgba(0,255,210,0.08);
+}
+
+input::placeholder {
+    color: rgba(255,255,255,0.40);
+}
+
+input[type="submit"] {
+    width: 100%;
+    height: 53px;
+
+    border: 0;
+    border-radius: 15px;
+
+    cursor: pointer;
+
+    color: #03100d;
+
+    background: linear-gradient(
+        135deg,
+        #57ffe0,
+        #00dcb5
+    );
+
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.7px;
+
+    box-shadow:
+        0 12px 30px rgba(0,220,180,0.20);
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+input[type="submit"]:hover {
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 16px 35px rgba(0,220,180,0.30);
+}
+
+input[type="submit"]:active {
+    transform: translateY(0);
+}
+
+/* =========================================================
+   PACKAGE CARDS
+   ========================================================= */
+
+.package-title {
+    text-align: center;
+    margin: 27px 0 13px;
+
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.packages {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.package {
+    padding: 14px;
+
+    border-radius: 17px;
+
+    background: rgba(255,255,255,0.045);
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+.package-name {
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.package-price {
+    font-size: 19px;
+    font-weight: 800;
+}
+
+.package-desc {
+    margin-top: 4px;
+    font-size: 10px;
+    color: rgba(255,255,255,0.48);
+}
+
+/* =========================================================
+   CONTACT BUTTONS
+   ========================================================= */
+
+.contact-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+
+    margin-top: 22px;
+}
+
+.contact-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 47px;
+
+    text-decoration: none;
+
+    border-radius: 14px;
+
+    color: #ffffff;
+
+    background: rgba(255,255,255,0.06);
+
+    border: 1px solid rgba(255,255,255,0.10);
+
+    font-size: 12px;
+    font-weight: 700;
+
+    transition:
+        background 0.2s ease,
+        transform 0.2s ease;
+}
+
+.contact-btn:hover {
+    background: rgba(255,255,255,0.11);
+    transform: translateY(-2px);
+}
+
+.whatsapp {
+    border-color: rgba(0,255,170,0.18);
+}
+
+/* =========================================================
+   BACK BUTTON
+   ========================================================= */
+
+.back-button {
+    display: block;
+
+    margin-top: 13px;
+
+    width: 100%;
+    padding: 14px;
+
+    text-align: center;
+
+    text-decoration: none;
+
+    border-radius: 14px;
+
+    color: rgba(255,255,255,0.72);
+
+    background: rgba(255,255,255,0.035);
+
+    border: 1px solid rgba(255,255,255,0.07);
+
+    font-size: 12px;
+    font-weight: 700;
+
+    transition: background 0.2s ease;
+}
+
+.back-button:hover {
+    background: rgba(255,255,255,0.08);
+}
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+
+.page-footer {
+    padding: 22px 8px 5px;
+
+    text-align: center;
+
+    color: rgba(255,255,255,0.40);
+
+    font-size: 10px;
+    line-height: 1.7;
+}
+
+.page-footer a {
+    color: rgba(87,255,224,0.85);
+    text-decoration: none;
+}
+
+/* =========================================================
+   ERROR / WARNING / INFO
+   ========================================================= */
+
+.message-dialog {
+    margin: 10px 0;
+    padding: 13px;
+
+    border-radius: 13px;
+
+    font-size: 12px;
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 520px) {
+
+    .wrap {
+        padding: 10px 10px 25px;
+    }
+
+    .page-header {
+        padding-top: 10px;
+    }
+
+    .page-logo {
+        width: 65px;
+        height: 65px;
+    }
+
+    .page-description {
+        font-size: 21px;
+    }
+
+    .extend-card {
+        padding: 19px 15px;
+        border-radius: 23px;
+    }
+
+    .title {
+        font-size: 23px;
+    }
+
+    .steps {
+        gap: 7px;
+    }
+
+    .step {
+        padding: 11px 5px;
+    }
+
+    .packages {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .package {
+        padding: 12px 10px;
+    }
+
+    .contact-buttons {
+        grid-template-columns: 1fr;
+    }
+
+    .till {
+        font-size: 24px;
+    }
+}
+
+</style>
+
+<script type="text/javascript">
+/*<![CDATA[*/
+
+function HideDialog(DialogId)
+{
+    var MessageDialog = document.getElementById(DialogId);
+
+    if (MessageDialog)
+    {
+        MessageDialog.style.display = 'none';
+    }
+}
+
+function ShowMessage(DialogId, Msg)
+{
+    var MessageDialog = document.getElementById(DialogId);
+
+    if (MessageDialog)
+    {
+        MessageDialog.style.display = 'block';
+        MessageDialog.offsetHeight;
+        MessageDialog.style.display = 'flex';
+        MessageDialog.textContent = Msg;
+    }
+}
+
+function ShowErrorMessage(Error)
+{
+    HideDialog("InfoDialog");
+    HideDialog("WarningDialog");
+
+    ShowMessage(
+        "ErrorDialog",
+        document.getElementById(Error).textContent
+    );
+}
+
+function ShowInfoMessage(Info)
+{
+    HideDialog("ErrorDialog");
+    HideDialog("WarningDialog");
+
+    ShowMessage(
+        "InfoDialog",
+        document.getElementById(Info).textContent
+    );
+}
+
+function ShowWarningMessage(Warning)
+{
+    HideDialog("ErrorDialog");
+    HideDialog("InfoDialog");
+
+    ShowMessage(
+        "WarningDialog",
+        document.getElementById(Warning).textContent
+    );
+}
+
+function VoucherAccountCheck()
+{
+    var chk = false;
+
+    if (document.getElementById("Voucher").value == '')
+    {
+        ShowErrorMessage("VoucherInvalid");
+    }
+    else
+    {
+        chk = true;
+    }
+
+    return chk;
+}
+
+function UserAccountCheck()
+{
+    var chk = false;
+
+    if (document.getElementById("Username").value == '')
+    {
+        ShowErrorMessage("UsernameInvalid");
+    }
+    else if (document.getElementById("Voucher").value == '')
+    {
+        ShowErrorMessage("VoucherInvalid");
+    }
+    else
+    {
+        chk = true;
+    }
+
+    return chk;
+}
+
+function ToggleCheckbox(element)
+{
+    document.getElementById("TOCLoginButton").disabled =
+        !element.checked;
+}
+
+$(document).ready(function()
+{
+    // MyPublicWiFi backend initialization preserved.
+});
+
+/*]]>*/
+</script>
+
+</head>
+
+<body>
+
+<div class="wrap">
+
+    <!-- HEADER -->
+
+    <div class="page-header">
+
+        <div class="page-logo background-hotspot"></div>
+
+        <div class="page-description">
+            ANONYMIKETECH SUPA LAN
+        </div>
+
+    </div>
+
+
+    <!-- SYSTEM MESSAGES -->
+
+    <div id="ErrorDialog"
+         class="container message-dialog background-error color-red"
+         style="display:none;">
+        &nbsp;
+    </div>
+
+    <div id="WarningDialog"
+         class="container message-dialog background-warning color-red"
+         style="display:none;">
+        &nbsp;
+    </div>
+
+    <div id="InfoDialog"
+         class="container message-dialog background-info"
+         style="display:none;">
+        &nbsp;
+    </div>
+
+
+    <noscript>
+
+        <div class="container message-dialog background-warning color-red">
+            JavaScript is required for this page to work correctly.
+            Please enable JavaScript in your browser.
+        </div>
+
+    </noscript>
+
+
+    <!-- MAIN CARD -->
+
+    <div class="extend-card">
+
+        <div class="hero-icon">
+            ⚡
+        </div>
+
+        <div class="title">
+            Extend Your Plan
+        </div>
+
+        <div class="subtitle">
+            Keep your ANONYMIKETECH SUPA LAN connection active.
+            Enter your voucher below to add internet credit to your account.
+        </div>
+
+
+        <!-- PAYMENT INFORMATION -->
+
+        <div class="payment-box">
+
+            <div class="payment-label">
+                M-PESA PAYMENT
+            </div>
+
+            <div class="till">
+                Till No. 4930086
+            </div>
+
+            <div class="payment-number">
+                Payment assistance:
+                <strong>0113313240</strong>
+            </div>
+
+        </div>
+
+
+        <!-- HOW IT WORKS -->
+
+        <div class="steps">
+
+            <div class="step">
+
+                <div class="step-number">
+                    1
+                </div>
+
+                <div class="step-text">
+                    Choose your internet package
+                </div>
+
+            </div>
+
+            <div class="step">
+
+                <div class="step-number">
+                    2
+                </div>
+
+                <div class="step-text">
+                    Pay via M-PESA Till
+                </div>
+
+            </div>
+
+            <div class="step">
+
+                <div class="step-number">
+                    3
+                </div>
+
+                <div class="step-text">
+                    Enter your voucher
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ORIGINAL MYPUBLICWIFI FORM -->
+
+        <div class="form-section">
+
+            <div class="section-title">
+                🎟️ Enter your voucher
+            </div>
+
+            <form
+                action="./"
+                method="post"
+                onsubmit="return UserAccountCheck();">
+
+                <!-- IMPORTANT: MyPublicWiFi backend action preserved -->
+
+                <input
+                    type="hidden"
+                    name="_action"
+                    value="AddCreditToUser"
+                />
+
+                <input
+                    tabindex="1"
+                    id="Username"
+                    class="icon-text-input background-user-16"
+                    placeholder="Username"
+                    name="Username"
+                    value=""
+                    autocomplete="off"
+                    type="text"
+                />
+
+                <input
+                    tabindex="2"
+                    class="icon-text-input background-password-16"
+                    placeholder="Password"
+                    name="Password"
+                    value=""
+                    autocomplete="off"
+                    type="password"
+                />
+
+                <input
+                    tabindex="3"
+                    id="Voucher"
+                    class="icon-text-input background-voucher-16"
+                    placeholder="Voucher Code"
+                    name="Voucher"
+                    value=""
+                    autocomplete="off"
+                    type="text"
+                />
+
+                <input
+                    tabindex="4"
+                    value="EXTEND MY PLAN"
+                    type="submit"
+                />
+
+            </form>
+
+        </div>
+
+
+        <!-- PACKAGES -->
+
+        <div class="package-title">
+            Available Internet Packages
+        </div>
+
+        <div class="packages">
+
+            <div class="package">
+                <div class="package-name">
+                    Monthly Unlimited
+                </div>
+
+                <div class="package-price">
+                    KSh 600
+                </div>
+
+                <div class="package-desc">
+                    Unlimited • 30 Days
+                </div>
+            </div>
+
+
+            <div class="package">
+                <div class="package-name">
+                    Monthly 100 GB
+                </div>
+
+                <div class="package-price">
+                    KSh 400
+                </div>
+
+                <div class="package-desc">
+                    100 GB • 30 Days
+                </div>
+            </div>
+
+
+            <div class="package">
+                <div class="package-name">
+                    7 Days Unlimited
+                </div>
+
+                <div class="package-price">
+                    KSh 150
+                </div>
+
+                <div class="package-desc">
+                    Unlimited • 7 Days
+                </div>
+            </div>
+
+
+            <div class="package">
+                <div class="package-name">
+                    Daily Unlimited Pro
+                </div>
+
+                <div class="package-price">
+                    KSh 40
+                </div>
+
+                <div class="package-desc">
+                    Unlimited • 24 Hours
+                </div>
+            </div>
+
+
+            <div class="package">
+                <div class="package-name">
+                    Daily Standard
+                </div>
+
+                <div class="package-price">
+                    KSh 25
+                </div>
+
+                <div class="package-desc">
+                    Unlimited • 24 Hours
+                </div>
+            </div>
+
+
+            <div class="package">
+                <div class="package-name">
+                    12 Hours Unlimited
+                </div>
+
+                <div class="package-price">
+                    KSh 15
+                </div>
+
+                <div class="package-desc">
+                    Unlimited • 12 Hours
+                </div>
+            </div>
+
+
+            <div class="package">
+                <div class="package-name">
+                    5 Hours Unlimited
+                </div>
+
+                <div class="package-price">
+                    KSh 8
+                </div>
+
+                <div class="package-desc">
+                    Unlimited • 5 Hours
+                </div>
+            </div>
+
+        </div>
+
+
+        <!-- CONTACT -->
+
+        <div class="contact-buttons">
+
+            <a
+                class="contact-btn whatsapp"
+                href="https://wa.me/254113313240?text=Hello%20ANONYMIKETECH%20SUPA%20LAN%2C%20I%20would%20like%20to%20purchase%20an%20internet%20package."
+                target="_blank">
+
+                💬 WhatsApp Support
+
+            </a>
+
+
+            <a
+                class="contact-btn"
+                href="tel:0113313240">
+
+                ☎ Call 0113313240
+
+            </a>
+
+        </div>
+
+
+        <!-- BACK -->
+
+        <a
+            class="back-button"
+            href="./">
+
+            ← Back to Login
+
+        </a>
+
+    </div>
+
+
+    <!-- FOOTER -->
+
+    <div class="page-footer">
+
+        ANONYMIKETECH SUPA LAN<br>
+
+        Fast • Affordable • Reliable
+
+        <br><br>
+
+        By using this service, you accept our
+        <a href="termsofuse.html">
+            Terms of Use
+        </a>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     ORIGINAL MYPUBLICWIFI SYSTEM MESSAGES
+     KEEP THESE INTACT
+     ===================================================== -->
+
+<div style="display:none;">
+
+    <p id="ServiceDisabled">
+        Sorry, This service is currently unavailable for the selected action.
+    </p>
+
+    <p id="UsernameInvalid">
+        The entered username is invalid. Please try again.
+    </p>
+
+    <p id="VoucherInvalid">
+        The entered voucher is invalid. Please try again.
+    </p>
+
+    <p id="UserPasswordInvalid">
+        The entered user password is invalid. Please try again.
+    </p>
+
+    <p id="GuestPasswordInvalid">
+        The entered access password is invalid. Please try again.
+    </p>
+
+    <p id="MaxDailyLoginsExceeded">
+        You have reached the maximum number of daily logins with this method.
+        Please try again tomorrow or choose another login method.
+    </p>
+
+    <p id="UserAccountDisabled">
+        The specified user account is currently blocked.
+        Please contact support.
+    </p>
+
+    <p id="UserAccountExpired">
+        The specified user account has expired.
+        Please contact support.
+    </p>
+
+    <p id="UserTimeCreditNotEnough">
+        The specified user account does not have sufficient time credit.
+        Please top up your account.
+    </p>
+
+    <p id="UserTrafficCreditNotEnough">
+        The specified user account does not have sufficient data volume credit.
+        Please top up your account.
+    </p>
+
+    <p id="NoUserCredit">
+        The time and data volume credit for the specified user account has been used up.
+        Please try another account.
+    </p>
+
+    <p id="DailyUserQuotaExceeded">
+        The daily time or data limit for the selected account has been reached.
+        Please try again tomorrow.
+    </p>
+
+    <p id="MonthlyUserQuotaExceeded">
+        The monthly time or data limit for the selected account has been reached.
+        Please try again next month.
+    </p>
+
+    <p id="UserAccountUsed">
+        The specified user account has already been used.
+        Please try another account.
+    </p>
+
+    <p id="MaxUserConcurrentLoginsExceeded">
+        The maximum number of simultaneous logins for this user account has been reached.
+        Please try again later.
+    </p>
+
+    <p id="VoucherDisabled">
+        The specified voucher is currently blocked.
+        Please contact support.
+    </p>
+
+    <p id="VoucherExpired">
+        The specified voucher has expired.
+        Please contact support.
+    </p>
+
+    <p id="VoucherTimeCreditNotEnough">
+        The specified voucher does not have sufficient time credit.
+        Please try another voucher.
+    </p>
+
+    <p id="VoucherTrafficCreditNotEnough">
+        The specified voucher does not have sufficient data volume credit.
+        Please try another voucher.
+    </p>
+
+    <p id="NoVoucherCredit">
+        The time and data volume credit for the specified voucher has been used up.
+        Please try another voucher.
+    </p>
+
+    <p id="DailyVoucherQuotaExceeded">
+        The daily time or data limit for this voucher has been reached.
+        Please try again tomorrow.
+    </p>
+
+    <p id="MonthlyVoucherQuotaExceeded">
+        The monthly time or data limit for this voucher has been reached.
+        Please try again next month.
+    </p>
+
+    <p id="VoucherUsed">
+        The specified voucher has already been used.
+        Please try another voucher.
+    </p>
+
+    <p id="MaxVoucherConcurrentLoginsExceeded">
+        The maximum number of simultaneous logins for this voucher has been reached.
+        Please try again later.
+    </p>
+
+    <p id="PasswordConfirmInvalid">
+        The two passwords do not match. Please try again.
+    </p>
+
+    <p id="NewPasswordEmpty">
+        Empty passwords are not allowed.
+        Please enter a password.
+    </p>
+
+    <p id="MaxUploadSizeExceeded">
+        Your data could not be transferred.
+        The maximum allowed file size has been exceeded.
+    </p>
+
+    <p id="FilesUploadRejected">
+        Your data could not be transferred.
+        The server rejected the file.
+    </p>
+
+    <p id="FilesUploadAborted">
+        Your data could not be transferred.
+        The upload has been canceled.
+    </p>
+
+    <p id="GeneralFilesUploadError">
+        Your data could not be transferred.
+        An error occurred.
+    </p>
+
+    <p id="AccountRecharged">
+        Your account has been successfully topped up.
+        Thank you for your trust!
+    </p>
+
+    <p id="PasswordChanged">
+        Your password has been successfully changed.
+    </p>
+
+    <p id="LoginSuccessful">
+        You have successfully logged in.
+    </p>
+
+    <p id="LogoutSuccessful">
+        You have successfully logged out.
+    </p>
+
+    <p id="FilesUploadSuccessful">
+        Your data has been successfully transferred.
+        Please check if your files have been saved correctly.
+    </p>
+
+    <p id="UserType">
+        User:
+    </p>
+
+    <p id="VoucherType">
+        Voucher:
+    </p>
+
+    <p id="GuestType">
+        Guest
+    </p>
+
+</div>
+
+</body>
+</html>

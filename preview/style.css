@@ -1,0 +1,1545 @@
+/* =========================================================
+   ANONYMIKETECH SUPA LAN
+   PREMIUM MYPUBLICWIFI THEME
+   ========================================================= */
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        Helvetica,
+        Arial,
+        sans-serif;
+
+    background:
+        radial-gradient(
+            circle at 20% 10%,
+            rgba(20, 132, 255, 0.18),
+            transparent 32%
+        ),
+        radial-gradient(
+            circle at 85% 25%,
+            rgba(0, 214, 255, 0.12),
+            transparent 28%
+        ),
+        linear-gradient(
+            145deg,
+            #06101d,
+            #091827 45%,
+            #04101d
+        );
+
+    color: #ffffff;
+
+    -webkit-font-smoothing: antialiased;
+}
+
+body.modal-open {
+    overflow: hidden;
+}
+
+
+/* =========================================================
+   MAIN WRAPPER
+   ========================================================= */
+
+.wrap {
+    width: 100%;
+    max-width: 650px;
+
+    margin: 0 auto;
+
+    padding:
+        22px
+        18px
+        50px;
+}
+
+
+/* =========================================================
+   HERO / BRAND
+   ========================================================= */
+
+.hero {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+
+    padding: 10px 2px 25px;
+}
+
+
+.brand-logo {
+    width: 58px;
+    height: 58px;
+
+    flex-shrink: 0;
+
+    border-radius: 17px;
+
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+
+    background-color: rgba(255,255,255,0.07);
+
+    border: 1px solid rgba(255,255,255,0.12);
+
+    box-shadow:
+        0 10px 30px rgba(0,0,0,0.35),
+        inset 0 1px 0 rgba(255,255,255,0.1);
+}
+
+
+.brand-text {
+    display: flex;
+    flex-direction: column;
+
+    margin-left: 14px;
+}
+
+
+.brand-name {
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+}
+
+
+.brand-network {
+    margin-top: 2px;
+
+    font-size: 12px;
+
+    color: #61b8ff;
+
+    letter-spacing: 2px;
+
+    font-weight: 700;
+}
+
+
+.online-badge {
+    margin-left: auto;
+
+    display: flex;
+    align-items: center;
+    gap: 7px;
+
+    padding: 7px 10px;
+
+    border-radius: 30px;
+
+    background: rgba(0, 220, 130, 0.08);
+
+    border: 1px solid rgba(0, 220, 130, 0.18);
+
+    color: #65e9ad;
+
+    font-size: 9px;
+    font-weight: 800;
+
+    letter-spacing: 0.6px;
+}
+
+
+.online-dot {
+    width: 7px;
+    height: 7px;
+
+    border-radius: 50%;
+
+    background: #2ee88c;
+
+    box-shadow:
+        0 0 10px rgba(46,232,140,0.9);
+}
+
+
+/* =========================================================
+   WELCOME CARD
+   ========================================================= */
+
+.welcome-card {
+    position: relative;
+
+    overflow: hidden;
+
+    display: flex;
+    align-items: center;
+
+    gap: 20px;
+
+    padding: 25px;
+
+    border-radius: 25px;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(20, 145, 255, 0.17),
+            rgba(255,255,255,0.045)
+        );
+
+    border: 1px solid rgba(255,255,255,0.10);
+
+    box-shadow:
+        0 20px 55px rgba(0,0,0,0.25),
+        inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+
+.welcome-card::after {
+    content: "";
+
+    position: absolute;
+
+    width: 180px;
+    height: 180px;
+
+    right: -90px;
+    top: -90px;
+
+    border-radius: 50%;
+
+    background: rgba(0,150,255,0.13);
+
+    filter: blur(10px);
+}
+
+
+.welcome-icon {
+    width: 65px;
+    height: 65px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 20px;
+
+    font-size: 31px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #1596ff,
+            #075fc7
+        );
+
+    box-shadow:
+        0 12px 30px rgba(0,119,255,0.3);
+}
+
+
+.eyebrow {
+    display: block;
+
+    margin-bottom: 6px;
+
+    font-size: 9px;
+
+    font-weight: 800;
+
+    letter-spacing: 1.7px;
+
+    color: #60b9ff;
+}
+
+
+.welcome-content h1 {
+    margin: 0;
+
+    font-size: 27px;
+
+    line-height: 1.12;
+
+    letter-spacing: -0.8px;
+}
+
+
+.welcome-content p {
+    margin: 10px 0 0;
+
+    color: #aab9c8;
+
+    font-size: 13px;
+
+    line-height: 1.55;
+}
+
+
+/* =========================================================
+   QUICK ACTIONS
+   ========================================================= */
+
+.quick-actions {
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 11px;
+
+    margin-top: 13px;
+}
+
+
+.quick-btn {
+    border: 1px solid rgba(255,255,255,0.09);
+
+    border-radius: 16px;
+
+    padding: 14px;
+
+    background: rgba(255,255,255,0.045);
+
+    color: white;
+
+    display: flex;
+    align-items: center;
+
+    text-align: left;
+
+    cursor: pointer;
+
+    transition:
+        transform 0.2s ease,
+        background 0.2s ease,
+        border-color 0.2s ease;
+}
+
+
+.quick-btn:hover {
+    transform: translateY(-2px);
+
+    background: rgba(255,255,255,0.075);
+
+    border-color: rgba(71,170,255,0.35);
+}
+
+
+.quick-icon {
+    width: 38px;
+    height: 38px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    margin-right: 10px;
+
+    border-radius: 12px;
+
+    background: rgba(0,135,255,0.12);
+
+    color: #63bdff;
+
+    font-size: 18px;
+}
+
+
+.quick-btn strong {
+    display: block;
+
+    font-size: 12px;
+}
+
+
+.quick-btn small {
+    display: block;
+
+    margin-top: 3px;
+
+    color: #8193a5;
+
+    font-size: 9px;
+}
+
+
+/* =========================================================
+   LOGIN CARD
+   ========================================================= */
+
+.login-card {
+    margin-top: 13px;
+
+    padding: 23px;
+
+    border-radius: 23px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255,255,255,0.075),
+            rgba(255,255,255,0.035)
+        );
+
+    border: 1px solid rgba(255,255,255,0.09);
+
+    box-shadow:
+        0 15px 45px rgba(0,0,0,0.20);
+}
+
+
+.section-heading {
+    display: flex;
+    align-items: center;
+}
+
+
+.section-icon {
+    width: 45px;
+    height: 45px;
+
+    margin-right: 13px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 13px;
+
+    background: rgba(31,148,255,0.12);
+
+    font-size: 18px;
+}
+
+
+.section-heading h2,
+.packages-heading h2,
+.payment-modal h2,
+.contact-modal h2 {
+    margin: 0;
+
+    font-size: 20px;
+
+    letter-spacing: -0.3px;
+}
+
+
+.section-description {
+    color: #8ea1b4;
+
+    font-size: 12px;
+
+    line-height: 1.6;
+
+    margin:
+        15px
+        0
+        17px;
+}
+
+
+/* =========================================================
+   VOUCHER INPUT
+   ========================================================= */
+
+.voucher-input-wrap {
+    position: relative;
+}
+
+
+.input-icon {
+    position: absolute;
+
+    left: 16px;
+    top: 50%;
+
+    transform: translateY(-50%);
+
+    font-size: 16px;
+
+    z-index: 2;
+}
+
+
+.voucher-input {
+    width: 100%;
+
+    height: 54px;
+
+    padding:
+        0
+        15px
+        0
+        46px;
+
+    border-radius: 14px;
+
+    border: 1px solid rgba(255,255,255,0.10);
+
+    outline: none;
+
+    background: rgba(0,0,0,0.22);
+
+    color: white;
+
+    font-size: 14px;
+
+    letter-spacing: 1px;
+
+    transition:
+        border 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+
+.voucher-input::placeholder {
+    color: #687b8e;
+}
+
+
+.voucher-input:focus {
+    border-color: rgba(51,161,255,0.65);
+
+    box-shadow:
+        0 0 0 3px rgba(26,145,255,0.09);
+}
+
+
+/* =========================================================
+   CONNECT BUTTON
+   ========================================================= */
+
+.connect-button {
+    width: 100%;
+
+    height: 54px;
+
+    margin-top: 11px;
+
+    border: 0;
+
+    border-radius: 14px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #159bff,
+            #0870df
+        );
+
+    color: white;
+
+    font-size: 13px;
+
+    font-weight: 800;
+
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 18px;
+
+    box-shadow:
+        0 12px 28px rgba(0,122,255,0.23);
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+
+.connect-button:hover {
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 15px 35px rgba(0,122,255,0.35);
+}
+
+
+.button-arrow {
+    font-size: 20px;
+}
+
+
+/* =========================================================
+   PACKAGE SECTION
+   ========================================================= */
+
+.packages-section {
+    margin-top: 35px;
+}
+
+
+.packages-heading {
+    text-align: center;
+
+    margin-bottom: 17px;
+}
+
+
+.packages-heading p {
+    margin: 7px 0 0;
+
+    color: #7f93a7;
+
+    font-size: 11px;
+}
+
+
+.package-card {
+    width: 100%;
+
+    display: block;
+
+    text-align: left;
+
+    padding: 19px;
+
+    margin-bottom: 10px;
+
+    border-radius: 20px;
+
+    border: 1px solid rgba(255,255,255,0.08);
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255,255,255,0.065),
+            rgba(255,255,255,0.025)
+        );
+
+    color: white;
+
+    cursor: pointer;
+
+    transition:
+        transform 0.22s ease,
+        border-color 0.22s ease,
+        background 0.22s ease,
+        box-shadow 0.22s ease;
+}
+
+
+.package-card:hover {
+    transform: translateY(-3px);
+
+    border-color: rgba(52,165,255,0.45);
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(25,142,255,0.13),
+            rgba(255,255,255,0.04)
+        );
+
+    box-shadow:
+        0 15px 35px rgba(0,0,0,0.22);
+}
+
+
+.package-card.featured {
+    border-color: rgba(43,161,255,0.38);
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(22,139,255,0.16),
+            rgba(255,255,255,0.045)
+        );
+
+    box-shadow:
+        0 14px 38px rgba(0,100,220,0.13);
+}
+
+
+.package-top {
+    display: flex;
+    align-items: center;
+
+    margin-bottom: 12px;
+}
+
+
+.package-icon {
+    width: 38px;
+    height: 38px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 11px;
+
+    background: rgba(27,149,255,0.12);
+
+    color: #5bb8ff;
+
+    font-size: 11px;
+
+    font-weight: 900;
+
+    letter-spacing: 0.3px;
+}
+
+
+.popular-tag,
+.package-label {
+    margin-left: auto;
+
+    padding: 5px 8px;
+
+    border-radius: 20px;
+
+    font-size: 8px;
+
+    font-weight: 800;
+
+    letter-spacing: 0.8px;
+}
+
+
+.popular-tag {
+    color: #6bc4ff;
+
+    background: rgba(41,158,255,0.10);
+
+    border: 1px solid rgba(41,158,255,0.16);
+}
+
+
+.package-label {
+    color: #768da2;
+}
+
+
+.package-name {
+    font-size: 15px;
+
+    font-weight: 800;
+}
+
+
+.package-price {
+    margin-top: 6px;
+
+    font-size: 27px;
+
+    font-weight: 900;
+
+    letter-spacing: -0.8px;
+}
+
+
+.package-price span {
+    font-size: 11px;
+
+    font-weight: 600;
+
+    color: #7f9ab2;
+}
+
+
+.package-period {
+    margin-top: 2px;
+
+    color: #8094a8;
+
+    font-size: 10px;
+}
+
+
+.package-cta {
+    margin-top: 14px;
+
+    color: #4eb2ff;
+
+    font-size: 10px;
+
+    font-weight: 800;
+}
+
+
+/* =========================================================
+   MODAL
+   ========================================================= */
+
+.modal-overlay {
+    position: fixed;
+
+    z-index: 9999;
+
+    inset: 0;
+
+    padding: 18px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background:
+        rgba(0, 7, 15, 0.82);
+
+    backdrop-filter: blur(12px);
+
+    -webkit-backdrop-filter: blur(12px);
+
+    overflow-y: auto;
+}
+
+
+.payment-modal,
+.contact-modal {
+    position: relative;
+
+    width: 100%;
+
+    max-width: 500px;
+
+    max-height: 94vh;
+
+    overflow-y: auto;
+
+    padding: 27px;
+
+    border-radius: 26px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #101e2c,
+            #08131f
+        );
+
+    border: 1px solid rgba(255,255,255,0.10);
+
+    box-shadow:
+        0 30px 90px rgba(0,0,0,0.60);
+
+    animation: modalIn 0.22s ease;
+}
+
+
+@keyframes modalIn {
+
+    from {
+        opacity: 0;
+        transform: translateY(15px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+}
+
+
+.modal-close {
+    position: absolute;
+
+    right: 17px;
+    top: 15px;
+
+    width: 34px;
+    height: 34px;
+
+    border-radius: 50%;
+
+    border: 1px solid rgba(255,255,255,0.08);
+
+    background: rgba(255,255,255,0.05);
+
+    color: #b8c7d5;
+
+    font-size: 21px;
+
+    cursor: pointer;
+}
+
+
+/* =========================================================
+   M-PESA
+   ========================================================= */
+
+.mpesa-logo {
+    display: inline-block;
+
+    padding: 8px 13px;
+
+    margin-bottom: 18px;
+
+    border-radius: 10px;
+
+    background: #54c56c;
+
+    color: #06240d;
+
+    font-size: 12px;
+
+    font-weight: 900;
+
+    letter-spacing: 1px;
+}
+
+
+.selected-package {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    margin:
+        18px
+        0;
+
+    padding: 16px;
+
+    border-radius: 15px;
+
+    background: rgba(255,255,255,0.045);
+
+    border: 1px solid rgba(255,255,255,0.07);
+
+    color: #b8c8d7;
+
+    font-size: 12px;
+}
+
+
+.selected-package strong {
+    color: #5bbcff;
+
+    font-size: 20px;
+}
+
+
+/* =========================================================
+   PAYMENT STEPS
+   ========================================================= */
+
+.payment-steps {
+    margin-top: 10px;
+}
+
+
+.payment-step {
+    display: flex;
+
+    gap: 13px;
+
+    padding: 11px 0;
+}
+
+
+.step-number {
+    width: 29px;
+    height: 29px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background: rgba(27,150,255,0.13);
+
+    border: 1px solid rgba(27,150,255,0.20);
+
+    color: #5ebaff;
+
+    font-size: 11px;
+
+    font-weight: 900;
+}
+
+
+.payment-step strong {
+    display: block;
+
+    font-size: 12px;
+}
+
+
+.payment-step p {
+    margin: 4px 0 0;
+
+    color: #8093a7;
+
+    font-size: 10px;
+
+    line-height: 1.5;
+}
+
+
+/* =========================================================
+   TILL BOX
+   ========================================================= */
+
+.till-box {
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    margin-top: 7px;
+}
+
+
+.till-box span {
+    padding: 8px 12px;
+
+    border-radius: 8px;
+
+    background: rgba(0,0,0,0.22);
+
+    color: #ffffff;
+
+    font-size: 17px;
+
+    font-weight: 900;
+
+    letter-spacing: 1px;
+}
+
+
+.till-box button {
+    border: 1px solid rgba(255,255,255,0.09);
+
+    border-radius: 8px;
+
+    padding: 8px 10px;
+
+    background: rgba(255,255,255,0.06);
+
+    color: #6bbcff;
+
+    font-size: 9px;
+
+    cursor: pointer;
+}
+
+
+/* =========================================================
+   PAYMENT NOTICE
+   ========================================================= */
+
+.payment-notice {
+    display: flex;
+
+    gap: 11px;
+
+    margin-top: 13px;
+
+    padding: 13px;
+
+    border-radius: 13px;
+
+    background: rgba(48,198,125,0.065);
+
+    border: 1px solid rgba(48,198,125,0.12);
+}
+
+
+.notice-icon {
+    width: 27px;
+    height: 27px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background: rgba(48,198,125,0.14);
+
+    color: #57dc9b;
+
+    font-size: 12px;
+}
+
+
+.payment-notice strong {
+    font-size: 11px;
+}
+
+
+.payment-notice p {
+    margin: 4px 0 0;
+
+    color: #819a8f;
+
+    font-size: 9px;
+
+    line-height: 1.5;
+}
+
+
+/* =========================================================
+   TRANSACTION INPUT
+   ========================================================= */
+
+.transaction-input {
+    width: 100%;
+
+    height: 48px;
+
+    margin-top: 13px;
+
+    padding: 0 14px;
+
+    border-radius: 12px;
+
+    border: 1px solid rgba(255,255,255,0.09);
+
+    outline: none;
+
+    background: rgba(0,0,0,0.23);
+
+    color: white;
+
+    font-size: 12px;
+}
+
+
+.transaction-input::placeholder {
+    color: #64798c;
+}
+
+
+.transaction-input:focus {
+    border-color: rgba(52,165,255,0.55);
+}
+
+
+/* =========================================================
+   PAYMENT BUTTONS
+   ========================================================= */
+
+.contact-payment-buttons {
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 9px;
+
+    margin-top: 10px;
+}
+
+
+.whatsapp-button,
+.sms-button {
+    height: 48px;
+
+    border: 0;
+
+    border-radius: 12px;
+
+    font-size: 10px;
+
+    font-weight: 800;
+
+    cursor: pointer;
+
+    transition:
+        transform 0.2s ease;
+}
+
+
+.whatsapp-button:hover,
+.sms-button:hover {
+    transform: translateY(-2px);
+}
+
+
+.whatsapp-button {
+    background: #22c76b;
+
+    color: #031b0c;
+}
+
+
+.sms-button {
+    background: rgba(255,255,255,0.08);
+
+    border: 1px solid rgba(255,255,255,0.10);
+
+    color: #d6e4f0;
+}
+
+
+.payment-footer-text {
+    text-align: center;
+
+    color: #687d91;
+
+    font-size: 9px;
+
+    line-height: 1.5;
+
+    margin:
+        14px
+        0
+        0;
+}
+
+
+/* =========================================================
+   CONTACT MODAL
+   ========================================================= */
+
+.contact-modal {
+    text-align: center;
+
+    max-width: 410px;
+}
+
+
+.contact-icon {
+    width: 65px;
+    height: 65px;
+
+    margin:
+        5px
+        auto
+        18px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 20px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #159bff,
+            #086ed6
+        );
+
+    font-size: 25px;
+}
+
+
+.contact-modal p {
+    color: #8397aa;
+
+    font-size: 12px;
+
+    line-height: 1.6;
+}
+
+
+.contact-number {
+    margin:
+        20px
+        0
+        12px;
+
+    padding: 17px;
+
+    border-radius: 14px;
+
+    background: rgba(255,255,255,0.045);
+}
+
+
+.contact-number span {
+    display: block;
+
+    color: #73889b;
+
+    font-size: 9px;
+
+    margin-bottom: 5px;
+}
+
+
+.contact-number strong {
+    font-size: 21px;
+
+    letter-spacing: 1px;
+}
+
+
+.whatsapp-full-button,
+.call-full-button {
+    display: block;
+
+    width: 100%;
+
+    padding: 14px;
+
+    margin-top: 9px;
+
+    border-radius: 12px;
+
+    text-decoration: none;
+
+    font-size: 11px;
+
+    font-weight: 800;
+}
+
+
+.whatsapp-full-button {
+    background: #22c76b;
+
+    color: #031b0c;
+}
+
+
+.call-full-button {
+    background: rgba(255,255,255,0.07);
+
+    color: white;
+
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+
+/* =========================================================
+   MESSAGE DIALOGS
+   ========================================================= */
+
+.message-dialog {
+    margin-top: 12px;
+
+    padding: 14px;
+
+    border-radius: 13px;
+
+    font-size: 11px;
+
+    line-height: 1.5;
+}
+
+
+.background-error {
+    background: rgba(220,50,50,0.13);
+
+    border: 1px solid rgba(255,70,70,0.16);
+
+    color: #ff9b9b;
+}
+
+
+.background-warning {
+    background: rgba(255,180,50,0.11);
+
+    border: 1px solid rgba(255,180,50,0.15);
+
+    color: #ffd18a;
+}
+
+
+.background-info {
+    background: rgba(40,150,255,0.11);
+
+    border: 1px solid rgba(40,150,255,0.15);
+
+    color: #9bd3ff;
+}
+
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+
+.page-footer {
+    text-align: center;
+
+    margin-top: 35px;
+
+    padding-top: 23px;
+
+    border-top: 1px solid rgba(255,255,255,0.07);
+
+    color: #687d91;
+}
+
+
+.footer-brand {
+    color: #a9bfd1;
+
+    font-size: 10px;
+
+    font-weight: 800;
+
+    letter-spacing: 1.3px;
+}
+
+
+.page-footer p {
+    margin: 7px 0 13px;
+
+    font-size: 9px;
+}
+
+
+.page-footer a {
+    color: #55b5ff;
+
+    text-decoration: none;
+
+    font-size: 9px;
+
+    font-weight: 700;
+}
+
+
+.footer-divider {
+    margin:
+        0
+        7px;
+
+    color: #405365;
+}
+
+
+.copyright {
+    margin-top: 15px;
+
+    color: #415465;
+
+    font-size: 8px;
+}
+
+
+/* =========================================================
+   MOBILE RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 480px) {
+
+    .wrap {
+        padding:
+            15px
+            13px
+            40px;
+    }
+
+
+    .hero {
+        padding-bottom: 18px;
+    }
+
+
+    .brand-logo {
+        width: 50px;
+        height: 50px;
+
+        border-radius: 14px;
+    }
+
+
+    .brand-name {
+        font-size: 14px;
+    }
+
+
+    .brand-network {
+        font-size: 10px;
+    }
+
+
+    .online-badge {
+        padding: 6px 7px;
+
+        font-size: 7px;
+    }
+
+
+    .welcome-card {
+        padding: 19px;
+
+        gap: 13px;
+
+        border-radius: 20px;
+    }
+
+
+    .welcome-icon {
+        width: 50px;
+        height: 50px;
+
+        border-radius: 15px;
+
+        font-size: 24px;
+    }
+
+
+    .welcome-content h1 {
+        font-size: 22px;
+    }
+
+
+    .welcome-content p {
+        font-size: 11px;
+    }
+
+
+    .login-card {
+        padding: 18px;
+
+        border-radius: 19px;
+    }
+
+
+    .package-card {
+        padding: 17px;
+
+        border-radius: 17px;
+    }
+
+
+    .payment-modal,
+    .contact-modal {
+        padding: 22px;
+
+        border-radius: 22px;
+    }
+
+}
+
+
+/* =========================================================
+   VERY SMALL DEVICES
+   ========================================================= */
+
+@media (max-width: 350px) {
+
+    .online-badge {
+        display: none;
+    }
+
+
+    .quick-actions {
+        grid-template-columns: 1fr;
+    }
+
+
+    .welcome-content h1 {
+        font-size: 20px;
+    }
+
+
+    .contact-payment-buttons {
+        grid-template-columns: 1fr;
+    }
+
+}

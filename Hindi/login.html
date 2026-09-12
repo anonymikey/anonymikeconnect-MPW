@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<!--
+Design by TRUE Software
+https://www.mypublicwifi.com
+-->
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="expires" content="0" />
+<meta http-equiv="pragma" content="no-cache" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="format-detection" content="telephone=no" />
+<meta name="HandheldFriendly" content="True" />
+<meta name="MobileOptimized" content="320" />
+<title>MyPublicWiFi - आपका लॉगिन</title>
+<script type="text/javascript" src="jquery-1.4.3.min.js"></script>
+<link rel="stylesheet"  type="text/css"  href="style.css" />
+<script type="text/javascript">
+        /*<![CDATA[*/
+
+
+function HideDialog(DialogId)
+{
+  const MessageDialog = document.getElementById(DialogId);
+  MessageDialog.style.display = 'none';
+
+}
+
+function ShowMessage(DialogId, Msg)
+{
+   const MessageDialog = document.getElementById(DialogId);
+   MessageDialog.style.display = 'block';
+   MessageDialog.offsetHeight; // Ein erzwungener Reflow
+   MessageDialog.style.display = 'flex';
+   MessageDialog.textContent = Msg;
+
+}
+
+function ShowErrorMessage(Error)
+
+{
+  HideDialog("InfoDialog");
+  HideDialog("WarningDialog");
+  ShowMessage("ErrorDialog", document.getElementById(Error).textContent);
+
+}
+
+function ShowInfoMessage(Info)
+
+{
+  HideDialog("ErrorDialog");
+  HideDialog("WarningDialog");
+  ShowMessage("InfoDialog", document.getElementById(Info).textContent);
+ }
+
+function ShowWarningMessage(Warning)
+
+{
+  HideDialog("ErrorDialog");
+  HideDialog("InfoDialog");
+  ShowMessage("WarningDialog", document.getElementById(Warning).textContent);
+ }
+
+function VoucherAccountCheck()
+  {
+   var chk = false;
+   if (document.getElementById("Voucher").value == '')
+   {
+     ShowErrorMessage("VoucherInvalid")
+   }
+   else
+   chk=true;
+   return(chk);
+  }
+
+function UserAccountCheck()
+  {
+   var chk = false;
+   if (document.getElementById("Username").value == '')
+   {
+     ShowErrorMessage("UsernameInvalid")
+   }
+   else
+   chk=true;
+   return(chk);
+  }
+
+function ToggleCheckbox(element)
+  {
+    document.getElementById("TOCLoginButton").disabled = !element.checked;
+  }
+
+
+
+  $(document).ready(function() {
+                            //6F143793-ACE5-4C04-93EA-C593CD76DC47
+                          });
+
+
+
+    /*]]>*/
+</script>
+
+</head>
+<body>
+
+   <div class="wrap" >
+
+      <div class="page-header">
+           <div class="page-logo background-hotspot"></div>
+           <div class="page-description">ANONYMIKETECH SUPA LAN</div>
+           <div class="language-container" >
+             <div class="popup-menu">
+               <a  class="popup-menu-item"  style="background-image:url('img/Hindi.png');" >Hindi</a>
+               <div  class="popup-sub-items display-none" >
+                 <ul>
+                                       <li>
+                     <a  style="background-image:url('img/Arabic.png');"   href="?lang=Arabic">Arabic</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Bengali.png');"   href="?lang=Bengali">Bengali</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/ChineseS.png');"   href="?lang=ChineseS">ChineseS</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/ChineseT.png');"   href="?lang=ChineseT">ChineseT</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/English.png');"   href="?lang=English">English</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Filipino.png');"   href="?lang=Filipino">Filipino</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/French.png');"   href="?lang=French">French</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/German.png');"   href="?lang=German">German</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Indonesia.png');"   href="?lang=Indonesia">Indonesia</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Italian.png');"   href="?lang=Italian">Italian</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Japanese.png');"   href="?lang=Japanese">Japanese</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Polish.png');"   href="?lang=Polish">Polish</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Portuguese.png');"   href="?lang=Portuguese">Portuguese</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Russian.png');"   href="?lang=Russian">Russian</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Spanish.png');"   href="?lang=Spanish">Spanish</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Turkish.png');"   href="?lang=Turkish">Turkish</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Urdu.png');"   href="?lang=Urdu">Urdu</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Vietnamese.png');"   href="?lang=Vietnamese">Vietnamese</a>
+                   </li>
+
+
+                 </ul>
+               </div>
+             </div>
+
+
+
+             <script type="text/javascript">
+                      /*<![CDATA[*/
+                   $(document).ready(function() {
+                       $('.popup-menu-item').click(function(){
+                             $(this).parent().find('.popup-sub-items').toggleClass('display-none');
+                            });
+                      $('.popup-menu').mouseleave(function() {
+                         $(this).find('.popup-sub-items').addClass('display-none');
+                       });
+                     });
+                   /*]]>*/
+             </script>
+           </div>
+
+        </div>
+
+        <div id="ErrorDialog" class="container message-dialog background-error margin-top--17px text-justify-bold color-red"  style="display: none;">
+           &nbsp;
+        </div>
+
+        <div id="WarningDialog" class="container message-dialog background-warning margin-top--17px text-justify-bold color-red"  style="display: none;">
+           &nbsp;
+        </div>
+
+        <div id="InfoDialog" class="container message-dialog background-info margin-top--17px text-justify-bold"  style="display: none;">
+           &nbsp;
+        </div>
+
+        <noscript>
+           <div  class="container message-dialog background-warning margin-top--17px text-justify-bold color-red">
+              यह पृष्ठ केवल JavaScript सक्षम होने पर सही ढंग से प्रदर्शित होता है। कृपया अपने ब्राउज़र में JavaScript सक्षम करें!
+           </div>
+        </noscript>
+
+
+      
+
+      
+
+              <div class="container">
+           <div class="container-header">
+               वाउचर लॉगिन
+           </div>
+           <div class="container-description background-voucher text-justify-bold" >
+               कृपया अपना वाउचर कोड दर्ज करें और फिर 'लॉगिन' पर क्लिक करें।
+           </div>
+           <div class="container-body">
+              <form  action="./"  method="post"  onsubmit="return VoucherAccountCheck();">
+                 <div><input type="hidden" name="_action"  value="VoucherLogin" /></div>
+                 <div>
+                    <input tabindex="4" id="Voucher"  class="icon-text-input background-voucher-16" placeholder="वाउचर"  name="Voucher"    value="" autocomplete="off" type="text"/>
+                 </div>
+                 <div>
+                    <input tabindex="5"  value="लॉगिन" type="submit"  />
+                 </div>
+              </form>
+           </div>
+        </div>
+
+
+      
+
+           <div class="page-footer">
+          लॉगिन करके, आप हमारे <a href="termsofuse.html">उपयोग की शर्तें</a>
+     </div>
+
+
+   </div>
+
+       <div style="display: none;">
+      <p id="ServiceDisabled">क्षमा करें, यह सेवा वर्तमान में चयनित कार्रवाई के लिए उपलब्ध नहीं है।</p>
+      <p id="UsernameInvalid">दर्ज किया गया उपयोगकर्ता नाम अमान्य है। कृपया फिर से प्रयास करें।</p>
+      <p id="VoucherInvalid">दर्ज किया गया वाउचर अमान्य है। कृपया फिर से प्रयास करें।</p>
+      <p id="UserPasswordInvalid">दर्ज किया गया उपयोगकर्ता पासवर्ड अमान्य है। कृपया फिर से प्रयास करें।</p>
+      <p id="GuestPasswordInvalid">दर्ज किया गया एक्सेस पासवर्ड अमान्य है। कृपया फिर से प्रयास करें।</p>
+      <p id="MaxDailyLoginsExceeded">आपने इस विधि से दैनिक लॉगिन की अधिकतम संख्या तक पहुंच गए हैं। कृपया कल फिर से प्रयास करें या कोई अन्य लॉगिन विधि चुनें।</p>
+      <p id="UserAccountDisabled">निर्दिष्ट उपयोगकर्ता खाता वर्तमान में ब्लॉक है। कृपया समर्थन से संपर्क करें।</p>
+      <p id="UserAccountExpired">निर्दिष्ट उपयोगकर्ता खाता समाप्त हो गया है। कृपया समर्थन से संपर्क करें।</p>
+      <p id="UserTimeCreditNotEnough">निर्दिष्ट उपयोगकर्ता खाते में पर्याप्त समय क्रेडिट नहीं है। कृपया अपने खाते को टॉप अप करें।</p>
+      <p id="UserTrafficCreditNotEnough">निर्दिष्ट उपयोगकर्ता खाते में पर्याप्त डेटा वॉल्यूम क्रेडिट नहीं है। कृपया अपने खाते को टॉप अप करें।</p>
+      <p id="NoUserCredit">निर्दिष्ट उपयोगकर्ता खाते के लिए समय और डेटा वॉल्यूम क्रेडिट समाप्त हो गया है। कृपया कोई अन्य खाता आज़माएं।</p>
+      <p id="DailyUserQuotaExceeded">निर्दिष्ट उपयोगकर्ता खाते के लिए दैनिक समय या डेटा सीमा पूरी हो गई है। कृपया कल फिर से प्रयास करें।</p>
+      <p id="MonthlyUserQuotaExceeded">निर्दिष्ट उपयोगकर्ता खाते के लिए मासिक समय या डेटा सीमा पूरी हो गई है। कृपया अगले महीने फिर से प्रयास करें।</p>
+      <p id="UserAccountUsed">निर्दिष्ट उपयोगकर्ता खाता पहले ही उपयोग किया जा चुका है। कृपया कोई अन्य खाता आज़माएं।</p>
+      <p id="MaxUserConcurrentLoginsExceeded">इस उपयोगकर्ता खाते के लिए एक साथ लॉगिन की अधिकतम संख्या पूरी हो गई है। कृपया बाद में फिर से प्रयास करें।</p>
+      <p id="VoucherDisabled">निर्दिष्ट वाउचर वर्तमान में ब्लॉक है। कृपया समर्थन से संपर्क करें।</p>
+      <p id="VoucherExpired">निर्दिष्ट वाउचर समाप्त हो गया है। कृपया समर्थन से संपर्क करें।</p>
+      <p id="VoucherTimeCreditNotEnough">निर्दिष्ट वाउचर में पर्याप्त समय क्रेडिट नहीं है। कृपया अपने खाते को टॉप अप करें।</p>
+      <p id="VoucherTrafficCreditNotEnough">निर्दिष्ट वाउचर में पर्याप्त डेटा वॉल्यूम क्रेडिट नहीं है। कृपया अपने खाते को टॉप अप करें।</p>
+      <p id="NoVoucherCredit">निर्दिष्ट वाउचर के लिए समय और डेटा वॉल्यूम क्रेडिट समाप्त हो गया है। कृपया कोई अन्य वाउचर आज़माएं।</p>
+      <p id="DailyVoucherQuotaExceeded">निर्दिष्ट वाउचर के लिए दैनिक समय या डेटा सीमा पूरी हो गई है। कृपया कल फिर से प्रयास करें।</p>
+      <p id="MonthlyVoucherQuotaExceeded">निर्दिष्ट वाउचर के लिए मासिक समय या डेटा सीमा पूरी हो गई है। कृपया अगले महीने फिर से प्रयास करें।</p>
+      <p id="VoucherUsed">निर्दिष्ट वाउचर पहले ही उपयोग किया जा चुका है। कृपया कोई अन्य वाउचर आज़माएं।</p>
+      <p id="MaxVoucherConcurrentLoginsExceeded">इस वाउचर के लिए एक साथ लॉगिन की अधिकतम संख्या पूरी हो गई है। कृपया बाद में फिर से प्रयास करें।</p>
+      <p id="PasswordConfirmInvalid">दोनों पासवर्ड मेल नहीं खाते हैं। कृपया फिर से प्रयास करें।</p>
+      <p id="NewPasswordEmpty">खाली पासवर्ड की अनुमति नहीं है। कृपया एक पासवर्ड दर्ज करें।</p>
+      <p id="MaxUploadSizeExceeded">आपका डेटा स्थानांतरित नहीं किया जा सका। अनुमत अधिकतम फ़ाइल आकार पार हो गया है।</p>
+      <p id="FilesUploadRejected">आपका डेटा स्थानांतरित नहीं किया जा सका। सर्वर ने अपलोड को अस्वीकार कर दिया है।</p>
+      <p id="FilesUploadAborted">आपका डेटा स्थानांतरित नहीं किया जा सका। अपलोड रद्द कर दिया गया है।</p>
+      <p id="GeneralFilesUploadError">आपका डेटा स्थानांतरित नहीं किया जा सका। एक त्रुटि हुई है।</p>
+      <p id="AccountRecharged">आपका खाता सफलतापूर्वक टॉप अप हो गया है। आपके विश्वास के लिए धन्यवाद!</p>
+      <p id="PasswordChanged">आपका पासवर्ड सफलतापूर्वक बदल गया है।</p>
+      <p id="LoginSuccessful">आप सफलतापूर्वक लॉगिन हो गए हैं।</p>
+      <p id="LogoutSuccessful">आप सफलतापूर्वक लॉग आउट हो गए हैं।</p>
+      <p id="FilesUploadSuccessful">आपका डेटा सफलतापूर्वक स्थानांतरित हो गया है। कृपया जांचें कि आपकी फ़ाइलें सही ढंग से सहेजी गई हैं।</p>
+      <p id="UserType">उपयोगकर्ता:</p>
+      <p id="VoucherType">वाउचर:</p>
+      <p id="GuestType">अतिथि</p>
+    </div>
+
+
+</body>
+</html>
+
+

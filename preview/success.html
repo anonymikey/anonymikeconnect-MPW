@@ -1,0 +1,1586 @@
+<!DOCTYPE html>
+<!--
+  ANONYMIKETECH SUPA LAN
+  MyPublicWiFi Session Information Page
+
+  IMPORTANT:
+  MyPublicWiFi backend placeholders, form actions,
+  hidden fields, IDs and system messages are preserved.
+-->
+<html lang="en">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="expires" content="0" />
+<meta http-equiv="pragma" content="no-cache" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="format-detection" content="telephone=no" />
+<meta name="HandheldFriendly" content="True" />
+<meta name="MobileOptimized" content="320" />
+
+<title>ANONYMIKETECH SUPA LAN - Connected</title>
+
+<script type="text/javascript" src="jquery-1.4.3.min.js"></script>
+<link rel="stylesheet" type="text/css" href="style.css" />
+
+<style>
+
+/* =========================================================
+   ANONYMIKETECH SUPA LAN
+   MODERN SESSION DASHBOARD
+   ========================================================= */
+
+:root {
+    --bg-1: #050816;
+    --bg-2: #0b1024;
+    --card: rgba(255,255,255,0.065);
+    --card-border: rgba(255,255,255,0.11);
+    --text: #ffffff;
+    --muted: #9da7bd;
+    --accent: #6d7cff;
+    --accent-2: #8b5cf6;
+    --success: #27e59b;
+    --danger: #ff5f6d;
+    --shadow: 0 25px 80px rgba(0,0,0,.35);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    min-height: 100%;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        Helvetica,
+        Arial,
+        sans-serif;
+
+    color: var(--text);
+
+    background:
+        radial-gradient(
+            circle at 10% 10%,
+            rgba(109,124,255,.20),
+            transparent 30%
+        ),
+        radial-gradient(
+            circle at 90% 20%,
+            rgba(139,92,246,.16),
+            transparent 30%
+        ),
+        radial-gradient(
+            circle at 50% 100%,
+            rgba(39,229,155,.08),
+            transparent 35%
+        ),
+        linear-gradient(
+            145deg,
+            var(--bg-1),
+            var(--bg-2)
+        );
+
+    overflow-x: hidden;
+}
+
+/* animated background */
+
+body::before,
+body::after {
+    content: "";
+    position: fixed;
+    width: 420px;
+    height: 420px;
+    border-radius: 50%;
+    filter: blur(100px);
+    pointer-events: none;
+    z-index: -1;
+}
+
+body::before {
+    background: rgba(109,124,255,.08);
+    top: -180px;
+    left: -150px;
+    animation: floatOrb 12s ease-in-out infinite alternate;
+}
+
+body::after {
+    background: rgba(139,92,246,.07);
+    right: -150px;
+    bottom: -180px;
+    animation: floatOrb 15s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes floatOrb {
+    from {
+        transform: translate3d(0,0,0) scale(1);
+    }
+    to {
+        transform: translate3d(35px,25px,0) scale(1.12);
+    }
+}
+
+/* Main wrapper */
+
+.wrap {
+    width: 100%;
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 28px 20px 35px;
+}
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.page-logo {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    border-radius: 15px;
+
+    background-color: rgba(255,255,255,.08);
+    background-size: 30px;
+    background-repeat: no-repeat;
+    background-position: center;
+
+    border: 1px solid var(--card-border);
+
+    box-shadow:
+        0 12px 35px rgba(0,0,0,.25),
+        inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+.page-description {
+    flex: 1;
+    font-size: 19px;
+    font-weight: 750;
+    letter-spacing: -.3px;
+}
+
+/* language */
+
+.language-container {
+    position: relative;
+}
+
+.popup-menu {
+    position: relative;
+}
+
+.popup-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    min-height: 40px;
+    padding: 0 14px;
+
+    border-radius: 12px;
+
+    color: #fff;
+    text-decoration: none;
+
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.10);
+
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.popup-sub-items {
+    position: absolute;
+    right: 0;
+    top: 48px;
+
+    width: 190px;
+    max-height: 350px;
+
+    overflow-y: auto;
+
+    padding: 8px;
+
+    background: rgba(9,13,30,.96);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 16px;
+
+    box-shadow: 0 25px 60px rgba(0,0,0,.45);
+
+    z-index: 50;
+}
+
+.popup-sub-items ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.popup-sub-items li {
+    margin: 3px 0;
+}
+
+.popup-sub-items a {
+    display: block;
+    padding: 9px 12px 9px 38px;
+
+    color: #e8ebf4;
+    text-decoration: none;
+
+    border-radius: 10px;
+
+    background-repeat: no-repeat;
+    background-position: 12px center;
+}
+
+.popup-sub-items a:hover {
+    background-color: rgba(255,255,255,.08);
+}
+
+.display-none {
+    display: none !important;
+}
+
+/* =========================================================
+   MESSAGES
+   ========================================================= */
+
+.message-dialog {
+    margin-bottom: 18px;
+    padding: 15px 18px;
+
+    border-radius: 15px;
+
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+
+    border: 1px solid rgba(255,255,255,.10);
+}
+
+.background-error {
+    background: rgba(255,70,90,.12);
+}
+
+.background-warning {
+    background: rgba(255,180,60,.12);
+}
+
+.background-info {
+    background: rgba(80,130,255,.12);
+}
+
+/* =========================================================
+   HERO
+   ========================================================= */
+
+.container {
+    margin-bottom: 20px;
+}
+
+.container-header {
+    display: none;
+}
+
+.session-hero {
+    position: relative;
+    overflow: hidden;
+
+    padding: 34px;
+
+    border-radius: 28px;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(109,124,255,.16),
+            rgba(139,92,246,.08)
+        ),
+        rgba(255,255,255,.045);
+
+    border: 1px solid rgba(255,255,255,.11);
+
+    box-shadow: var(--shadow);
+
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+}
+
+.session-hero::after {
+    content: "";
+    position: absolute;
+
+    width: 230px;
+    height: 230px;
+
+    right: -80px;
+    top: -100px;
+
+    border-radius: 50%;
+
+    background: rgba(109,124,255,.16);
+
+    filter: blur(20px);
+}
+
+.status-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+
+    margin-bottom: 18px;
+
+    color: var(--success);
+
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.status-dot {
+    width: 9px;
+    height: 9px;
+
+    border-radius: 50%;
+
+    background: var(--success);
+
+    box-shadow:
+        0 0 0 5px rgba(39,229,155,.10),
+        0 0 20px rgba(39,229,155,.5);
+
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%,100% {
+        box-shadow:
+            0 0 0 4px rgba(39,229,155,.08),
+            0 0 15px rgba(39,229,155,.35);
+    }
+
+    50% {
+        box-shadow:
+            0 0 0 8px rgba(39,229,155,.03),
+            0 0 25px rgba(39,229,155,.55);
+    }
+}
+
+.hero-title {
+    position: relative;
+    z-index: 2;
+
+    margin: 0 0 10px;
+
+    font-size: clamp(30px, 6vw, 52px);
+    line-height: 1.02;
+    letter-spacing: -2px;
+}
+
+.hero-text {
+    position: relative;
+    z-index: 2;
+
+    max-width: 620px;
+
+    margin: 0;
+
+    color: var(--muted);
+
+    font-size: 15px;
+    line-height: 1.65;
+}
+
+/* =========================================================
+   STATS
+   ========================================================= */
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+
+    margin-top: 20px;
+}
+
+.stat-card {
+    position: relative;
+
+    min-height: 145px;
+    padding: 22px;
+
+    border-radius: 22px;
+
+    background: var(--card);
+
+    border: 1px solid var(--card-border);
+
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+
+    box-shadow: 0 15px 50px rgba(0,0,0,.18);
+
+    transition:
+        transform .25s ease,
+        border-color .25s ease,
+        background .25s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    background: rgba(255,255,255,.08);
+    border-color: rgba(255,255,255,.18);
+}
+
+.stat-icon {
+    width: 40px;
+    height: 40px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    margin-bottom: 16px;
+
+    border-radius: 12px;
+
+    background: rgba(109,124,255,.12);
+
+    font-size: 19px;
+}
+
+.stat-label {
+    display: block;
+
+    margin-bottom: 7px;
+
+    color: var(--muted);
+
+    font-size: 12px;
+    font-weight: 650;
+    text-transform: uppercase;
+    letter-spacing: .7px;
+}
+
+.stat-value {
+    display: block;
+
+    color: #fff;
+
+    font-size: 17px;
+    font-weight: 750;
+
+    overflow-wrap: anywhere;
+}
+
+/* =========================================================
+   SESSION DETAILS
+   ========================================================= */
+
+.details-card {
+    padding: 25px;
+
+    border-radius: 24px;
+
+    background: var(--card);
+
+    border: 1px solid var(--card-border);
+
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+
+    box-shadow: 0 15px 50px rgba(0,0,0,.18);
+}
+
+.section-heading {
+    margin: 0 0 20px;
+
+    font-size: 17px;
+    font-weight: 750;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table tr {
+    border-bottom: 1px solid rgba(255,255,255,.07);
+}
+
+.data-table tr:last-child {
+    border-bottom: 0;
+}
+
+.data-table td {
+    padding: 15px 5px;
+
+    font-size: 14px;
+}
+
+.data-table td:first-child {
+    width: 45%;
+
+    color: var(--muted);
+
+    font-weight: 500;
+}
+
+.data-table td:last-child {
+    color: #fff;
+
+    font-weight: 650;
+
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
+/* =========================================================
+   ACTIONS
+   ========================================================= */
+
+.actions {
+    display: flex;
+    gap: 12px;
+
+    margin-top: 20px;
+}
+
+.actions input,
+.actions button {
+    min-height: 48px;
+
+    padding: 0 21px;
+
+    border: 0;
+    border-radius: 14px;
+
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 750;
+
+    cursor: pointer;
+
+    transition:
+        transform .2s ease,
+        box-shadow .2s ease,
+        opacity .2s ease;
+}
+
+.actions input {
+    color: #fff;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--accent),
+            var(--accent-2)
+        );
+
+    box-shadow:
+        0 10px 25px rgba(109,124,255,.22);
+}
+
+.actions button {
+    color: #fff;
+
+    background: rgba(255,255,255,.08);
+
+    border: 1px solid rgba(255,255,255,.11);
+}
+
+.actions input:hover,
+.actions button:hover {
+    transform: translateY(-2px);
+}
+
+.actions input:active,
+.actions button:active {
+    transform: translateY(0);
+}
+
+.actions a {
+    text-decoration: none;
+}
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+
+.page-footer {
+    padding: 15px 5px 0;
+
+    color: #747f98;
+
+    text-align: center;
+
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.page-footer a {
+    color: #aeb8ff;
+    text-decoration: none;
+}
+
+.page-footer a:hover {
+    text-decoration: underline;
+}
+
+/* =========================================================
+   HIDE ORIGINAL TABLE VISUAL CONTAINER
+   ========================================================= */
+
+.original-session-table {
+    display: none;
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 650px) {
+
+    .wrap {
+        padding: 16px 13px 25px;
+    }
+
+    .page-header {
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+
+    .page-logo {
+        width: 43px;
+        height: 43px;
+        min-width: 43px;
+    }
+
+    .page-description {
+        font-size: 15px;
+    }
+
+    .popup-menu-item {
+        padding: 0 10px;
+        font-size: 12px;
+    }
+
+    .session-hero {
+        padding: 25px 21px;
+
+        border-radius: 22px;
+    }
+
+    .hero-title {
+        font-size: 34px;
+        letter-spacing: -1.3px;
+    }
+
+    .hero-text {
+        font-size: 13px;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .stat-card {
+        min-height: 125px;
+        padding: 16px;
+        border-radius: 18px;
+    }
+
+    .stat-icon {
+        width: 35px;
+        height: 35px;
+        margin-bottom: 12px;
+    }
+
+    .stat-value {
+        font-size: 14px;
+    }
+
+    .details-card {
+        padding: 18px 15px;
+        border-radius: 20px;
+    }
+
+    .data-table td {
+        padding: 13px 3px;
+        font-size: 12px;
+    }
+
+    .data-table td:first-child {
+        width: 48%;
+    }
+
+    .actions {
+        flex-direction: column;
+    }
+
+    .actions input,
+    .actions button {
+        width: 100%;
+    }
+}
+
+@media (max-width: 380px) {
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .hero-title {
+        font-size: 30px;
+    }
+}
+
+</style>
+
+<script type="text/javascript">
+/*<![CDATA[*/
+
+function HideDialog(DialogId)
+{
+    const MessageDialog = document.getElementById(DialogId);
+
+    if (MessageDialog)
+    {
+        MessageDialog.style.display = 'none';
+    }
+}
+
+function ShowMessage(DialogId, Msg)
+{
+    const MessageDialog = document.getElementById(DialogId);
+
+    if (!MessageDialog)
+        return;
+
+    MessageDialog.style.display = 'block';
+
+    MessageDialog.offsetHeight;
+
+    MessageDialog.style.display = 'flex';
+
+    MessageDialog.textContent = Msg;
+}
+
+function ShowErrorMessage(Error)
+{
+    HideDialog("InfoDialog");
+    HideDialog("WarningDialog");
+
+    ShowMessage(
+        "ErrorDialog",
+        document.getElementById(Error).textContent
+    );
+}
+
+function ShowInfoMessage(Info)
+{
+    HideDialog("ErrorDialog");
+    HideDialog("WarningDialog");
+
+    ShowMessage(
+        "InfoDialog",
+        document.getElementById(Info).textContent
+    );
+}
+
+function ShowWarningMessage(Warning)
+{
+    HideDialog("ErrorDialog");
+    HideDialog("InfoDialog");
+
+    ShowMessage(
+        "WarningDialog",
+        document.getElementById(Warning).textContent
+    );
+}
+
+function VoucherAccountCheck()
+{
+    var chk = false;
+
+    if (document.getElementById("Voucher").value == '')
+    {
+        ShowErrorMessage("VoucherInvalid");
+    }
+    else
+    {
+        chk = true;
+    }
+
+    return(chk);
+}
+
+function UserAccountCheck()
+{
+    var chk = false;
+
+    if (document.getElementById("Username").value == '')
+    {
+        ShowErrorMessage("UsernameInvalid");
+    }
+    else
+    {
+        chk = true;
+    }
+
+    return(chk);
+}
+
+function ToggleCheckbox(element)
+{
+    document.getElementById("TOCLoginButton").disabled =
+        !element.checked;
+}
+
+function ConvertToLocaleDateTime(Id)
+{
+    const element = document.getElementById(Id);
+
+    if (!element)
+        return;
+
+    const dateString = element.textContent.trim();
+
+    if ((dateString != '-') && (dateString != ''))
+    {
+        var customDate = new Date(dateString);
+
+        if (!isNaN(customDate.getTime()))
+        {
+            element.textContent =
+                customDate.toLocaleString();
+        }
+    }
+}
+
+$(document).ready(function()
+{
+    ConvertToLocaleDateTime("StartTime");
+    ConvertToLocaleDateTime("EndTime");
+
+    const accountElement =
+        document.getElementById(
+            "55FC9BE7-5A3D-4643-ABCE-B1DFAA3BA57E"
+        );
+
+    if (accountElement)
+    {
+        document.getElementById("AccountType").textContent =
+            accountElement.textContent;
+    }
+
+    $('.popup-menu-item').click(function()
+    {
+        $(this)
+            .parent()
+            .find('.popup-sub-items')
+            .toggleClass('display-none');
+    });
+
+    $('.popup-menu').mouseleave(function()
+    {
+        $(this)
+            .find('.popup-sub-items')
+            .addClass('display-none');
+    });
+});
+
+/*]]>*/
+</script>
+
+</head>
+
+<body>
+
+<div class="wrap">
+
+    <!-- =====================================================
+         HEADER
+         ===================================================== -->
+
+    <div class="page-header">
+
+        <div class="page-logo background-hotspot"></div>
+
+        <div class="page-description">
+            ANONYMIKETECH SUPA LAN
+        </div>
+
+        <div class="language-container">
+
+            <div class="popup-menu">
+
+                <a
+                    class="popup-menu-item"
+                    style="background-image:url('img/English.png');"
+                >
+                    English
+                </a>
+
+                <div class="popup-sub-items display-none">
+
+                    <ul>
+
+                        <li>
+                            <a
+                                style="background-image:url('img/Arabic.png');"
+                                href="?lang=Arabic"
+                            >
+                                Arabic
+                            </a>
+                        </li>
+
+                        <li>
+                            <a
+                                style="background-image:url('img/Bengali.png');"
+                                href="?lang=Bengali"
+                            >
+                                Bengali
+                            </a>
+                        </li>
+
+                        <li>
+                            <a
+                                style="background-image:url('img/ChineseS.png');"
+                                href="?lang=ChineseS"
+                            >
+                                ChineseS
+                            </a>
+                        </li>
+
+                        <li>
+                            <a
+                                style="background-image:url('img/ChineseT.png');"
+                                href="?lang=ChineseT"
+                            >
+                                ChineseT
+                            </a>
+                        </li>
+
+                        <li>
+                            <a
+                                style="background-image:url('img/French.png');"
+                                href="?lang=French"
+                            >
+                                French
+                            </a>
+                        </li>
+
+                        <li>
+                            <a
+                                style="background-image:url('img/German.png');"
+                                href="?lang=German"
+                            >
+                                German
+                            </a>
+                        </li>
+
+                        <li>
+                            <a
+                                style="background-image:url('img/Hindi.png');"
+                                href="?lang=Hindi"
+                            >
+                                Hindi
+                            </a>
+                        </li>
+
+                        <li>
+                            <a
+                                style="background-image:url('img/Italian.png');"
+                                href="?lang=Italian"
+                            >
+                                Italian
+                            </a>
+                        </li>
+
+                        <li>
+                            <a
+                                style="background-image:url('img/Japanese.png');"
+                                href="?lang=Japanese"
+                            >
+                                Japanese
+                            </a>
+                        </li>
+
+                        <li>
+                            <a
+                                style="background-image:url('img/Polish.png');"
+                                href="?lang=Polish"
+                            >
+                                Polish
+                            </a>
+                        </li>
+
+                        <li>
+                            <a
+                                style="background-image:url('img/Portuguese.png');"
+                                href="?lang=Portuguese"
+                            >
+                                Portuguese
+                            </a>
+                        </li>
+
+                        <li>
+                            <a
+                                style="background-image:url('img/Russian.png');"
+                                href="?lang=Russian"
+                            >
+                                Russian
+                            </a>
+                        </li>
+
+                        <li>
+                            <a
+                                style="background-image:url('img/Spanish.png');"
+                                href="?lang=Spanish"
+                            >
+                                Spanish
+                            </a>
+                        </li>
+
+                        <li>
+                            <a
+                                style="background-image:url('img/Turkish.png');"
+                                href="?lang=Turkish"
+                            >
+                                Turkish
+                            </a>
+                        </li>
+
+                        <li>
+                            <a
+                                style="background-image:url('img/Urdu.png');"
+                                href="?lang=Urdu"
+                            >
+                                Urdu
+                            </a>
+                        </li>
+
+                        <li>
+                            <a
+                                style="background-image:url('img/Vietnamese.png');"
+                                href="?lang=Vietnamese"
+                            >
+                                Vietnamese
+                            </a>
+                        </li>
+
+                    </ul>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         SYSTEM MESSAGES
+         ===================================================== -->
+
+    <div
+        id="ErrorDialog"
+        class="container message-dialog background-error"
+        style="display:none;"
+    >
+        &nbsp;
+    </div>
+
+    <div
+        id="WarningDialog"
+        class="container message-dialog background-warning"
+        style="display:none;"
+    >
+        &nbsp;
+    </div>
+
+    <div
+        id="InfoDialog"
+        class="container message-dialog background-info"
+        style="display:none;"
+    >
+        &nbsp;
+    </div>
+
+
+    <noscript>
+
+        <div
+            class="container message-dialog background-warning"
+        >
+            This page is displayed correctly only with JavaScript.
+            Please enable JavaScript in your browser!
+        </div>
+
+    </noscript>
+
+
+    <!-- =====================================================
+         HERO
+         ===================================================== -->
+
+    <div class="session-hero">
+
+        <div class="status-row">
+
+            <span class="status-dot"></span>
+
+            <span>CONNECTED • ONLINE</span>
+
+        </div>
+
+        <h1 class="hero-title">
+            You're Connected.
+        </h1>
+
+        <p class="hero-text">
+            Welcome to ANONYMIKETECH SUPA LAN.
+            Your Internet session is active and ready to use.
+        </p>
+
+    </div>
+
+
+    <!-- =====================================================
+         STAT CARDS
+         ===================================================== -->
+
+    <div class="stats-grid">
+
+        <div class="stat-card">
+
+            <div class="stat-icon">
+                ↓
+            </div>
+
+            <span class="stat-label">
+                Download
+            </span>
+
+            <span class="stat-value">
+                <!--21F722D0-37E2-4A92-ADF9-0DE8CE733C20-->
+            </span>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <div class="stat-icon">
+                ↑
+            </div>
+
+            <span class="stat-label">
+                Upload
+            </span>
+
+            <span class="stat-value">
+                <!--5161DB90-9946-41C7-85C3-3DC333B11211-->
+            </span>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <div class="stat-icon">
+                ◷
+            </div>
+
+            <span class="stat-label">
+                Connected Since
+            </span>
+
+            <span
+                class="stat-value"
+                id="StartTime"
+            >
+                <!--4F288B97-F112-4C1A-B2DE-FBDD78718DE2-->
+            </span>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <div class="stat-icon">
+                ⏱
+            </div>
+
+            <span class="stat-label">
+                Session Ends
+            </span>
+
+            <span
+                class="stat-value"
+                id="EndTime"
+            >
+                <!--114D9DA7-0360-4E3D-A023-04CFA04D4CC0-->
+            </span>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         SESSION DETAILS
+         ===================================================== -->
+
+    <div class="details-card">
+
+        <h2 class="section-heading">
+            Session Details
+        </h2>
+
+        <div>
+
+            <table class="data-table">
+
+                <tr>
+                    <td>
+                        IP Address
+                    </td>
+
+                    <td>
+                        <!--C811F149-5EBD-4500-AC23-991C41C626E7-->
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>
+                        MAC Address
+                    </td>
+
+                    <td>
+                        <!--173DDC21-AF45-458F-A24C-D015E13275AB-->
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>
+                        Hostname
+                    </td>
+
+                    <td>
+                        <!--7C35D645-1397-4637-A6A3-34FECB358D29-->
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>
+                        Account
+                    </td>
+
+                    <td>
+                        <span id="AccountType">
+                            &nbsp;
+                        </span>
+
+                        <!--87495468-6AC9-4E8B-8DD1-1A728A6C3820-->
+                    </td>
+                </tr>
+
+                <tr
+                    class="<!--A91F7DA3-A405-4891-AC25-B6CFDF393CAE-->"
+                >
+                    <td>
+                        Account Security
+                    </td>
+
+                    <td>
+                        <a
+                            href="./changeuserpassword.html"
+                            style="color:#aeb8ff;text-decoration:none;"
+                        >
+                            Change Password
+                        </a>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>
+                        Data Volume
+                    </td>
+
+                    <td>
+                        <!--6922BCFC-BDBD-49F3-808A-B12F0A64F506-->
+                    </td>
+                </tr>
+
+            </table>
+
+        </div>
+
+
+        <!-- =================================================
+             ACTIONS
+             ================================================= -->
+
+        <form
+            action="./"
+            method="post"
+        >
+
+            <input
+                type="hidden"
+                name="_action"
+                value="Logout"
+            />
+
+            <div class="actions">
+
+                <input
+                    tabindex="1"
+                    value="Log Out"
+                    type="submit"
+                />
+
+                <a href="./addcredit.html">
+
+                    <button
+                        tabindex="2"
+                        type="button"
+                    >
+                        Top Up Account
+                    </button>
+
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+
+
+    <!-- =====================================================
+         FOOTER
+         ===================================================== -->
+
+    <div class="page-footer">
+
+        By using ANONYMIKETECH SUPA LAN,
+        you accept our
+
+        <a href="termsofuse.html">
+            Terms of Use
+        </a>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     MYPUBLICWIFI SYSTEM MESSAGES
+     DO NOT REMOVE THESE
+     ========================================================= -->
+
+<div style="display:none;">
+
+    <p id="ServiceDisabled">
+        Sorry, This service is currently unavailable for the selected action.
+    </p>
+
+    <p id="UsernameInvalid">
+        The entered username is invalid. Please try again.
+    </p>
+
+    <p id="VoucherInvalid">
+        The entered voucher is invalid. Please try again.
+    </p>
+
+    <p id="UserPasswordInvalid">
+        The entered user password is invalid. Please try again.
+    </p>
+
+    <p id="GuestPasswordInvalid">
+        The entered access password is invalid. Please try again.
+    </p>
+
+    <p id="MaxDailyLoginsExceeded">
+        You have reached the maximum number of daily logins with this method.
+        Please try again tomorrow or choose another login method.
+    </p>
+
+    <p id="UserAccountDisabled">
+        The specified user account is currently blocked.
+        Please contact support.
+    </p>
+
+    <p id="UserAccountExpired">
+        The specified user account has expired.
+        Please contact support.
+    </p>
+
+    <p id="UserTimeCreditNotEnough">
+        The specified user account does not have sufficient time credit.
+        Please top up your account.
+    </p>
+
+    <p id="UserTrafficCreditNotEnough">
+        The specified user account does not have sufficient data volume credit.
+        Please top up your account.
+    </p>
+
+    <p id="NoUserCredit">
+        The time and data volume credit for the specified user account
+        has been used up. Please try another account.
+    </p>
+
+    <p id="DailyUserQuotaExceeded">
+        The daily time or data limit for the specified user account
+        has been reached. Please try again tomorrow.
+    </p>
+
+    <p id="MonthlyUserQuotaExceeded">
+        The monthly time or data limit for the specified user account
+        has been reached. Please try again next month.
+    </p>
+
+    <p id="UserAccountUsed">
+        The specified user account has already been used.
+        Please try another account.
+    </p>
+
+    <p id="MaxUserConcurrentLoginsExceeded">
+        The maximum number of simultaneous logins for this user account
+        has been reached. Please try again later.
+    </p>
+
+    <p id="VoucherDisabled">
+        The specified voucher is currently blocked.
+        Please contact support.
+    </p>
+
+    <p id="VoucherExpired">
+        The specified voucher has expired.
+        Please contact support.
+    </p>
+
+    <p id="VoucherTimeCreditNotEnough">
+        The specified voucher does not have sufficient time credit.
+        Please top up your account.
+    </p>
+
+    <p id="VoucherTrafficCreditNotEnough">
+        The specified voucher does not have sufficient data volume credit.
+        Please top up your account.
+    </p>
+
+    <p id="NoVoucherCredit">
+        The time and data volume credit for the specified voucher
+        has been used up. Please try another account.
+    </p>
+
+    <p id="DailyVoucherQuotaExceeded">
+        The daily time or data limit for the specified voucher
+        has been reached. Please try again tomorrow.
+    </p>
+
+    <p id="MonthlyVoucherQuotaExceeded">
+        The monthly time or data limit for the specified voucher
+        has been reached. Please try again next month.
+    </p>
+
+    <p id="VoucherUsed">
+        The specified voucher has already been used.
+        Please try another voucher.
+    </p>
+
+    <p id="MaxVoucherConcurrentLoginsExceeded">
+        The maximum number of simultaneous logins for this voucher
+        has been reached. Please try again later.
+    </p>
+
+    <p id="PasswordConfirmInvalid">
+        The two passwords do not match. Please try again.
+    </p>
+
+    <p id="NewPasswordEmpty">
+        Empty passwords are not allowed. Please enter a password.
+    </p>
+
+    <p id="MaxUploadSizeExceeded">
+        Your data could not be transferred.
+        The maximum allowed file size has been exceeded.
+    </p>
+
+    <p id="FilesUploadRejected">
+        Your data could not be transferred.
+        The server rejected the upload.
+    </p>
+
+    <p id="FilesUploadAborted">
+        Your data could not be transferred.
+        The upload has been canceled.
+    </p>
+
+    <p id="GeneralFilesUploadError">
+        Your data could not be transferred.
+        An error occurred.
+    </p>
+
+    <p id="AccountRecharged">
+        Your account has been successfully topped up.
+        Thank you for your trust!
+    </p>
+
+    <p id="PasswordChanged">
+        Your password has been successfully changed.
+    </p>
+
+    <p id="LoginSuccessful">
+        You have successfully logged in.
+    </p>
+
+    <p id="LogoutSuccessful">
+        You have successfully logged out.
+    </p>
+
+    <p id="FilesUploadSuccessful">
+        Your data has been successfully transferred.
+        Please check if your files have been saved correctly.
+    </p>
+
+    <p id="UserType">
+        User:
+    </p>
+
+    <p id="VoucherType">
+        Voucher:
+    </p>
+
+    <p id="GuestType">
+        Guest
+    </p>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<!--
+Design by TRUE Software
+https://www.mypublicwifi.com
+-->
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="expires" content="0" />
+<meta http-equiv="pragma" content="no-cache" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="format-detection" content="telephone=no" />
+<meta name="HandheldFriendly" content="True" />
+<meta name="MobileOptimized" content="320" />
+<title>MyPublicWiFi - Ricarica il tuo account utente</title>
+<script type="text/javascript" src="jquery-1.4.3.min.js"></script>
+<link rel="stylesheet"  type="text/css"  href="style.css" />
+<script type="text/javascript">
+        /*<![CDATA[*/
+
+
+function HideDialog(DialogId)
+{
+  const MessageDialog = document.getElementById(DialogId);
+  MessageDialog.style.display = 'none';
+
+}
+
+function ShowMessage(DialogId, Msg)
+{
+   const MessageDialog = document.getElementById(DialogId);
+   MessageDialog.style.display = 'block';
+   MessageDialog.offsetHeight; // Ein erzwungener Reflow
+   MessageDialog.style.display = 'flex';
+   MessageDialog.textContent = Msg;
+
+}
+
+function ShowErrorMessage(Error)
+
+{
+  HideDialog("InfoDialog");
+  HideDialog("WarningDialog");
+  ShowMessage("ErrorDialog", document.getElementById(Error).textContent);
+
+}
+
+function ShowInfoMessage(Info)
+
+{
+  HideDialog("ErrorDialog");
+  HideDialog("WarningDialog");
+  ShowMessage("InfoDialog", document.getElementById(Info).textContent);
+ }
+
+function ShowWarningMessage(Warning)
+
+{
+  HideDialog("ErrorDialog");
+  HideDialog("InfoDialog");
+  ShowMessage("WarningDialog", document.getElementById(Warning).textContent);
+ }
+
+function VoucherAccountCheck()
+  {
+   var chk = false;
+   if (document.getElementById("Voucher").value == '')
+   {
+     ShowErrorMessage("VoucherInvalid")
+   }
+   else
+   chk=true;
+   return(chk);
+  }
+
+function UserAccountCheck()
+  {
+   var chk = false;
+   if (document.getElementById("Username").value == '')
+   {
+     ShowErrorMessage("UsernameInvalid")
+   }
+   else if (document.getElementById("Voucher").value == '')
+   {
+     ShowErrorMessage("VoucherInvalid")
+   }
+   else
+    chk=true;
+   return(chk);
+  }
+
+function ToggleCheckbox(element)
+  {
+    document.getElementById("TOCLoginButton").disabled = !element.checked;
+  }
+
+
+
+  $(document).ready(function() {
+                            //6F143793-ACE5-4C04-93EA-C593CD76DC47
+                          });
+
+
+
+    /*]]>*/
+</script>
+</head>
+
+<body>
+
+   <div class="wrap" >
+      <div class="page-header">
+           <div class="page-logo background-hotspot"></div>
+           <div class="page-description">ANONYMIKETECH SUPA LAN</div>
+           <div class="language-container" >
+             <div class="popup-menu">
+               <a  class="popup-menu-item"  style="background-image:url('img/Italian.png');" >Italian</a>
+               <div  class="popup-sub-items display-none" >
+                 <ul>
+                                       <li>
+                     <a  style="background-image:url('img/Arabic.png');"   href="?lang=Arabic">Arabic</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Bengali.png');"   href="?lang=Bengali">Bengali</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/ChineseS.png');"   href="?lang=ChineseS">ChineseS</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/ChineseT.png');"   href="?lang=ChineseT">ChineseT</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/English.png');"   href="?lang=English">English</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Filipino.png');"   href="?lang=Filipino">Filipino</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/French.png');"   href="?lang=French">French</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/German.png');"   href="?lang=German">German</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Hindi.png');"   href="?lang=Hindi">Hindi</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Indonesia.png');"   href="?lang=Indonesia">Indonesia</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Japanese.png');"   href="?lang=Japanese">Japanese</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Polish.png');"   href="?lang=Polish">Polish</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Portuguese.png');"   href="?lang=Portuguese">Portuguese</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Russian.png');"   href="?lang=Russian">Russian</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Spanish.png');"   href="?lang=Spanish">Spanish</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Turkish.png');"   href="?lang=Turkish">Turkish</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Urdu.png');"   href="?lang=Urdu">Urdu</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Vietnamese.png');"   href="?lang=Vietnamese">Vietnamese</a>
+                   </li>
+
+
+                 </ul>
+               </div>
+             </div>
+
+
+
+             <script type="text/javascript">
+                      /*<![CDATA[*/
+                   $(document).ready(function() {
+                       $('.popup-menu-item').click(function(){
+                             $(this).parent().find('.popup-sub-items').toggleClass('display-none');
+                            });
+                      $('.popup-menu').mouseleave(function() {
+                         $(this).find('.popup-sub-items').addClass('display-none');
+                       });
+                     });
+                   /*]]>*/
+             </script>
+           </div>
+
+        </div>
+
+        <div id="ErrorDialog" class="container message-dialog background-error margin-top--17px text-justify-bold color-red"  style="display: none;">
+           &nbsp;
+        </div>
+
+        <div id="WarningDialog" class="container message-dialog background-warning margin-top--17px text-justify-bold color-red"  style="display: none;">
+           &nbsp;
+        </div>
+
+        <div id="InfoDialog" class="container message-dialog background-info margin-top--17px text-justify-bold"  style="display: none;">
+           &nbsp;
+        </div>
+
+        <noscript>
+           <div  class="container message-dialog background-warning margin-top--17px text-justify-bold color-red">
+              Questa pagina viene visualizzata correttamente solo con JavaScript. Abilita JavaScript nel tuo browser!
+           </div>
+        </noscript>
+
+
+      <div class="container">
+         <div class="container-header">
+           Ricarica il tuo account utente
+         </div>
+         <div class="container-description background-voucher text-justify-bold" >
+               Puoi ricaricare il tuo account utente utilizzando un codice voucher valido.
+         </div>
+         <div class="container-body">
+            <form  action="./" method="post"  onsubmit="return UserAccountCheck();">
+               <div><input type="hidden" name="_action" value="AddCreditToUser" /></div>
+               <div>
+                  <input  tabindex="1" id="Username"  class="icon-text-input background-user-16" placeholder="Nome utente"  name="Username"     value="" autocomplete="off" type="text"/>
+               </div>
+               <div>
+                  <input  tabindex="2"  class="icon-text-input background-password-16" placeholder="Password" name="Password"   value="" autocomplete="off" type="password"/>
+               </div>
+               <div>
+                  <input tabindex="3" id="Voucher"  class="icon-text-input background-voucher-16" placeholder="Voucher"  name="Voucher"    value="" autocomplete="off" type="text"/>
+               </div>
+               <div>
+                  <table>
+                     <tr>
+                        <td><input tabindex="4"  value="Ricarica" type="submit"  /></td>
+                        <td  class="padding-left-5px"><a href="./"><button tabindex="2" type="button" >Annulla</button></a></td>
+                     </tr>
+                  </table>
+               </div>
+            </form>
+         </div>
+      </div>
+           <div class="page-footer">
+          Accedendo, accetti i nostri <a href="termsofuse.html">Termini di utilizzo</a>
+     </div>
+
+   </div>
+
+       <div style="display: none;">
+      <p id="ServiceDisabled">Spiacenti, questo servizio non è attualmente disponibile per l'azione selezionata.</p>
+      <p id="UsernameInvalid">Il nome utente inserito non è valido. Riprova.</p>
+      <p id="VoucherInvalid">Il voucher inserito non è valido. Riprova.</p>
+      <p id="UserPasswordInvalid">La password utente inserita non è valida. Riprova.</p>
+      <p id="GuestPasswordInvalid">La password di accesso inserita non è valida. Riprova.</p>
+      <p id="MaxDailyLoginsExceeded">Hai raggiunto il numero massimo di accessi giornalieri con questo metodo. Riprova domani o scegli un altro metodo di accesso.</p>
+      <p id="UserAccountDisabled">L'account utente specificato è attualmente bloccato. Contatta l'assistenza.</p>
+      <p id="UserAccountExpired">L'account utente specificato è scaduto. Contatta l'assistenza.</p>
+      <p id="UserTimeCreditNotEnough">L'account utente specificato non ha credito tempo sufficiente. Ricarica il tuo account.</p>
+      <p id="UserTrafficCreditNotEnough">L'account utente specificato non ha credito volume dati sufficiente. Ricarica il tuo account.</p>
+      <p id="NoUserCredit">Il credito tempo e volume dati per l'account utente specificato è esaurito. Prova un altro account.</p>
+      <p id="DailyUserQuotaExceeded">È stato raggiunto il limite giornaliero di tempo o dati per l'account utente specificato. Riprova domani.</p>
+      <p id="MonthlyUserQuotaExceeded">È stato raggiunto il limite mensile di tempo o dati per l'account utente specificato. Riprova il prossimo mese.</p>
+      <p id="UserAccountUsed">L'account utente specificato è già stato utilizzato. Prova un altro account.</p>
+      <p id="MaxUserConcurrentLoginsExceeded">È stato raggiunto il numero massimo di accessi simultanei per questo account utente. Riprova più tardi.</p>
+      <p id="VoucherDisabled">Il voucher specificato è attualmente bloccato. Contatta l'assistenza.</p>
+      <p id="VoucherExpired">Il voucher specificato è scaduto. Contatta l'assistenza.</p>
+      <p id="VoucherTimeCreditNotEnough">Il voucher specificato non ha credito tempo sufficiente. Ricarica il tuo account.</p>
+      <p id="VoucherTrafficCreditNotEnough">Il voucher specificato non ha credito volume dati sufficiente. Ricarica il tuo account.</p>
+      <p id="NoVoucherCredit">Il credito tempo e volume dati per il voucher specificato è esaurito. Prova un altro voucher.</p>
+      <p id="DailyVoucherQuotaExceeded">È stato raggiunto il limite giornaliero di tempo o dati per il voucher specificato. Riprova domani.</p>
+      <p id="MonthlyVoucherQuotaExceeded">È stato raggiunto il limite mensile di tempo o dati per il voucher specificato. Riprova il prossimo mese.</p>
+      <p id="VoucherUsed">Il voucher specificato è già stato utilizzato. Prova un altro voucher.</p>
+      <p id="MaxVoucherConcurrentLoginsExceeded">È stato raggiunto il numero massimo di accessi simultanei per questo voucher. Riprova più tardi.</p>
+      <p id="PasswordConfirmInvalid">Le due password non corrispondono. Riprova.</p>
+      <p id="NewPasswordEmpty">Le password vuote non sono consentite. Inserisci una password.</p>
+      <p id="MaxUploadSizeExceeded">I tuoi dati non possono essere trasferiti. È stato superato il limite massimo di dimensione del file consentito.</p>
+      <p id="FilesUploadRejected">I tuoi dati non possono essere trasferiti. Il server ha rifiutato il caricamento.</p>
+      <p id="FilesUploadAborted">I tuoi dati non possono essere trasferiti. Il caricamento è stato annullato.</p>
+      <p id="GeneralFilesUploadError">I tuoi dati non possono essere trasferiti. Si è verificato un errore.</p>
+      <p id="AccountRecharged">Il tuo account è stato ricaricato con successo. Grazie per la tua fiducia!</p>
+      <p id="PasswordChanged">La tua password è stata cambiata con successo.</p>
+      <p id="LoginSuccessful">Hai effettuato l'accesso con successo.</p>
+      <p id="LogoutSuccessful">Hai effettuato la disconnessione con successo.</p>
+      <p id="FilesUploadSuccessful">I tuoi dati sono stati trasferiti con successo. Verifica se i tuoi file sono stati salvati correttamente.</p>
+      <p id="UserType">Utente:</p>
+      <p id="VoucherType">Voucher:</p>
+      <p id="GuestType">Ospite</p>
+    </div>
+
+
+</body>
+</html>

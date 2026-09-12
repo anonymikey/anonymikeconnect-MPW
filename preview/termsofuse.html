@@ -1,0 +1,2691 @@
+<!DOCTYPE html>
+<!--
+Design by TRUE Software
+https://www.mypublicwifi.com
+Customized for ANONYMIKETECH SUPA LAN
+-->
+
+<html>
+
+<head>
+
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="expires" content="0" />
+<meta http-equiv="pragma" content="no-cache" />
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+<meta name="format-detection" content="telephone=no" />
+<meta name="HandheldFriendly" content="True" />
+<meta name="MobileOptimized" content="320" />
+
+<title>ANONYMIKETECH - SUPA LAN</title>
+
+<script type="text/javascript" src="jquery-1.4.3.min.js"></script>
+
+<link rel="stylesheet" type="text/css" href="style.css" />
+
+
+<style>
+
+/* ==========================================================
+   ANONYMIKETECH SUPA LAN
+   FUTURISTIC MOBILE-FIRST THEME
+   ========================================================== */
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+}
+
+body {
+
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        Helvetica,
+        Arial,
+        sans-serif;
+
+    color: #ffffff;
+
+    background:
+        radial-gradient(
+            circle at 15% 10%,
+            rgba(0, 229, 255, 0.15),
+            transparent 28%
+        ),
+        radial-gradient(
+            circle at 85% 20%,
+            rgba(124, 58, 237, 0.17),
+            transparent 30%
+        ),
+        radial-gradient(
+            circle at 50% 100%,
+            rgba(14, 165, 233, 0.12),
+            transparent 35%
+        ),
+        #020617;
+
+    overflow-x: hidden;
+}
+
+
+/* ==========================================================
+   LIVE NETWORK BACKGROUND
+   ========================================================== */
+
+#networkCanvas {
+
+    position: fixed;
+
+    left: 0;
+    top: 0;
+
+    width: 100%;
+    height: 100%;
+
+    z-index: -10;
+
+    pointer-events: none;
+}
+
+
+.live-glow {
+
+    position: fixed;
+
+    width: 420px;
+    height: 420px;
+
+    border-radius: 50%;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(0, 229, 255, 0.09),
+            rgba(59, 130, 246, 0.03),
+            transparent 70%
+        );
+
+    filter: blur(10px);
+
+    pointer-events: none;
+
+    z-index: -5;
+
+    animation:
+        floatingGlow 12s ease-in-out infinite alternate;
+}
+
+
+.live-glow.one {
+
+    left: -180px;
+    top: -170px;
+}
+
+
+.live-glow.two {
+
+    right: -180px;
+    bottom: -170px;
+
+    animation-delay: -5s;
+}
+
+
+@keyframes floatingGlow {
+
+    0% {
+        transform:
+            translate(0, 0)
+            scale(1);
+    }
+
+    100% {
+        transform:
+            translate(70px, 50px)
+            scale(1.25);
+    }
+}
+
+
+/* ==========================================================
+   PAGE
+   ========================================================== */
+
+.wrap {
+
+    width: 100%;
+
+    min-height: 100vh;
+
+    padding:
+        10px
+        10px
+        30px;
+}
+
+
+.page-header {
+
+    width: 100%;
+
+    max-width: 520px;
+
+    margin: 0 auto 8px;
+
+    padding: 5px;
+
+    text-align: center;
+}
+
+
+.page-logo img {
+
+    max-width: 145px;
+
+    max-height: 65px;
+
+    object-fit: contain;
+
+    filter:
+        drop-shadow(
+            0 0 15px
+            rgba(0, 229, 255, 0.35)
+        );
+}
+
+
+.page-description {
+
+    margin-top: 4px;
+
+    color:
+        rgba(255, 255, 255, 0.55);
+
+    font-size: 9px;
+
+    font-weight: 800;
+
+    letter-spacing: 2.5px;
+
+    text-transform: uppercase;
+}
+
+
+.container {
+
+    width: 100%;
+
+    max-width: 520px;
+
+    margin: 0 auto;
+}
+
+
+.container-body {
+
+    width: 100%;
+}
+
+
+/* ==========================================================
+   MAIN GLASS PANEL
+   ========================================================== */
+
+.main-panel {
+
+    width: 100%;
+
+    padding: 18px;
+
+    border-radius: 25px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(15, 23, 42, 0.84),
+            rgba(2, 6, 23, 0.76)
+        );
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.09);
+
+    box-shadow:
+        0 25px 80px
+        rgba(0, 0, 0, 0.45),
+
+        inset 0 1px 0
+        rgba(255, 255, 255, 0.05);
+
+    backdrop-filter:
+        blur(20px);
+
+    -webkit-backdrop-filter:
+        blur(20px);
+}
+
+
+/* ==========================================================
+   HERO
+   ========================================================== */
+
+.hero {
+
+    text-align: center;
+
+    padding:
+        2px
+        5px
+        16px;
+}
+
+
+.status-orb {
+
+    width: 62px;
+    height: 62px;
+
+    margin:
+        0 auto
+        11px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background:
+        radial-gradient(
+            circle at 35% 30%,
+            #67e8f9,
+            #06b6d4 35%,
+            #0e7490 70%,
+            #082f49
+        );
+
+    box-shadow:
+        0 0 20px
+        rgba(34, 211, 238, 0.45),
+
+        0 0 55px
+        rgba(34, 211, 238, 0.18);
+
+    animation:
+        orbPulse 3s
+        ease-in-out
+        infinite;
+}
+
+
+.status-orb span {
+
+    font-size: 26px;
+
+    filter:
+        drop-shadow(
+            0 0 8px
+            rgba(255,255,255,0.75)
+        );
+}
+
+
+@keyframes orbPulse {
+
+    0%,
+    100% {
+
+        box-shadow:
+            0 0 20px
+            rgba(34,211,238,.45),
+
+            0 0 55px
+            rgba(34,211,238,.15);
+    }
+
+    50% {
+
+        box-shadow:
+            0 0 30px
+            rgba(34,211,238,.75),
+
+            0 0 75px
+            rgba(34,211,238,.28);
+    }
+}
+
+
+.brand-title {
+
+    margin: 0;
+
+    font-size: 24px;
+
+    font-weight: 950;
+
+    letter-spacing: -0.8px;
+
+    background:
+        linear-gradient(
+            90deg,
+            #ffffff,
+            #67e8f9,
+            #60a5fa,
+            #ffffff
+        );
+
+    background-size: 250% auto;
+
+    -webkit-background-clip: text;
+
+    background-clip: text;
+
+    color: transparent;
+
+    animation:
+        brandShine 5s
+        linear infinite;
+}
+
+
+@keyframes brandShine {
+
+    to {
+        background-position:
+            250% center;
+    }
+}
+
+
+.brand-badge {
+
+    display: inline-block;
+
+    margin-top: 6px;
+
+    padding:
+        5px
+        13px;
+
+    border-radius: 50px;
+
+    font-size: 9px;
+
+    font-weight: 900;
+
+    letter-spacing: 1.7px;
+
+    color: #cffafe;
+
+    background:
+        rgba(6, 182, 212, 0.10);
+
+    border:
+        1px solid
+        rgba(34, 211, 238, 0.25);
+
+    box-shadow:
+        0 0 20px
+        rgba(34,211,238,.08);
+}
+
+
+.hero-text {
+
+    max-width: 400px;
+
+    margin:
+        11px auto
+        0;
+
+    color:
+        rgba(226,232,240,.68);
+
+    font-size: 11px;
+
+    line-height: 1.6;
+}
+
+
+/* ==========================================================
+   NETWORK STATUS
+   ========================================================== */
+
+.connection-status {
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 7px;
+
+    margin-bottom: 17px;
+
+    color: #a7f3d0;
+
+    font-size: 9px;
+
+    font-weight: 900;
+
+    letter-spacing: 1px;
+
+    text-transform: uppercase;
+}
+
+
+.status-dot {
+
+    width: 7px;
+    height: 7px;
+
+    border-radius: 50%;
+
+    background: #22c55e;
+
+    box-shadow:
+        0 0 10px
+        #22c55e;
+
+    animation:
+        onlinePulse 1.5s
+        infinite;
+}
+
+
+@keyframes onlinePulse {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: .4;
+        transform: scale(.65);
+    }
+}
+
+
+/* ==========================================================
+   M-PESA INFORMATION
+   ========================================================== */
+
+.payment-card {
+
+    position: relative;
+
+    overflow: hidden;
+
+    padding: 16px;
+
+    margin-bottom: 19px;
+
+    border-radius: 18px;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(6,78,59,.55),
+            rgba(2,44,34,.45)
+        );
+
+    border:
+        1px solid
+        rgba(52,211,153,.18);
+
+    box-shadow:
+        0 12px 35px
+        rgba(0,0,0,.18);
+}
+
+
+.payment-card:before {
+
+    content: "";
+
+    position: absolute;
+
+    width: 130px;
+    height: 130px;
+
+    right: -55px;
+    top: -65px;
+
+    border-radius: 50%;
+
+    background:
+        rgba(34,197,94,.09);
+
+    filter: blur(5px);
+}
+
+
+.mpesa-label {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 6px;
+
+    padding:
+        5px
+        10px;
+
+    border-radius: 8px;
+
+    background:
+        rgba(34,197,94,.14);
+
+    border:
+        1px solid
+        rgba(74,222,128,.18);
+
+    color: #bbf7d0;
+
+    font-size: 9px;
+
+    font-weight: 900;
+
+    letter-spacing: 1px;
+
+    text-transform: uppercase;
+}
+
+
+.payment-title {
+
+    margin-top: 11px;
+
+    color:
+        rgba(255,255,255,.55);
+
+    font-size: 10px;
+}
+
+
+.till-number {
+
+    margin-top: 3px;
+
+    color: #ffffff;
+
+    font-size: 27px;
+
+    font-weight: 950;
+
+    letter-spacing: 1px;
+}
+
+
+.contact-number {
+
+    margin-top: 10px;
+
+    padding-top: 9px;
+
+    border-top:
+        1px dashed
+        rgba(255,255,255,.12);
+
+    color: #86efac;
+
+    font-size: 11px;
+
+    font-weight: 800;
+}
+
+
+/* ==========================================================
+   PACKAGE HEADING
+   ========================================================== */
+
+.package-heading {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 9px;
+
+    color: #e0f2fe;
+
+    font-size: 10px;
+
+    font-weight: 900;
+
+    letter-spacing: 1.1px;
+
+    text-transform: uppercase;
+}
+
+
+.package-heading span:last-child {
+
+    color:
+        rgba(255,255,255,.27);
+
+    font-size: 8px;
+
+    letter-spacing: .3px;
+
+    text-transform: none;
+}
+
+
+/* ==========================================================
+   PACKAGES
+   ========================================================== */
+
+.packages {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 7px;
+
+    margin-bottom: 18px;
+}
+
+
+.wifi-package {
+
+    position: relative;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    width: 100%;
+
+    min-height: 63px;
+
+    padding:
+        10px
+        12px;
+
+    border-radius: 14px;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(15,23,42,.83),
+            rgba(30,41,59,.55)
+        );
+
+    border:
+        1px solid
+        rgba(255,255,255,.07);
+
+    cursor: pointer;
+
+    transition:
+        transform .2s ease,
+        border-color .2s ease,
+        background .2s ease,
+        box-shadow .2s ease;
+
+    -webkit-tap-highlight-color: transparent;
+}
+
+
+.wifi-package:after {
+
+    content: "›";
+
+    position: absolute;
+
+    right: 78px;
+
+    color:
+        rgba(255,255,255,.18);
+
+    font-size: 16px;
+}
+
+
+.wifi-package:hover {
+
+    transform:
+        translateY(-2px);
+
+    border-color:
+        rgba(34,211,238,.30);
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(15,42,64,.92),
+            rgba(30,41,59,.75)
+        );
+
+    box-shadow:
+        0 10px 28px
+        rgba(0,0,0,.25),
+
+        0 0 20px
+        rgba(34,211,238,.05);
+}
+
+
+.wifi-package:active {
+
+    transform:
+        scale(.985);
+}
+
+
+.package-name {
+
+    color: #f8fafc;
+
+    font-size: 12px;
+
+    font-weight: 850;
+}
+
+
+.package-description {
+
+    margin-top: 3px;
+
+    color: #64748b;
+
+    font-size: 9px;
+
+    line-height: 1.3;
+}
+
+
+.package-price {
+
+    min-width: 65px;
+
+    padding:
+        7px
+        8px;
+
+    text-align: center;
+
+    border-radius: 9px;
+
+    color: #ecfeff;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(8,145,178,.45),
+            rgba(37,99,235,.40)
+        );
+
+    border:
+        1px solid
+        rgba(103,232,249,.20);
+
+    font-size: 12px;
+
+    font-weight: 950;
+
+    box-shadow:
+        0 5px 15px
+        rgba(0,0,0,.18);
+}
+
+
+/* ==========================================================
+   INFORMATION BOX
+   ========================================================== */
+
+.info-box {
+
+    padding: 12px;
+
+    margin-bottom: 15px;
+
+    text-align: center;
+
+    border-radius: 13px;
+
+    background:
+        rgba(14,165,233,.06);
+
+    border:
+        1px solid
+        rgba(56,189,248,.12);
+
+    color: #94a3b8;
+
+    font-size: 9px;
+
+    line-height: 1.55;
+}
+
+
+.info-box strong {
+
+    color: #67e8f9;
+}
+
+
+/* ==========================================================
+   BACK HOME
+   IMPORTANT:
+   login.html is the MyPublicWiFi local home/login page.
+   ========================================================== */
+
+.home-button {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 7px;
+
+    width: 100%;
+
+    min-height: 46px;
+
+    text-decoration: none;
+
+    border-radius: 12px;
+
+    background:
+        rgba(255,255,255,.055);
+
+    border:
+        1px solid
+        rgba(255,255,255,.10);
+
+    color: #cbd5e1;
+
+    font-size: 11px;
+
+    font-weight: 850;
+
+    transition: .2s;
+}
+
+
+.home-button:hover {
+
+    background:
+        rgba(255,255,255,.09);
+
+    border-color:
+        rgba(103,232,249,.25);
+
+    color: #ffffff;
+}
+
+
+/* ==========================================================
+   PAYMENT MODAL
+   ========================================================== */
+
+#paymentModal {
+
+    display: none;
+
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 99999;
+
+    width: 100%;
+    height: 100%;
+
+    padding:
+        max(10px, env(safe-area-inset-top))
+        10px
+        max(10px, env(safe-area-inset-bottom));
+
+    overflow-y: auto;
+
+    background:
+        rgba(2,6,23,.84);
+
+    backdrop-filter:
+        blur(18px);
+
+    -webkit-backdrop-filter:
+        blur(18px);
+}
+
+
+.payment-modal {
+
+    width: 100%;
+
+    max-width: 430px;
+
+    margin:
+        clamp(8px,4vh,40px)
+        auto
+        15px;
+
+    border-radius: 22px;
+
+    overflow: hidden;
+
+    background:
+        linear-gradient(
+            145deg,
+            #0f172a,
+            #020617
+        );
+
+    border:
+        1px solid
+        rgba(255,255,255,.10);
+
+    box-shadow:
+        0 30px 100px
+        rgba(0,0,0,.65);
+
+    animation:
+        modalIn .25s
+        ease-out;
+}
+
+
+@keyframes modalIn {
+
+    from {
+
+        opacity: 0;
+
+        transform:
+            translateY(25px)
+            scale(.97);
+    }
+
+    to {
+
+        opacity: 1;
+
+        transform:
+            translateY(0)
+            scale(1);
+    }
+}
+
+
+.modal-header {
+
+    position: relative;
+
+    padding:
+        20px
+        15px;
+
+    text-align: center;
+
+    background:
+        radial-gradient(
+            circle at 50% 0%,
+            rgba(34,211,238,.25),
+            transparent 55%
+        ),
+        linear-gradient(
+            145deg,
+            #0c4a6e,
+            #172554
+        );
+}
+
+
+.modal-close {
+
+    position: absolute;
+
+    right: 11px;
+    top: 10px;
+
+    width: 34px;
+    height: 34px;
+
+    border: 0;
+
+    border-radius: 50%;
+
+    background:
+        rgba(255,255,255,.09);
+
+    color: #ffffff;
+
+    font-size: 21px;
+
+    cursor: pointer;
+}
+
+
+.modal-small {
+
+    color: #a5f3fc;
+
+    font-size: 8px;
+
+    font-weight: 900;
+
+    letter-spacing: 1.8px;
+
+    text-transform: uppercase;
+}
+
+
+.modal-title {
+
+    margin-top: 4px;
+
+    color: #ffffff;
+
+    font-size: 20px;
+
+    font-weight: 950;
+}
+
+
+#selectedPackage {
+
+    margin-top: 6px;
+
+    color:
+        rgba(255,255,255,.65);
+
+    font-size: 10px;
+}
+
+
+.modal-content {
+
+    padding: 14px;
+}
+
+
+/* ==========================================================
+   AMOUNT
+   ========================================================== */
+
+.amount-box {
+
+    padding: 13px;
+
+    text-align: center;
+
+    margin-bottom: 11px;
+
+    border-radius: 14px;
+
+    background:
+        rgba(255,255,255,.045);
+
+    border:
+        1px solid
+        rgba(255,255,255,.07);
+}
+
+
+.amount-label {
+
+    color: #64748b;
+
+    font-size: 8px;
+
+    font-weight: 900;
+
+    letter-spacing: 1px;
+
+    text-transform: uppercase;
+}
+
+
+#selectedPrice {
+
+    margin-top: 2px;
+
+    color: #67e8f9;
+
+    font-size: 29px;
+
+    font-weight: 950;
+
+    text-shadow:
+        0 0 20px
+        rgba(34,211,238,.18);
+}
+
+
+/* ==========================================================
+   MODAL M-PESA
+   ========================================================== */
+
+.modal-mpesa {
+
+    padding: 14px;
+
+    margin-bottom: 11px;
+
+    border-radius: 15px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(6,78,59,.60),
+            rgba(2,44,34,.48)
+        );
+
+    border:
+        1px solid
+        rgba(52,211,153,.18);
+}
+
+
+.modal-mpesa-label {
+
+    color: #86efac;
+
+    font-size: 9px;
+
+    font-weight: 900;
+
+    text-transform: uppercase;
+
+    letter-spacing: 1px;
+}
+
+
+.modal-till {
+
+    margin-top: 3px;
+
+    color: #ffffff;
+
+    font-size: 26px;
+
+    font-weight: 950;
+
+    letter-spacing: 1px;
+}
+
+
+.modal-phone {
+
+    margin-top: 8px;
+
+    padding-top: 8px;
+
+    border-top:
+        1px dashed
+        rgba(255,255,255,.10);
+
+    color: #bbf7d0;
+
+    font-size: 10px;
+
+    font-weight: 800;
+}
+
+
+/* ==========================================================
+   INSTRUCTIONS
+   ========================================================== */
+
+.instructions {
+
+    padding: 12px;
+
+    margin-bottom: 11px;
+
+    border-radius: 14px;
+
+    background:
+        rgba(14,165,233,.07);
+
+    border:
+        1px solid
+        rgba(56,189,248,.12);
+
+    color: #94a3b8;
+
+    font-size: 10px;
+
+    line-height: 1.6;
+}
+
+
+.instructions-title {
+
+    color: #67e8f9;
+
+    font-weight: 900;
+
+    margin-bottom: 5px;
+}
+
+
+/* ==========================================================
+   ACTION BUTTONS
+   ========================================================== */
+
+.action-button {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 8px;
+
+    width: 100%;
+
+    min-height: 46px;
+
+    margin-bottom: 8px;
+
+    border-radius: 12px;
+
+    text-decoration: none;
+
+    font-size: 11px;
+
+    font-weight: 900;
+
+    transition: .2s;
+}
+
+
+.whatsapp-button {
+
+    color: #ffffff;
+
+    background:
+        linear-gradient(
+            135deg,
+            #16a34a,
+            #22c55e
+        );
+
+    box-shadow:
+        0 8px 25px
+        rgba(34,197,94,.18);
+}
+
+
+.sms-button {
+
+    color: #bae6fd;
+
+    background:
+        rgba(255,255,255,.045);
+
+    border:
+        1px solid
+        rgba(255,255,255,.08);
+}
+
+
+.action-button:active {
+
+    transform:
+        scale(.98);
+}
+
+
+.voucher-note {
+
+    padding:
+        3px
+        8px
+        8px;
+
+    text-align: center;
+
+    color: #64748b;
+
+    font-size: 8px;
+
+    line-height: 1.5;
+}
+
+
+.back-button {
+
+    width: 100%;
+
+    padding: 9px;
+
+    border: 0;
+
+    background: transparent;
+
+    color: #64748b;
+
+    font-size: 10px;
+
+    font-weight: 800;
+
+    cursor: pointer;
+}
+
+
+/* ==========================================================
+   VERY SMALL PHONES
+   ========================================================== */
+
+@media(max-width:360px) {
+
+    .wrap {
+
+        padding:
+            6px
+            6px
+            20px;
+    }
+
+
+    .main-panel {
+
+        padding: 12px;
+
+        border-radius: 19px;
+    }
+
+
+    .brand-title {
+
+        font-size: 21px;
+    }
+
+
+    .status-orb {
+
+        width: 52px;
+        height: 52px;
+    }
+
+
+    .payment-card {
+
+        padding: 13px;
+    }
+
+
+    .till-number {
+
+        font-size: 23px;
+    }
+
+
+    .wifi-package {
+
+        min-height: 59px;
+
+        padding:
+            9px
+            10px;
+    }
+
+
+    .package-name {
+
+        font-size: 11px;
+    }
+
+
+    .package-description {
+
+        font-size: 8px;
+    }
+
+
+    .package-price {
+
+        min-width: 59px;
+
+        font-size: 11px;
+    }
+
+
+    .wifi-package:after {
+
+        display: none;
+    }
+
+}
+
+
+/* ==========================================================
+   REDUCED MOTION
+   ========================================================== */
+
+@media(prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+
+        animation-duration:
+            .01ms !important;
+
+        animation-iteration-count:
+            1 !important;
+
+        transition-duration:
+            .01ms !important;
+    }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<!-- ==========================================================
+     LIVE BACKGROUND
+     ========================================================== -->
+
+<canvas id="networkCanvas"></canvas>
+
+<div class="live-glow one"></div>
+
+<div class="live-glow two"></div>
+
+
+<!-- ==========================================================
+     PAGE
+     ========================================================== -->
+
+<div class="wrap">
+
+
+    <!-- HEADER -->
+
+    <div class="page-header">
+
+        <div class="page-logo">
+
+            <img
+                src="img/logo.png"
+                alt="ANONYMIKETECH"
+            />
+
+        </div>
+
+
+        <div class="page-description">
+
+            SUPA LAN • WiFi Access
+
+        </div>
+
+    </div>
+
+
+    <div class="container">
+
+        <div class="container-body">
+
+
+            <div class="main-panel">
+
+
+                <!-- ==================================================
+                     HERO
+                     ================================================== -->
+
+                <div class="hero">
+
+
+                    <div class="status-orb">
+
+                        <span>⚡</span>
+
+                    </div>
+
+
+                    <h1 class="brand-title">
+
+                        ANONYMIKETECH
+
+                    </h1>
+
+
+                    <div class="brand-badge">
+
+                        SUPA LAN
+
+                    </div>
+
+
+                    <div class="hero-text">
+
+                        Fast and reliable outdoor WiFi.
+                        Choose your package below and
+                        activate your connection through
+                        M-PESA.
+
+                    </div>
+
+                </div>
+
+
+                <!-- NETWORK STATUS -->
+
+                <div class="connection-status">
+
+                    <span class="status-dot"></span>
+
+                    Network Ready
+
+                </div>
+
+
+                <!-- ==================================================
+                     M-PESA CARD
+                     ================================================== -->
+
+                <div class="payment-card">
+
+
+                    <div class="mpesa-label">
+
+                        <span>●</span>
+
+                        Lipa Na M-PESA
+
+                    </div>
+
+
+                    <div class="payment-title">
+
+                        Buy Goods & Services Till
+
+                    </div>
+
+
+                    <div class="till-number">
+
+                        4930086
+
+                    </div>
+
+
+                    <div class="contact-number">
+
+                        📱 WhatsApp / SMS:
+                        <strong>0113313240</strong>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ==================================================
+                     PACKAGE TITLE
+                     ================================================== -->
+
+                <div class="package-heading">
+
+                    <span>
+                        Choose Your Package
+                    </span>
+
+                    <span>
+                        Tap a package
+                    </span>
+
+                </div>
+
+
+                <!-- ==================================================
+                     PACKAGES
+                     ================================================== -->
+
+                <div class="packages">
+
+
+                    <!-- MONTHLY UNLIMITED -->
+
+                    <div
+                        class="wifi-package"
+                        onclick="openPayment(
+                            'Monthly Unlimited',
+                            '600',
+                            '30 Days • Unlimited Access'
+                        )"
+                    >
+
+                        <div>
+
+                            <div class="package-name">
+
+                                🚀 Monthly Unlimited
+
+                            </div>
+
+                            <div class="package-description">
+
+                                30 Days • Unlimited Access
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="package-price">
+
+                            KSh 600
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- MONTHLY 100GB -->
+
+                    <div
+                        class="wifi-package"
+                        onclick="openPayment(
+                            'Monthly 100 GB',
+                            '400',
+                            '30 Days • 100 GB Data'
+                        )"
+                    >
+
+                        <div>
+
+                            <div class="package-name">
+
+                                📦 Monthly 100 GB
+
+                            </div>
+
+                            <div class="package-description">
+
+                                30 Days • 100 GB Data
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="package-price">
+
+                            KSh 400
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- 7 DAYS -->
+
+                    <div
+                        class="wifi-package"
+                        onclick="openPayment(
+                            '7 Days Unlimited',
+                            '150',
+                            '7 Days • Unlimited Access'
+                        )"
+                    >
+
+                        <div>
+
+                            <div class="package-name">
+
+                                ⏳ 7 Days Unlimited
+
+                            </div>
+
+                            <div class="package-description">
+
+                                7 Days • Unlimited Access
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="package-price">
+
+                            KSh 150
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- DAILY PRO -->
+
+                    <div
+                        class="wifi-package"
+                        onclick="openPayment(
+                            'Daily Unlimited Pro',
+                            '40',
+                            '24 Hours • Unlimited Access'
+                        )"
+                    >
+
+                        <div>
+
+                            <div class="package-name">
+
+                                ⚡ Daily Unlimited Pro
+
+                            </div>
+
+                            <div class="package-description">
+
+                                24 Hours • Unlimited Access
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="package-price">
+
+                            KSh 40
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- DAILY STANDARD -->
+
+                    <div
+                        class="wifi-package"
+                        onclick="openPayment(
+                            'Daily Unlimited Standard',
+                            '25',
+                            '24 Hours • Unlimited Access'
+                        )"
+                    >
+
+                        <div>
+
+                            <div class="package-name">
+
+                                🌅 Daily Unlimited Standard
+
+                            </div>
+
+                            <div class="package-description">
+
+                                24 Hours • Unlimited Access
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="package-price">
+
+                            KSh 25
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- 12 HOURS -->
+
+                    <div
+                        class="wifi-package"
+                        onclick="openPayment(
+                            '12 Hours Unlimited',
+                            '15',
+                            '12 Hours • Unlimited Access'
+                        )"
+                    >
+
+                        <div>
+
+                            <div class="package-name">
+
+                                ☀️ 12 Hours Unlimited
+
+                            </div>
+
+                            <div class="package-description">
+
+                                12 Hours • Unlimited Access
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="package-price">
+
+                            KSh 15
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- 5 HOURS -->
+
+                    <div
+                        class="wifi-package"
+                        onclick="openPayment(
+                            '5 Hours Unlimited',
+                            '8',
+                            '5 Hours • Unlimited Access'
+                        )"
+                    >
+
+                        <div>
+
+                            <div class="package-name">
+
+                                🔥 5 Hours Unlimited
+
+                            </div>
+
+                            <div class="package-description">
+
+                                5 Hours • Unlimited Access
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="package-price">
+
+                            KSh 8
+
+                        </div>
+
+                    </div>
+
+
+                </div>
+
+
+                <!-- ==================================================
+                     INFO
+                     ================================================== -->
+
+                <div class="info-box">
+
+                    💡 After payment, send your
+                    <strong>M-PESA confirmation message
+                    or transaction code</strong>
+                    to <strong>0113313240</strong>.
+
+                    Your voucher will be delivered after
+                    payment verification.
+
+                </div>
+
+
+                <!-- ==================================================
+                     CORRECT LOCAL MY PUBLIC WIFI LOGIN LINK
+                     ================================================== -->
+
+                <a
+                    href="login.html"
+                    class="home-button"
+                >
+
+                    🏠 Back Home / Login
+
+                </a>
+
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ==========================================================
+     PAYMENT MODAL
+     ========================================================== -->
+
+<div id="paymentModal">
+
+
+    <div class="payment-modal">
+
+
+        <!-- MODAL HEADER -->
+
+        <div class="modal-header">
+
+
+            <button
+                class="modal-close"
+                onclick="closePayment()"
+                type="button"
+            >
+
+                ×
+
+            </button>
+
+
+            <div class="modal-small">
+
+                ANONYMIKETECH • SUPA LAN
+
+            </div>
+
+
+            <div class="modal-title">
+
+                Complete Payment
+
+            </div>
+
+
+            <div id="selectedPackage">
+
+                Package
+
+            </div>
+
+
+        </div>
+
+
+        <div class="modal-content">
+
+
+            <!-- SELECTED AMOUNT -->
+
+            <div class="amount-box">
+
+
+                <div class="amount-label">
+
+                    Amount To Pay
+
+                </div>
+
+
+                <div id="selectedPrice">
+
+                    KSh 0
+
+                </div>
+
+
+            </div>
+
+
+            <!-- M-PESA -->
+
+            <div class="modal-mpesa">
+
+
+                <div class="modal-mpesa-label">
+
+                    ● Lipa Na M-PESA
+
+                </div>
+
+
+                <div style="
+                    color:#64748b;
+                    font-size:9px;
+                    margin-top:9px;
+                ">
+
+                    Buy Goods & Services Till
+
+                </div>
+
+
+                <div class="modal-till">
+
+                    4930086
+
+                </div>
+
+
+                <div class="modal-phone">
+
+                    📱 WhatsApp / SMS:
+                    0113313240
+
+                </div>
+
+
+            </div>
+
+
+            <!-- INSTRUCTIONS -->
+
+            <div class="instructions">
+
+
+                <div class="instructions-title">
+
+                    📲 How to activate
+
+                </div>
+
+
+                <b>1.</b>
+                Pay the displayed amount to
+                <b>Till 4930086</b>.
+
+                <br />
+
+
+                <b>2.</b>
+                Keep your M-PESA confirmation
+                message.
+
+                <br />
+
+
+                <b>3.</b>
+                Send the M-PESA confirmation
+                message or transaction code to
+                <b>0113313240</b>.
+
+                <br />
+
+
+                <b>4.</b>
+                Your WiFi voucher code will be
+                sent after payment verification.
+
+
+            </div>
+
+
+            <!-- WHATSAPP -->
+
+            <a
+                id="whatsappButton"
+                href="#"
+                target="_blank"
+                class="action-button whatsapp-button"
+            >
+
+                💬 Send M-PESA via WhatsApp
+
+            </a>
+
+
+            <!-- SMS -->
+
+            <a
+                id="smsButton"
+                href="#"
+                class="action-button sms-button"
+            >
+
+                📩 Send M-PESA via SMS
+
+            </a>
+
+
+            <div class="voucher-note">
+
+                Voucher delivery is subject to
+                successful payment verification.
+
+            </div>
+
+
+            <button
+                class="back-button"
+                onclick="closePayment()"
+                type="button"
+            >
+
+                ← Back to Packages
+
+            </button>
+
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ==========================================================
+     PAYMENT JAVASCRIPT
+     ========================================================== -->
+
+<script>
+
+var selectedPackageName = "";
+
+var selectedPackagePrice = "";
+
+
+/*
+ * OPEN PAYMENT
+ */
+
+function openPayment(
+    packageName,
+    price,
+    description
+) {
+
+
+    selectedPackageName =
+        packageName;
+
+
+    selectedPackagePrice =
+        price;
+
+
+    document.getElementById(
+        "selectedPackage"
+    ).innerHTML =
+        packageName +
+        " • " +
+        description;
+
+
+    document.getElementById(
+        "selectedPrice"
+    ).innerHTML =
+        "KSh " +
+        price;
+
+
+    /*
+     * WHATSAPP
+     *
+     * 0113313240
+     * becomes
+     * +25411331240
+     */
+
+    var whatsappMessage =
+        "Hello ANONYMIKETECH,%0A%0A" +
+
+        "I have paid for:%0A" +
+
+        "Package: " +
+        packageName +
+        "%0A" +
+
+        "Amount: KSh " +
+        price +
+        "%0A%0A" +
+
+        "Till Number: 4930086%0A%0A" +
+
+        "M-PESA Confirmation / Transaction Code:%0A";
+
+
+    document.getElementById(
+        "whatsappButton"
+    ).href =
+        "https://wa.me/25411331240?text=" +
+        whatsappMessage;
+
+
+    /*
+     * SMS
+     */
+
+    var smsMessage =
+        "ANONYMIKETECH WiFi - " +
+        packageName +
+        " - KSh " +
+        price +
+        ". M-PESA Transaction Code: ";
+
+
+    document.getElementById(
+        "smsButton"
+    ).href =
+        "sms:0113313240?body=" +
+        encodeURIComponent(
+            smsMessage
+        );
+
+
+    /*
+     * SHOW MODAL
+     */
+
+    document.getElementById(
+        "paymentModal"
+    ).style.display =
+        "block";
+
+
+    document.body.style.overflow =
+        "hidden";
+
+}
+
+
+/*
+ * CLOSE PAYMENT
+ */
+
+function closePayment() {
+
+
+    document.getElementById(
+        "paymentModal"
+    ).style.display =
+        "none";
+
+
+    document.body.style.overflow =
+        "auto";
+
+}
+
+
+/*
+ * CLOSE WHEN CLICKING
+ * OUTSIDE MODAL
+ */
+
+document.getElementById(
+    "paymentModal"
+).addEventListener(
+    "click",
+    function(event) {
+
+
+        if (
+            event.target === this
+        ) {
+
+            closePayment();
+
+        }
+
+    }
+);
+
+
+/*
+ * CLOSE WITH ESCAPE
+ */
+
+document.addEventListener(
+    "keydown",
+    function(event) {
+
+
+        if (
+            event.key === "Escape"
+        ) {
+
+            closePayment();
+
+        }
+
+    }
+);
+
+</script>
+
+
+<!-- ==========================================================
+     LIVE NETWORK CANVAS
+     ========================================================== -->
+
+<script>
+
+(function() {
+
+
+    var canvas =
+        document.getElementById(
+            "networkCanvas"
+        );
+
+
+    var ctx =
+        canvas.getContext("2d");
+
+
+    var particles = [];
+
+
+    var width = 0;
+
+    var height = 0;
+
+
+    /*
+     * Resize canvas
+     */
+
+    function resize() {
+
+
+        width =
+            canvas.width =
+            window.innerWidth;
+
+
+        height =
+            canvas.height =
+            window.innerHeight;
+
+
+        createParticles();
+
+    }
+
+
+    /*
+     * Create network nodes
+     */
+
+    function createParticles() {
+
+
+        particles = [];
+
+
+        var amount =
+            Math.min(
+                70,
+                Math.max(
+                    25,
+                    Math.floor(
+                        (
+                            width *
+                            height
+                        ) /
+                        17000
+                    )
+                )
+            );
+
+
+        for (
+            var i = 0;
+            i < amount;
+            i++
+        ) {
+
+
+            particles.push({
+
+                x:
+                    Math.random()
+                    * width,
+
+                y:
+                    Math.random()
+                    * height,
+
+                vx:
+                    (
+                        Math.random()
+                        - 0.5
+                    ) * 0.32,
+
+                vy:
+                    (
+                        Math.random()
+                        - 0.5
+                    ) * 0.32,
+
+                radius:
+                    Math.random()
+                    * 1.5
+                    + 0.4
+
+            });
+
+        }
+
+    }
+
+
+    /*
+     * Animation
+     */
+
+    function draw() {
+
+
+        ctx.clearRect(
+            0,
+            0,
+            width,
+            height
+        );
+
+
+        for (
+            var i = 0;
+            i < particles.length;
+            i++
+        ) {
+
+
+            var p =
+                particles[i];
+
+
+            /*
+             * Movement
+             */
+
+            p.x += p.vx;
+
+            p.y += p.vy;
+
+
+            /*
+             * Screen boundaries
+             */
+
+            if (
+                p.x < 0 ||
+                p.x > width
+            ) {
+
+                p.vx *= -1;
+
+            }
+
+
+            if (
+                p.y < 0 ||
+                p.y > height
+            ) {
+
+                p.vy *= -1;
+
+            }
+
+
+            /*
+             * Draw node
+             */
+
+            ctx.beginPath();
+
+
+            ctx.arc(
+                p.x,
+                p.y,
+                p.radius,
+                0,
+                Math.PI * 2
+            );
+
+
+            ctx.fillStyle =
+                "rgba(103,232,249,.65)";
+
+
+            ctx.fill();
+
+
+            /*
+             * Draw connections
+             */
+
+            for (
+                var j = i + 1;
+                j < particles.length;
+                j++
+            ) {
+
+
+                var q =
+                    particles[j];
+
+
+                var dx =
+                    p.x - q.x;
+
+
+                var dy =
+                    p.y - q.y;
+
+
+                var distance =
+                    Math.sqrt(
+                        dx * dx +
+                        dy * dy
+                    );
+
+
+                if (
+                    distance < 115
+                ) {
+
+
+                    var opacity =
+                        (
+                            1 -
+                            distance / 115
+                        ) * 0.15;
+
+
+                    ctx.beginPath();
+
+
+                    ctx.moveTo(
+                        p.x,
+                        p.y
+                    );
+
+
+                    ctx.lineTo(
+                        q.x,
+                        q.y
+                    );
+
+
+                    ctx.strokeStyle =
+                        "rgba(56,189,248," +
+                        opacity +
+                        ")";
+
+
+                    ctx.lineWidth =
+                        0.7;
+
+
+                    ctx.stroke();
+
+                }
+
+            }
+
+        }
+
+
+        requestAnimationFrame(
+            draw
+        );
+
+    }
+
+
+    /*
+     * Start
+     */
+
+    window.addEventListener(
+        "resize",
+        resize
+    );
+
+
+    /*
+     * Respect reduced motion
+     */
+
+    if (
+        !window.matchMedia(
+            "(prefers-reduced-motion: reduce)"
+        ).matches
+    ) {
+
+        resize();
+
+        draw();
+
+    } else {
+
+        canvas.style.display =
+            "none";
+
+    }
+
+
+})();
+
+</script>
+
+
+</body>
+
+</html>

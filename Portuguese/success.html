@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<!--
+Design by TRUE Software
+https://www.mypublicwifi.com
+-->
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="expires" content="0" />
+<meta http-equiv="pragma" content="no-cache" />
+<!--meta http-equiv="refresh" content="30" /-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="format-detection" content="telephone=no" />
+<meta name="HandheldFriendly" content="True" />
+<meta name="MobileOptimized" content="320" />
+<title>MyPublicWiFi - Suas Informações de Sessão</title>
+<script type="text/javascript" src="jquery-1.4.3.min.js"></script>
+<link rel="stylesheet"  type="text/css"  href="style.css" />
+<script type="text/javascript">
+        /*<![CDATA[*/
+
+
+function HideDialog(DialogId)
+{
+  const MessageDialog = document.getElementById(DialogId);
+  MessageDialog.style.display = 'none';
+
+}
+
+function ShowMessage(DialogId, Msg)
+{
+   const MessageDialog = document.getElementById(DialogId);
+   MessageDialog.style.display = 'block';
+   MessageDialog.offsetHeight; // Ein erzwungener Reflow
+   MessageDialog.style.display = 'flex';
+   MessageDialog.textContent = Msg;
+
+}
+
+function ShowErrorMessage(Error)
+
+{
+  HideDialog("InfoDialog");
+  HideDialog("WarningDialog");
+  ShowMessage("ErrorDialog", document.getElementById(Error).textContent);
+
+}
+
+function ShowInfoMessage(Info)
+
+{
+  HideDialog("ErrorDialog");
+  HideDialog("WarningDialog");
+  ShowMessage("InfoDialog", document.getElementById(Info).textContent);
+ }
+
+function ShowWarningMessage(Warning)
+
+{
+  HideDialog("ErrorDialog");
+  HideDialog("InfoDialog");
+  ShowMessage("WarningDialog", document.getElementById(Warning).textContent);
+ }
+
+function VoucherAccountCheck()
+  {
+   var chk = false;
+   if (document.getElementById("Voucher").value == '')
+   {
+     ShowErrorMessage("VoucherInvalid")
+   }
+   else
+   chk=true;
+   return(chk);
+  }
+
+function UserAccountCheck()
+  {
+   var chk = false;
+   if (document.getElementById("Username").value == '')
+   {
+     ShowErrorMessage("UsernameInvalid")
+   }
+   else
+   chk=true;
+   return(chk);
+  }
+
+function ToggleCheckbox(element)
+  {
+    document.getElementById("TOCLoginButton").disabled = !element.checked;
+  }
+
+
+function ConvertToLocaleDateTime(Id)
+  {
+   const dateString = document.getElementById(Id).textContent.trim();
+
+    if ((dateString != '-') && (dateString != ''))
+   {
+     var customDate = new Date(dateString);
+     document.getElementById(Id).textContent = customDate.toLocaleString();
+   }
+  }
+
+
+
+  $(document).ready(function() {
+                            //6F143793-ACE5-4C04-93EA-C593CD76DC47
+                          });
+
+   $(document).ready(function() {
+                           ConvertToLocaleDateTime("StartTime");
+                           ConvertToLocaleDateTime("EndTime");
+                           const accountElement = document.getElementById("55FC9BE7-5A3D-4643-ABCE-B1DFAA3BA57E");
+                           if (accountElement) {
+                              document.getElementById("AccountType").textContent = accountElement.textContent;
+                            }
+
+                          });
+
+
+
+    /*]]>*/
+</script>
+</head>
+<body>
+   <div class="wrap" >
+
+      <div class="page-header">
+           <div class="page-logo background-hotspot"></div>
+           <div class="page-description">ANONYMIKETECH SUPA LAN</div>
+           <div class="language-container" >
+             <div class="popup-menu">
+               <a  class="popup-menu-item"  style="background-image:url('img/Portuguese.png');" >Portuguese</a>
+               <div  class="popup-sub-items display-none" >
+                 <ul>
+                                       <li>
+                     <a  style="background-image:url('img/Arabic.png');"   href="?lang=Arabic">Arabic</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Bengali.png');"   href="?lang=Bengali">Bengali</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/ChineseS.png');"   href="?lang=ChineseS">ChineseS</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/ChineseT.png');"   href="?lang=ChineseT">ChineseT</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/English.png');"   href="?lang=English">English</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Filipino.png');"   href="?lang=Filipino">Filipino</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/French.png');"   href="?lang=French">French</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/German.png');"   href="?lang=German">German</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Hindi.png');"   href="?lang=Hindi">Hindi</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Indonesia.png');"   href="?lang=Indonesia">Indonesia</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Italian.png');"   href="?lang=Italian">Italian</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Japanese.png');"   href="?lang=Japanese">Japanese</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Polish.png');"   href="?lang=Polish">Polish</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Russian.png');"   href="?lang=Russian">Russian</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Spanish.png');"   href="?lang=Spanish">Spanish</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Turkish.png');"   href="?lang=Turkish">Turkish</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Urdu.png');"   href="?lang=Urdu">Urdu</a>
+                   </li>
+
+                   <li>
+                     <a  style="background-image:url('img/Vietnamese.png');"   href="?lang=Vietnamese">Vietnamese</a>
+                   </li>
+
+
+                 </ul>
+               </div>
+             </div>
+
+
+
+             <script type="text/javascript">
+                      /*<![CDATA[*/
+                   $(document).ready(function() {
+                       $('.popup-menu-item').click(function(){
+                             $(this).parent().find('.popup-sub-items').toggleClass('display-none');
+                            });
+                      $('.popup-menu').mouseleave(function() {
+                         $(this).find('.popup-sub-items').addClass('display-none');
+                       });
+                     });
+                   /*]]>*/
+             </script>
+           </div>
+
+        </div>
+
+        <div id="ErrorDialog" class="container message-dialog background-error margin-top--17px text-justify-bold color-red"  style="display: none;">
+           &nbsp;
+        </div>
+
+        <div id="WarningDialog" class="container message-dialog background-warning margin-top--17px text-justify-bold color-red"  style="display: none;">
+           &nbsp;
+        </div>
+
+        <div id="InfoDialog" class="container message-dialog background-info margin-top--17px text-justify-bold"  style="display: none;">
+           &nbsp;
+        </div>
+
+        <noscript>
+           <div  class="container message-dialog background-warning margin-top--17px text-justify-bold color-red">
+              Esta página é exibida corretamente apenas com JavaScript. Por favor, habilite o JavaScript no seu navegador!
+           </div>
+        </noscript>
+
+
+      <div class="container">
+         <div class="container-header">
+            Suas Informações de Sessão
+         </div>
+         <div class="container-body">
+            <form  action="./"  method="post" >
+               <div><input type="hidden" name="_action" value="Logout" /></div>
+               <div class="text-justify-bold">
+                  <table class="data-table">
+                     <tr>
+                        <td>
+                           Seu Endereço IP:
+                        </td>
+                        <td>
+                             <!--C811F149-5EBD-4500-AC23-991C41C626E7-->
+                        </td>
+                     </tr>
+                     <tr>
+                        <td>
+                           Seu Endereço MAC:
+                        </td>
+                        <td>
+                             <!--173DDC21-AF45-458F-A24C-D015E13275AB-->
+                        </td>
+                     </tr>
+                     <tr>
+                        <td>
+                           Seu Nome de Host:
+                        </td>
+                        <td>
+                             <!--7C35D645-1397-4637-A6A3-34FECB358D29-->
+                        </td>
+                     </tr>
+                     <tr>
+                        <td>
+                           Hora de Início:
+                        </td>
+                        <td id="StartTime">
+                             <!--4F288B97-F112-4C1A-B2DE-FBDD78718DE2-->
+                        </td>
+                     </tr>
+                     <tr>
+                        <td>
+                           Download:
+                        </td>
+                        <td>
+                             <!--21F722D0-37E2-4A92-ADF9-0DE8CE733C20-->
+                        </td>
+                     </tr>
+                    <tr>
+                       <td>
+                           Upload:
+                        </td>
+                        <td>
+                             <!--5161DB90-9946-41C7-85C3-3DC333B11211-->
+                        </td>
+                     </tr>
+                     <tr>
+                        <td>
+                           Conta:
+                        </td>
+                        <td>
+                             <span id="AccountType">&nbsp;</span><!--87495468-6AC9-4E8B-8DD1-1A728A6C3820-->
+                        </td>
+                     </tr>
+                     <tr class="<!--A91F7DA3-A405-4891-AC25-B6CFDF393CAE-->">
+                       <td>
+                          &nbsp;
+                       </td>
+                       <td>
+                          <a href="./changeuserpassword.html">Alterar Senha</a>
+                       </td>
+                     </tr>
+                     <tr>
+                        <td>
+                           Hora de Término:
+                        </td>
+                        <td id="EndTime">
+                             <!--114D9DA7-0360-4E3D-A023-04CFA04D4CC0-->
+                        </td>
+                     </tr>
+                     <tr>
+                        <td>
+                           Volume de Dados:
+                        </td>
+                        <td>
+                             <!--6922BCFC-BDBD-49F3-808A-B12F0A64F506-->
+                        </td>
+                     </tr>
+                  </table>
+               </div>
+               <div>
+                  <table>
+                     <tr>
+                        <td class="padding-left-5px <!--E44C50F4-9D38-430B-B61F-6F769B2868AB-->">
+                           <input tabindex="1"  value="Sair" type="submit"  />
+                        </td>
+                        <td class="padding-left-5px <!--7B7EE9C5-3625-4A50-942E-0B51D9DB0956-->">
+                           <a href="./addcredit.html"><button tabindex="2" type="button" >Recarregar</button></a>
+                        </td>
+                     </tr>
+                  </table>
+               </div>
+            </form>
+         </div>
+      </div>
+
+           <div class="page-footer">
+          Ao fazer login, você aceita nossos <a href="termsofuse.html">Termos de Uso</a>
+     </div>
+
+
+
+   </div>
+
+       <div style="display: none;">
+      <p id="ServiceDisabled">Desculpe, este serviço está indisponível para a ação selecionada.</p>
+      <p id="UsernameInvalid">O nome de usuário inserido é inválido. Por favor, tente novamente.</p>
+      <p id="VoucherInvalid">O voucher inserido é inválido. Por favor, tente novamente.</p>
+      <p id="UserPasswordInvalid">A senha de usuário inserida é inválida. Por favor, tente novamente.</p>
+      <p id="GuestPasswordInvalid">A senha de acesso inserida é inválida. Por favor, tente novamente.</p>
+      <p id="MaxDailyLoginsExceeded">Você atingiu o número máximo de logins diários com este método. Por favor, tente novamente amanhã ou escolha outro método de login.</p>
+      <p id="UserAccountDisabled">A conta de usuário especificada está bloqueada. Por favor, entre em contato com o suporte.</p>
+      <p id="UserAccountExpired">A conta de usuário especificada expirou. Por favor, entre em contato com o suporte.</p>
+      <p id="UserTimeCreditNotEnough">A conta de usuário especificada não tem crédito de tempo suficiente. Por favor, recarregue sua conta.</p>
+      <p id="UserTrafficCreditNotEnough">A conta de usuário especificada não tem crédito de volume de dados suficiente. Por favor, recarregue sua conta.</p>
+      <p id="NoUserCredit">O crédito de tempo e volume de dados para a conta de usuário especificada foi esgotado. Por favor, tente outra conta.</p>
+      <p id="DailyUserQuotaExceeded">O limite diário de tempo ou dados para a conta de usuário especificada foi atingido. Por favor, tente novamente amanhã.</p>
+      <p id="MonthlyUserQuotaExceeded">O limite mensal de tempo ou dados para a conta de usuário especificada foi atingido. Por favor, tente novamente no próximo mês.</p>
+      <p id="UserAccountUsed">A conta de usuário especificada já foi usada. Por favor, tente outra conta.</p>
+      <p id="MaxUserConcurrentLoginsExceeded">O número máximo de logins simultâneos para esta conta de usuário foi atingido. Por favor, tente novamente mais tarde.</p>
+      <p id="VoucherDisabled">O voucher especificado está bloqueado. Por favor, entre em contato com o suporte.</p>
+      <p id="VoucherExpired">O voucher especificado expirou. Por favor, entre em contato com o suporte.</p>
+      <p id="VoucherTimeCreditNotEnough">O voucher especificado não tem crédito de tempo suficiente. Por favor, recarregue sua conta.</p>
+      <p id="VoucherTrafficCreditNotEnough">O voucher especificado não tem crédito de volume de dados suficiente. Por favor, recarregue sua conta.</p>
+      <p id="NoVoucherCredit">O crédito de tempo e volume de dados para o voucher especificado foi esgotado. Por favor, tente outro voucher.</p>
+      <p id="DailyVoucherQuotaExceeded">O limite diário de tempo ou dados para o voucher especificado foi atingido. Por favor, tente novamente amanhã.</p>
+      <p id="MonthlyVoucherQuotaExceeded">O limite mensal de tempo ou dados para o voucher especificado foi atingido. Por favor, tente novamente no próximo mês.</p>
+      <p id="VoucherUsed">O voucher especificado já foi usado. Por favor, tente outro voucher.</p>
+      <p id="MaxVoucherConcurrentLoginsExceeded">O número máximo de logins simultâneos para este voucher foi atingido. Por favor, tente novamente mais tarde.</p>
+      <p id="PasswordConfirmInvalid">As duas senhas não coincidem. Por favor, tente novamente.</p>
+      <p id="NewPasswordEmpty">Senhas vazias não são permitidas. Por favor, insira uma senha.</p>
+      <p id="MaxUploadSizeExceeded">Seus dados não puderam ser transferidos. O tamanho máximo permitido do arquivo foi excedido.</p>
+      <p id="FilesUploadRejected">Seus dados não puderam ser transferidos. O servidor rejeitou o envio.</p>
+      <p id="FilesUploadAborted">Seus dados não puderam ser transferidos. O envio foi cancelado.</p>
+      <p id="GeneralFilesUploadError">Seus dados não puderam ser transferidos. Ocorreu um erro.</p>
+      <p id="AccountRecharged">Sua conta foi recarregada com sucesso. Obrigado pela sua confiança!</p>
+      <p id="PasswordChanged">Sua senha foi alterada com sucesso.</p>
+      <p id="LoginSuccessful">Você fez login com sucesso.</p>
+      <p id="LogoutSuccessful">Você fez logout com sucesso.</p>
+      <p id="FilesUploadSuccessful">Seus dados foram transferidos com sucesso. Por favor, verifique se seus arquivos foram salvos corretamente.</p>
+      <p id="UserType">Usuário:</p>
+      <p id="VoucherType">Voucher:</p>
+      <p id="GuestType">Convidado</p>
+    </div>
+
+
+</body>
+</html>
+
