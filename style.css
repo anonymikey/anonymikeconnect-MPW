@@ -582,6 +582,24 @@ body.modal-open {
 }
 
 
+.package-availability-status {
+    margin: 0 auto 10px;
+    padding: 8px 11px;
+    border: 1px solid rgba(103, 232, 249, 0.12);
+    border-radius: 10px;
+    color: #86a5b8;
+    background: rgba(34, 211, 238, 0.05);
+    font-size: 9px;
+    text-align: center;
+    letter-spacing: 0.3px;
+}
+
+.package-availability-status.loaded {
+    color: #86efac;
+    border-color: rgba(74, 222, 128, 0.14);
+    background: rgba(34, 197, 94, 0.05);
+}
+
 .packages-heading {
     text-align: center;
 
@@ -649,7 +667,25 @@ body.modal-open {
 }
 
 
-.package-card.featured {
+  .package-card.unavailable {
+    cursor: not-allowed;
+    opacity: 0.58;
+    filter: saturate(0.45);
+    border-color: rgba(148, 163, 184, 0.14);
+    background: linear-gradient(145deg, rgba(71, 85, 105, 0.12), rgba(15, 23, 42, 0.22));
+  }
+
+  .package-card.unavailable:hover {
+    transform: none;
+    box-shadow: none;
+    border-color: rgba(148, 163, 184, 0.14);
+  }
+
+  .package-card.unavailable .package-cta {
+    color: #94a3b8;
+  }
+
+  .package-card.featured {
     border-color: rgba(43,161,255,0.38);
 
     background:
@@ -1088,6 +1124,32 @@ body.modal-open {
     line-height: 1.5;
 }
 
+
+/* Login checkout hierarchy */
+.login-stk-card { margin-top: 14px; padding: 15px; border: 1px solid rgba(34, 211, 238, .28); border-radius: 16px; background: linear-gradient(145deg, rgba(8, 58, 78, .58), rgba(11, 28, 43, .92)); }
+.login-method-heading { display: flex; align-items: center; gap: 10px; }
+.login-method-heading strong { display: block; color: #f8fafc; font-size: 13px; }
+.login-method-icon { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 10px; color: #082f49; background: #67e8f9; font-weight: 950; }
+.login-method-icon.fallback { color: #c4b5fd; background: rgba(139, 92, 246, .18); }
+.login-method-kicker, .login-method-subtitle { display: block; color: #8da7ba; font-size: 9px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; }
+.login-method-badge { margin-left: auto; padding: 5px 7px; border-radius: 999px; color: #a5f3fc; background: rgba(34, 211, 238, .12); font-size: 8px; font-weight: 900; letter-spacing: .6px; }
+.login-method-description, .login-fallback-copy { margin: 11px 0; color: #91a4b5; font-size: 10px; line-height: 1.5; }
+.login-phone-label { display: block; margin-bottom: 6px; color: #cbd5e1; font-size: 9px; font-weight: 850; letter-spacing: .6px; text-transform: uppercase; }
+.login-phone-input { height: 43px; }
+.login-fallback-divider { display: flex; align-items: center; gap: 9px; margin: 17px 0 10px; color: #64748b; font-size: 9px; font-weight: 850; letter-spacing: .7px; text-transform: uppercase; }
+.login-fallback-divider::before, .login-fallback-divider::after { content: ''; height: 1px; flex: 1; background: rgba(148, 163, 184, .12); }
+.login-fallback-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.login-fallback-card { padding: 13px; border: 1px solid rgba(148, 163, 184, .13); border-radius: 16px; background: rgba(15, 27, 40, .78); }
+.login-till-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 13px; }
+.login-till-row strong { color: #f8fafc; font-size: 18px; letter-spacing: .8px; }
+.login-till-row button { padding: 6px 8px; border: 1px solid rgba(103, 232, 249, .2); border-radius: 8px; color: #a5f3fc; background: rgba(34, 211, 238, .08); font-size: 8px; font-weight: 850; cursor: pointer; }
+.login-transaction-input { margin-top: 12px; }
+.login-stk-button { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 46px; margin-top: 11px; border: 0; border-radius: 11px; color: #082f49; background: linear-gradient(135deg, #67e8f9, #38bdf8); font-weight: 900; cursor: pointer; }
+.login-fallback-actions { display: flex; gap: 7px; margin-top: 11px; }
+.login-fallback-actions button { flex: 1; min-height: 32px; padding: 7px 8px; border: 0; border-radius: 8px; color: #fff; font-size: 9px; font-weight: 850; cursor: pointer; }
+.login-fallback-actions .whatsapp-button { background: #16a34a; }
+.login-fallback-actions .sms-button { color: #bae6fd; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); }
+@media (max-width: 430px) { .login-fallback-grid { grid-template-columns: 1fr; } }
 
 /* =========================================================
    PAYMENT INPUTS & ACTIONS

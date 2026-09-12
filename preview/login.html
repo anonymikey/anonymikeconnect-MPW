@@ -113,18 +113,29 @@ function VoucherAccountCheck()
 
 var selectedPackage = "";
 var selectedPrice = "";
+var selectedPackageId = "";
 
 
 /*
    Open payment modal
 */
-function openPayment(packageName, price)
+function openPayment(packageName, price, packageId)
 {
     selectedPackage = packageName;
     selectedPrice = price;
+    selectedPackageId = packageId || "";
 
     document.getElementById("selectedPackage").textContent = packageName;
     document.getElementById("selectedPrice").textContent = "KSh " + price;
+    document.getElementById("phoneNumber").value = "";
+    document.getElementById("payStatus").textContent = "";
+
+    var card = document.querySelector('[data-package-id="' + packageId + '"]');
+    if (card && card.dataset.available === 'false')
+    {
+        ShowMessage("WarningDialog", "This package is currently unavailable. Please choose another package.");
+        return;
+    }
 
     document.getElementById("paymentModal").style.display = "flex";
 
@@ -155,6 +166,151 @@ window.onclick = function(event)
         closePayment();
     }
 };
+
+
+/*
+   Create a test-mode order through the Phase 1 backend
+*/
+async function payWithMPEsa()
+{
+    var phone = document.getElementById("phoneNumber").value.trim();
+    var status = document.getElementById("payStatus");
+    var button = document.getElementById("payButton");
+
+    if (!selectedPackageId)
+    {
+        status.textContent = "Select a valid package first.";
+        return;
+    }
+
+    if (!/^\+?[0-9]{9,13}$/.test(phone.replace(/\s|-/g, '')))
+    {
+        status.textContent = "Enter a valid M-PESA phone number.";
+        return;
+    }
+
+    button.disabled = true;
+    status.textContent = "Sending STK Push test request...";
+
+    try
+    {
+        var response = await fetch('/api/orders', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                package_id: selectedPackageId,
+                phone: phone
+            })
+        });
+
+        var result = await response.json();
+
+        if (!response.ok)
+        {
+            if (result.error === 'PACKAGE_UNAVAILABLE')
+            {
+                var unavailableCard = document.querySelector('[data-package-id="' + selectedPackageId + '"]');
+                if (unavailableCard)
+                {
+                    unavailableCard.classList.add('unavailable');
+                    unavailableCard.disabled = true;
+                    unavailableCard.dataset.available = 'false';
+                    var unavailableCta = unavailableCard.querySelector('.package-cta');
+                    if (unavailableCta) unavailableCta.textContent = 'Not available';
+                }
+            }
+            throw new Error(result.message || 'Unable to create order.');
+        }
+
+        status.textContent = result.order.message || "STK Push accepted. Complete the M-PESA prompt on your phone.";
+
+        document.getElementById("orderReference").textContent = "Order: " + result.order.reference;
+
+        if (result.voucher && result.voucher.code)
+        {
+            document.getElementById("voucherResult").textContent = "Voucher: " + result.voucher.code;
+            status.textContent = "Payment verified. Your Wi-Fi voucher is ready.";
+            button.disabled = false;
+        }
+        else
+        {
+            document.getElementById("voucherResult").textContent = "Waiting for payment confirmation...";
+            pollForVoucher(result.order.id || result.order.reference, status);
+        }
+    }
+    catch (err)
+    {
+        status.textContent = err.message || "Payment request failed.";
+        button.disabled = false;
+    }
+}
+
+
+/*
+   Poll the backend for the assigned voucher after payment is verified.
+   The voucher is only ever returned by the server once the PalPluss webhook
+   has confirmed the payment and a voucher has been assigned.
+*/
+function pollForVoucher(orderId, status)
+{
+    var button = document.getElementById("payButton");
+    var voucherResult = document.getElementById("voucherResult");
+    var attempts = 0;
+    var maxAttempts = 40; // ~2 minutes at 3s intervals
+
+    var timer = setInterval(async function()
+    {
+        attempts++;
+
+        try
+        {
+            var response = await fetch('/api/orders/' + encodeURIComponent(orderId));
+            var order = await response.json();
+
+            if (!response.ok)
+            {
+                return;
+            }
+
+            if (order.status === "VOUCHER_ASSIGNED" && order.voucher_code)
+            {
+                clearInterval(timer);
+                status.textContent = "Payment verified. Your Wi-Fi voucher is ready.";
+                voucherResult.textContent = "Voucher: " + order.voucher_code;
+                button.disabled = false;
+                return;
+            }
+
+            if (order.status === "FAILED" || order.status === "EXPIRED")
+            {
+                clearInterval(timer);
+                status.textContent = "Payment was not completed. Please try again.";
+                voucherResult.textContent = "";
+                button.disabled = false;
+                return;
+            }
+
+            if (order.status === "PAID")
+            {
+                voucherResult.textContent = "Payment received. Assigning your voucher...";
+            }
+        }
+        catch (err)
+        {
+            // Transient network error; keep polling until maxAttempts.
+        }
+
+        if (attempts >= maxAttempts)
+        {
+            clearInterval(timer);
+            status.textContent =
+                "Still awaiting confirmation. If you paid, your voucher will be sent shortly.";
+            button.disabled = false;
+        }
+    }, 3000);
+}
 
 
 /*
@@ -259,13 +415,58 @@ function closeContact()
 }
 
 
+async function loadPackageAvailability()
+{
+    try
+    {
+        var response = await fetch('/api/packages', { cache: 'no-store' });
+        var result = await response.json();
+        if (!response.ok || !Array.isArray(result.packages)) return;
+
+        var availableCount = 0;
+        result.packages.forEach(function(pkg)
+        {
+            var card = document.querySelector('[data-package-id="' + pkg.id + '"]');
+            if (!card) return;
+
+            var cta = card.querySelector('.package-cta');
+            var available = Boolean(pkg.available) && Number(pkg.available_vouchers) > 0;
+            if (available) availableCount++;
+            card.dataset.available = available ? 'true' : 'false';
+            card.setAttribute('aria-disabled', available ? 'false' : 'true');
+
+            if (!available)
+            {
+                card.classList.add('unavailable');
+                card.disabled = true;
+                if (cta) cta.textContent = 'Not available';
+            }
+            else if (cta)
+            {
+                cta.textContent = 'Get this package →';
+            }
+        });
+
+        var availabilityStatus = document.getElementById('packageAvailabilityStatus');
+        if (availabilityStatus)
+        {
+            availabilityStatus.textContent = availableCount + ' package' + (availableCount === 1 ? '' : 's') + ' ready for instant activation.';
+            availabilityStatus.classList.add('loaded');
+        }
+    }
+    catch (error)
+    {
+        console.warn('[v0] Package availability could not be loaded:', error.message);
+    }
+}
+
 /* =========================================================
    DOCUMENT READY
    ========================================================= */
 
 $(document).ready(function()
 {
-    // ANONYMIKETECH SUPA LAN
+    loadPackageAvailability();
 });
 
 
@@ -518,6 +719,8 @@ $(document).ready(function()
 
     <section id="packages" class="packages-section">
 
+        <div id="packageAvailabilityStatus" class="package-availability-status" role="status" aria-live="polite">Checking package availability...</div>
+
         <div class="packages-heading">
 
             <span class="eyebrow">
@@ -541,7 +744,8 @@ $(document).ready(function()
         <button
             type="button"
             class="package-card featured"
-            onclick="openPayment('Monthly Unlimited', '600');">
+            data-package-id="monthly_unlimited"
+            onclick="openPayment('Monthly Unlimited', '600', 'monthly_unlimited');">
 
             <div class="package-top">
 
@@ -580,7 +784,8 @@ $(document).ready(function()
         <button
             type="button"
             class="package-card"
-            onclick="openPayment('Monthly 100 GB', '400');">
+            data-package-id="monthly_100gb"
+            onclick="openPayment('Monthly 100 GB', '400', 'monthly_100gb');">
 
             <div class="package-top">
 
@@ -619,7 +824,8 @@ $(document).ready(function()
         <button
             type="button"
             class="package-card"
-            onclick="openPayment('7 Days Unlimited', '150');">
+            data-package-id="weekly_unlimited"
+            onclick="openPayment('7 Days Unlimited', '150', 'weekly_unlimited');">
 
             <div class="package-top">
 
@@ -658,7 +864,8 @@ $(document).ready(function()
         <button
             type="button"
             class="package-card"
-            onclick="openPayment('Daily Unlimited Pro', '40');">
+            data-package-id="daily_pro"
+            onclick="openPayment('Daily Unlimited Pro', '50', 'daily_pro');">
 
             <div class="package-top">
 
@@ -677,7 +884,7 @@ $(document).ready(function()
             </div>
 
             <div class="package-price">
-                <span>KSh</span> 40
+                <span>KSh</span> 50
             </div>
 
             <div class="package-period">
@@ -697,7 +904,8 @@ $(document).ready(function()
         <button
             type="button"
             class="package-card"
-            onclick="openPayment('Daily Unlimited Standard', '25');">
+            data-package-id="daily_standard"
+            onclick="openPayment('Daily Unlimited Standard', '30', 'daily_standard');">
 
             <div class="package-top">
 
@@ -716,7 +924,7 @@ $(document).ready(function()
             </div>
 
             <div class="package-price">
-                <span>KSh</span> 25
+                <span>KSh</span> 30
             </div>
 
             <div class="package-period">
@@ -736,7 +944,8 @@ $(document).ready(function()
         <button
             type="button"
             class="package-card"
-            onclick="openPayment('12 Hours Unlimited', '15');">
+            data-package-id="hours_12"
+            onclick="openPayment('12 Hours Unlimited', '20', 'hours_12');">
 
             <div class="package-top">
 
@@ -751,7 +960,7 @@ $(document).ready(function()
             </div>
 
             <div class="package-price">
-                <span>KSh</span> 15
+                <span>KSh</span> 20
             </div>
 
             <div class="package-period">
@@ -771,7 +980,8 @@ $(document).ready(function()
         <button
             type="button"
             class="package-card"
-            onclick="openPayment('5 Hours Unlimited', '8');">
+            data-package-id="hours_5"
+            onclick="openPayment('5 Hours Unlimited', '10', 'hours_5');">
 
             <div class="package-top">
 
@@ -786,7 +996,7 @@ $(document).ready(function()
             </div>
 
             <div class="package-price">
-                <span>KSh</span> 8
+                <span>KSh</span> 10
             </div>
 
             <div class="package-period">
@@ -853,134 +1063,84 @@ $(document).ready(function()
             </div>
 
 
-            <div class="payment-steps">
-
-                <div class="payment-step">
-
-                    <div class="step-number">
-                        1
-                    </div>
-
+            <div class="login-stk-card">
+                <div class="login-method-heading">
+                    <div class="login-method-icon">↗</div>
                     <div>
-                        <strong>
-                            Go to M-PESA
-                        </strong>
-
-                        <p>
-                            Open M-PESA on your phone.
-                        </p>
+                        <span class="login-method-kicker">Recommended</span>
+                        <strong>Pay with M-PESA</strong>
                     </div>
-
+                    <span class="login-method-badge">STK PUSH</span>
                 </div>
-
-
-                <div class="payment-step">
-
-                    <div class="step-number">
-                        2
-                    </div>
-
-                    <div>
-                        <strong>
-                            Lipa na M-PESA
-                        </strong>
-
-                        <p>
-                            Select <b>Buy Goods and Services</b>.
-                        </p>
-                    </div>
-
-                </div>
-
-
-                <div class="payment-step">
-
-                    <div class="step-number">
-                        3
-                    </div>
-
-                    <div>
-                        <strong>
-                            Enter Till Number
-                        </strong>
-
-                        <div class="till-box">
-
-                            <span>
-                                4930086
-                            </span>
-
-                            <button
-                                id="copyTillButton"
-                                type="button"
-                                onclick="copyTill();">
-
-                                Copy Till
-
-                            </button>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <div class="payment-step">
-
-                    <div class="step-number">
-                        4
-                    </div>
-
-                    <div>
-                        <strong>
-                            Enter the package amount
-                        </strong>
-
-                        <p>
-                            Confirm the amount shown above
-                            before completing payment.
-                        </p>
-                    </div>
-
-                </div>
-
+                <p class="login-method-description">Enter your M-PESA number and receive a secure payment prompt directly on your phone.</p>
+                <label for="phoneNumber" class="login-phone-label">M-PESA phone number</label>
+                <input id="phoneNumber" class="transaction-input login-phone-input" type="tel" inputmode="numeric" placeholder="e.g. 0712345678" autocomplete="tel" />
             </div>
 
+            <div class="login-fallback-divider"><span>STK not working?</span></div>
+
+            <div class="login-fallback-grid">
+                <div class="login-fallback-card">
+                    <div class="login-method-heading">
+                        <div class="login-method-icon fallback">#</div>
+                        <div><strong>Pay via Till</strong><span class="login-method-subtitle">Buy Goods &amp; Services</span></div>
+                    </div>
+                    <div class="login-till-row"><strong>4930086</strong><button id="copyTillButton" type="button" onclick="copyTill();">Copy Till</button></div>
+                </div>
+                <div class="login-fallback-card">
+                    <div class="login-method-heading">
+                        <div class="login-method-icon fallback">↗</div>
+                        <div><strong>Send Money</strong><span class="login-method-subtitle">To 0113313240</span></div>
+                    </div>
+                    <p class="login-fallback-copy">Send your M-PESA confirmation after paying.</p>
+                </div>
+            </div>
 
             <div class="payment-notice">
-
-                <div class="notice-icon">
-                    ✓
-                </div>
-
-                <div>
-
-                    <strong>
-                        After payment
-                    </strong>
-
-                    <p>
-                        Enter your M-PESA transaction code below,
-                        then send the payment confirmation to
-                        ANONYMIKETECH.
-                    </p>
-
-                </div>
-
+                <div class="notice-icon">✓</div>
+                <div><strong>Voucher delivery</strong><p>Once payment is verified, your Wi-Fi voucher will appear here automatically.</p></div>
             </div>
 
+            <div class="phone-input-wrap">
+                <label for="phoneNumber" class="phone-label">
+                    M-PESA Phone Number
+                </label>
+                <input
+                    id="phoneNumber"
+                    class="transaction-input"
+                    type="text"
+                    placeholder="e.g. +254712345678"
+                    autocomplete="off"
+                />
+            </div>
+
+            <div class="pay-status" id="payStatus"></div>
+
+            <div class="order-reference-wrap">
+                <span id="orderReference">Order: --</span>
+                <span id="voucherResult">Voucher: pending</span>
+            </div>
 
             <input
                 id="transactionCode"
-                class="transaction-input"
+                class="transaction-input login-transaction-input"
                 type="text"
                 placeholder="M-PESA transaction code (optional)"
                 autocomplete="off"
             />
 
-
             <div class="contact-payment-buttons">
+
+                <button
+                    type="button"
+                    class="pay-button"
+                    id="payButton"
+                    onclick="payWithMPEsa();">
+
+                    <span>✓</span>
+                    Pay with M-PESA
+
+                </button>
 
                 <button
                     type="button"
