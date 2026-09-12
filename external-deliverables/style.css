@@ -693,6 +693,56 @@ body::after {
 }
 
 /* ---------------------------------------------------------
+   UNAVAILABLE PACKAGE RIBBON
+   --------------------------------------------------------- */
+
+.package-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.package-card.unavailable {
+    cursor: not-allowed;
+    opacity: .62;
+}
+
+.package-card.unavailable::before {
+    content: "NOT AVAILABLE";
+    position: absolute;
+    top: 13px;
+    right: -38px;
+    z-index: 2;
+    width: 142px;
+    padding: 6px 8px;
+    color: #fff7ed;
+    background: linear-gradient(135deg, #b45309, #c2410c);
+    box-shadow: 0 5px 14px rgba(124, 45, 18, .28);
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: .11em;
+    line-height: 1.2;
+    text-align: center;
+    transform: rotate(32deg);
+    transform-origin: center;
+    pointer-events: none;
+}
+
+.package-card.unavailable .package-cta {
+    color: #fed7aa;
+    font-weight: 900;
+}
+
+@media (max-width: 520px) {
+    .package-card.unavailable::before {
+        top: 10px;
+        right: -43px;
+        width: 132px;
+        padding: 5px 6px;
+        font-size: 8px;
+    }
+}
+
+/* ---------------------------------------------------------
    REDUCED MOTION ACCESSIBILITY
    --------------------------------------------------------- */
 
