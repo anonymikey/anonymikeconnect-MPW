@@ -101,14 +101,19 @@ function normalizePhone(phone) {
 }
 
 function normalizePalPlussState(status) {
+  const normalized = String(status || '').trim().toUpperCase();
   const map = {
     SUCCESS: 'PAID',
+    COMPLETED: 'PAID',
+    PAID: 'PAID',
     FAILED: 'FAILED',
+    FAILURE: 'FAILED',
     CANCELLED: 'FAILED',
+    CANCELED: 'FAILED',
     EXPIRED: 'EXPIRED'
   };
 
-  return map[status] || 'PENDING';
+  return map[normalized] || 'PENDING';
 }
 
 function getDefaultCallbackUrl() {
@@ -279,6 +284,18 @@ app.post('/api/orders', async (req, res) => {
     }
 
     const pkg = packageResult.rows[0];
+    const inventoryResult = await db.query(
+      `select 1 from vouchers where package_id = $1 and status = 'AVAILABLE' limit 1`,
+      [pkg.id]
+    );
+
+    if (inventoryResult.rowCount === 0) {
+      return res.status(409).json({
+        error: 'VOUCHER_UNAVAILABLE',
+        message: 'This offer is temporarily unavailable. Please check back soon.'
+      });
+    }
+
     const reference = `SUPA-${crypto.randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase()}`;
     const provider = (process.env.PAYMENT_PROVIDER || 'PALPLUSS').toUpperCase();
 
@@ -529,6 +546,13 @@ app.post('/api/webhooks/palpluss', async (req, res) => {
           assignedVoucherCode = voucher.code;
           finalStatus = 'VOUCHER_ASSIGNED';
         } else {
+          finalStatus = 'INVENTORY_UNAVAILABLE';
+          await client.query(
+            `update orders
+             set status = 'INVENTORY_UNAVAILABLE', updated_at = now()
+             where id = $1`,
+            [order.id]
+          );
           console.warn(`No AVAILABLE voucher in inventory for package ${order.package_id} (order ${order.reference}).`);
         }
       }

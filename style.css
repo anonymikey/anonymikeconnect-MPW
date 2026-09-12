@@ -800,7 +800,8 @@ body.modal-open {
 
 
 .payment-modal,
-.contact-modal {
+.contact-modal,
+.availability-modal {
     position: relative;
 
     width: 100%;
@@ -1207,6 +1208,8 @@ body.modal-open {
 
 
 .order-status-panel {
+    display: grid;
+    gap: 6px;
     padding: 12px;
 
     margin-top: 12px;
@@ -1224,6 +1227,43 @@ body.modal-open {
     line-height: 1.6;
 }
 
+
+.availability-modal {
+    max-width: 420px;
+    text-align: center;
+}
+
+.availability-modal p {
+    color: #aab9cf;
+    line-height: 1.6;
+    margin: 12px 0 20px;
+}
+
+.availability-icon {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 14px;
+    border-radius: 50%;
+    color: #ffd166;
+    background: rgba(255, 209, 102, 0.12);
+    border: 1px solid rgba(255, 209, 102, 0.35);
+    font-size: 24px;
+    font-weight: 800;
+}
+
+.voucher-success {
+    display: block;
+    padding: 12px 14px;
+    border-radius: 12px;
+    color: #07131f;
+    background: #7cf2a4;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-align: center;
+}
 
 /* =========================================================
    PAYMENT BUTTONS

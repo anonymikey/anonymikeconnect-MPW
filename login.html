@@ -147,6 +147,21 @@ function closePayment()
 }
 
 
+function showUnavailableOffer(message)
+{
+    var button = document.getElementById("payButton");
+    button.disabled = false;
+    document.getElementById("unavailableMessage").textContent = message || "This offer is temporarily unavailable. Please check back soon.";
+    document.getElementById("unavailableModal").style.display = "flex";
+}
+
+
+function closeUnavailableOffer()
+{
+    document.getElementById("unavailableModal").style.display = "none";
+}
+
+
 /*
    Close modal when clicking outside
 */
@@ -202,6 +217,11 @@ async function payWithMPEsa()
 
         if (!response.ok)
         {
+            if (result.error === 'VOUCHER_UNAVAILABLE')
+            {
+                showUnavailableOffer(result.message);
+                return;
+            }
             throw new Error(result.message || 'Unable to create order.');
         }
 
@@ -251,6 +271,16 @@ function pollForVoucher(orderId, status)
                 clearInterval(timer);
                 status.textContent = "Payment verified. Your Wi-Fi voucher is ready.";
                 voucherResult.textContent = "Voucher: " + order.voucher_code;
+                voucherResult.className = "voucher-success";
+                button.disabled = false;
+                return;
+            }
+
+            if (order.status === "INVENTORY_UNAVAILABLE")
+            {
+                clearInterval(timer);
+                showUnavailableOffer("Payment was received, but this offer is temporarily unavailable. Please contact support for assistance.");
+                status.textContent = "Payment received. Voucher inventory is unavailable.";
                 button.disabled = false;
                 return;
             }
@@ -1179,6 +1209,18 @@ $(document).ready(function()
     <!-- =====================================================
          CONTACT MODAL
          ===================================================== -->
+
+    <div id="unavailableModal" class="modal-overlay" style="display:none;">
+        <div class="availability-modal" role="alertdialog" aria-modal="true" aria-labelledby="unavailableTitle">
+            <button type="button" class="modal-close" onclick="closeUnavailableOffer();" aria-label="Close">×</button>
+            <div class="availability-icon">!</div>
+            <span class="eyebrow">OFFER UNAVAILABLE</span>
+            <h2 id="unavailableTitle">Please check back soon</h2>
+            <p id="unavailableMessage">This offer is temporarily unavailable. Please check back soon.</p>
+            <button type="button" class="pay-button" onclick="closeUnavailableOffer();">Choose another package</button>
+        </div>
+    </div>
+
 
     <div
         id="contactModal"
