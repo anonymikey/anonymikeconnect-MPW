@@ -181,7 +181,7 @@
   <!-- Import -->
   <section class="card">
     <h2>Add voucher codes</h2>
-    <p class="sub">Paste codes from your MyPublicWiFi export (one per line, or a CSV &mdash; the first column is used). Choose the package they belong to.</p>
+    <p class="sub">Paste codes directly from MyPublicWiFi, one per line or as CSV/TSV text. A file upload is optional. Choose the package they belong to.</p>
     <div class="form-row">
       <div>
         <label for="pkgSelect">Package</label>
@@ -317,16 +317,30 @@
   function parseCodes(raw) {
     var out = [];
     var seen = {};
-    raw.split(/\r?\n/).forEach(function (line) {
-      var cell = line.indexOf(',') >= 0 ? line.split(',')[0] : line;
-      cell = cell.replace(/^["']|["']$/g, '').trim();
+    var text = String(raw || '').replace(/^\uFEFF/, '');
+    var lines = text.split(/\r\n|\n|\r/);
+    lines.forEach(function (line) {
+      var trimmed = line.trim();
+      if (!trimmed) return;
+
+      // Support MyPublicWiFi CSV/TSV exports and pasted single-column lists.
+      // The first non-empty column is the voucher code.
+      var cells = trimmed.split(/[,\t;]/);
+      var cell = cells[0].replace(/^['"]|['"]$/g, '').trim();
       if (!cell) return;
-      // Skip obvious header labels.
-      if (/^(voucher\s*code|code|username|password)$/i.test(cell)) return;
+
+      // Skip headers and spreadsheet metadata, but keep real short codes.
+      if (/^(voucher\s*code|voucher|code|username|password|user(name)?|login|name|account|serial|id)$/i.test(cell)) return;
+      if (/^(voucher\s*code|code|username|password)\s*[:=]/i.test(cell)) {
+        cell = cell.replace(/^[^:=]+[:=]/, '').trim();
+      }
+      cell = cell.replace(/^['"]|['"]$/g, '').trim();
+      if (!cell || /^(voucher\s*code|code)$/i.test(cell)) return;
+
       var key = cell.toUpperCase();
       if (seen[key]) return;
       seen[key] = true;
-      out.push(cell);
+      out.push(key);
     });
     return out;
   }
@@ -409,7 +423,7 @@
     btn.textContent = 'Adding&hellip;';
     api('/api/admin/vouchers', { method: 'POST', body: { packageId: packageId, codes: codes } })
       .then(function (res) {
-        toast(res.message || 'Vouchers added.', 'ok');
+        toast((res.message || 'Vouchers added.') + ' Received: ' + (res.received || codes.length) + ', added: ' + (res.inserted || 0) + ', skipped: ' + (res.skipped || 0) + '.', 'ok');
         codesInput.value = '';
         updateDetected();
         loadSummary();

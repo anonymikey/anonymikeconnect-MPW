@@ -703,10 +703,12 @@ app.post('/api/admin/vouchers', requireAdmin, async (req, res) => {
   for (const entry of rawCodes) {
     const code = String(entry || '').trim();
     if (!code) continue;
-    const key = code.toUpperCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    codes.push(code);
+  const key = code.toUpperCase();
+  if (seen.has(key)) continue;
+  seen.add(key);
+  // MyPublicWiFi codes are case-insensitive; store one canonical form so
+  // repeated exports cannot create visually duplicate inventory entries.
+  codes.push(key);
   }
 
   if (codes.length === 0) {
