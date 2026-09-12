@@ -106,8 +106,12 @@ function normalizePhone(phone) {
 
 function normalizePalPlussState(status) {
   const map = {
-    SUCCESS: 'PAID',
-    FAILED: 'FAILED',
+  SUCCESS: 'PAID',
+  SUCCESSFUL: 'PAID',
+  COMPLETED: 'PAID',
+  COMPLETE: 'PAID',
+  PAID: 'PAID',
+  FAILED: 'FAILED',
     CANCELLED: 'FAILED',
     EXPIRED: 'EXPIRED'
   };
@@ -468,10 +472,11 @@ app.get('/api/orders/:id', async (req, res) => {
 
 app.post('/api/webhooks/palpluss', async (req, res) => {
   const body = req.body || {};
-  const eventType = body.event_type || body.event || 'transaction.updated';
-  const transaction = body.transaction || {};
-  const transactionId = transaction.id || null;
-  const externalReference = transaction.external_reference || transaction.accountReference || transaction.reference || null;
+  const eventType = body.event_type || body.event || body.type || 'transaction.updated';
+  const transaction = body.transaction || body.data?.transaction || body.data || body;
+  const transactionId = transaction.id || transaction.transaction_id || body.transaction_id || null;
+  const metadata = transaction.metadata || body.metadata || {};
+  const externalReference = transaction.external_reference || transaction.accountReference || transaction.account_reference || transaction.reference || transaction.order_reference || metadata.external_reference || metadata.accountReference || metadata.order_reference || body.external_reference || body.accountReference || body.reference || null;
 
   if (!transactionId || !externalReference) {
     return res.status(400).json({

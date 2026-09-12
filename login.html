@@ -224,15 +224,18 @@ async function payWithMPEsa()
             throw new Error(result.message || 'Unable to create order.');
         }
 
-        status.textContent = result.order.message || "STK Push accepted. Complete the M-PESA prompt on your phone.";
+        var paymentProgress = document.getElementById("paymentProgress");
+        if (paymentProgress) paymentProgress.hidden = false;
+        status.textContent = "Payment prompt sent. Complete it on your phone while we reserve your voucher.";
 
         document.getElementById("orderReference").textContent = "Order: " + result.order.reference;
 
         if (result.voucher && result.voucher.code)
         {
             document.getElementById("voucherResult").textContent = "Voucher: " + result.voucher.code;
-            status.textContent = "Payment verified. Your Wi-Fi voucher is ready.";
-            button.disabled = false;
+                if (paymentProgress) paymentProgress.hidden = true;
+                status.textContent = "Payment verified. Your Wi-Fi voucher is ready.";
+                button.disabled = false;
         }
         else
         {
@@ -277,6 +280,8 @@ function pollForVoucher(orderId, status)
             if (order.status === "VOUCHER_ASSIGNED" && order.voucher_code)
             {
                 clearInterval(timer);
+                var paymentProgress = document.getElementById("paymentProgress");
+                if (paymentProgress) paymentProgress.hidden = true;
                 status.textContent = "Payment verified. Your Wi-Fi voucher is ready.";
                 voucherResult.textContent = "Voucher: " + order.voucher_code;
                 button.disabled = false;
@@ -286,6 +291,8 @@ function pollForVoucher(orderId, status)
             if (order.status === "FAILED" || order.status === "EXPIRED")
             {
                 clearInterval(timer);
+                var paymentProgress = document.getElementById("paymentProgress");
+                if (paymentProgress) paymentProgress.hidden = true;
                 status.textContent = "Payment was not completed. Please try again.";
                 voucherResult.textContent = "";
                 button.disabled = false;
@@ -305,8 +312,10 @@ function pollForVoucher(orderId, status)
         if (attempts >= maxAttempts)
         {
             clearInterval(timer);
+            var paymentProgress = document.getElementById("paymentProgress");
+            if (paymentProgress) paymentProgress.hidden = true;
             status.textContent =
-                "Still awaiting confirmation. If you paid, your voucher will be sent shortly.";
+                "We are still waiting for payment verification. Please contact support if you completed payment.";
             button.disabled = false;
         }
     }, 3000);
@@ -1108,6 +1117,10 @@ $(document).ready(function()
                 <div><strong>Voucher delivery</strong><p>Once payment is verified, your Wi-Fi voucher will appear here automatically.</p></div>
             </div>
 
+            <div class="payment-progress" id="paymentProgress" hidden role="status" aria-live="polite">
+                <span class="payment-spinner" aria-hidden="true"></span>
+                <span>Confirming payment and reserving your voucher...</span>
+            </div>
             <div class="pay-status" id="payStatus"></div>
 
             <div class="order-reference-wrap">
