@@ -205,20 +205,83 @@ async function payWithMPEsa()
             throw new Error(result.message || 'Unable to create order.');
         }
 
-        status.textContent = result.order.message || "STK Push accepted in TEST MODE";
+        status.textContent = result.order.message || "STK Push accepted. Complete the M-PESA prompt on your phone.";
 
         document.getElementById("orderReference").textContent = "Order: " + result.order.reference;
-        document.getElementById("voucherResult").textContent = "Voucher will be assigned after webhook verification";
+        document.getElementById("voucherResult").textContent = "Waiting for payment confirmation...";
 
+        pollForVoucher(result.order.id || result.order.reference, status);
     }
     catch (err)
     {
         status.textContent = err.message || "Payment request failed.";
-    }
-    finally
-    {
         button.disabled = false;
     }
+}
+
+
+/*
+   Poll the backend for the assigned voucher after payment is verified.
+   The voucher is only ever returned by the server once the PalPluss webhook
+   has confirmed the payment and a voucher has been assigned.
+*/
+function pollForVoucher(orderId, status)
+{
+    var button = document.getElementById("payButton");
+    var voucherResult = document.getElementById("voucherResult");
+    var attempts = 0;
+    var maxAttempts = 40; // ~2 minutes at 3s intervals
+
+    var timer = setInterval(async function()
+    {
+        attempts++;
+
+        try
+        {
+            var response = await fetch('/api/orders/' + encodeURIComponent(orderId));
+            var order = await response.json();
+
+            if (!response.ok)
+            {
+                return;
+            }
+
+            if (order.status === "VOUCHER_ASSIGNED" && order.voucher_code)
+            {
+                clearInterval(timer);
+                status.textContent = "Payment verified. Your Wi-Fi voucher is ready.";
+                voucherResult.textContent = "Voucher: " + order.voucher_code;
+                button.disabled = false;
+                return;
+            }
+
+            if (order.status === "FAILED" || order.status === "EXPIRED")
+            {
+                clearInterval(timer);
+                status.textContent = "Payment was not completed. Please try again.";
+                voucherResult.textContent = "";
+                button.disabled = false;
+                return;
+            }
+
+            if (order.status === "PAID")
+            {
+                voucherResult.textContent = "Payment received. Assigning your voucher...";
+            }
+        }
+        catch (err)
+        {
+            // Transient network error; keep polling until maxAttempts.
+        }
+
+        if (attempts >= maxAttempts)
+        {
+            clearInterval(timer);
+            status.textContent =
+                "Still awaiting confirmation. If you paid, your voucher will be sent shortly.";
+            button.disabled = false;
+        }
+    }, 3000);
 }
 
 

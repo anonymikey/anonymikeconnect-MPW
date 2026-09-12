@@ -373,11 +373,14 @@ app.get('/api/orders/:id', async (req, res) => {
          o.amount,
          o.status,
          o.payment_provider,
+         o.voucher_id,
+         v.code as voucher_code,
          o.created_at,
          o.paid_at,
          o.updated_at
        from orders o
        join packages p on p.id = o.package_id
+       left join vouchers v on v.id::text = o.voucher_id
        where o.id::text = $1 or o.reference = $1
        limit 1`,
       [idParam]
@@ -389,6 +392,9 @@ app.get('/api/orders/:id', async (req, res) => {
 
     const order = result.rows[0];
 
+    // Only expose the voucher code once the payment is verified and a voucher assigned.
+    const voucherCode = order.status === 'VOUCHER_ASSIGNED' ? order.voucher_code : null;
+
     return res.json({
       id: order.id,
       reference: order.reference,
@@ -397,6 +403,7 @@ app.get('/api/orders/:id', async (req, res) => {
       amount: order.amount,
       status: order.status,
       payment_provider: order.payment_provider,
+      voucher_code: voucherCode,
       created_at: order.created_at,
       paid_at: order.paid_at,
       updated_at: order.updated_at
@@ -440,67 +447,105 @@ app.post('/api/webhooks/palpluss', async (req, res) => {
     const paymentProvider = process.env.PAYMENT_PROVIDER || 'PALPLUSS';
     const providerTransactionId = transaction.provider_request_id || transaction.providerRequestId || transaction.id;
 
-    const orderResult = await db.query(
-      `select id, reference, package_id, voucher_id
-       from orders
-       where reference = $1
-       limit 1`,
-      [externalReference]
-    );
+    // All state changes run inside one transaction with the order row locked,
+    // so concurrent or replayed callbacks can never assign more than one voucher.
+    const client = await db.connect();
+    let assignedVoucherCode = null;
+    let finalStatus = status;
 
-    if (orderResult.rowCount === 0) {
-      return res.status(404).json({
-        error: 'ORDER_NOT_FOUND',
-        message: 'Order reference from PalPluss callback was not found locally.'
-      });
-    }
+    try {
+      await client.query('begin');
 
-    const order = orderResult.rows[0];
-
-    await db.query(
-      `update orders
-       set status = $1,
-           payment_provider = $2,
-           provider_transaction_id = $3,
-           amount = coalesce($4, amount),
-           updated_at = now(),
-           paid_at = case when $1 = 'PAID' then now() else paid_at end
-       where reference = $5`,
-      [status, paymentProvider, providerTransactionId, amount || null, externalReference]
-    );
-
-    if (status === 'PAID') {
-      const availableVoucher = await db.query(
-        `select id, code, package_id, status
-         from vouchers
-         where package_id = $1 and status = 'AVAILABLE'
-         order by created_at asc
-         limit 1 for update skip locked`,
-        [order.package_id]
+      const orderResult = await client.query(
+        `select id, reference, package_id, voucher_id, status
+         from orders
+         where reference = $1
+         limit 1
+         for update`,
+        [externalReference]
       );
 
-      if (availableVoucher.rowCount > 0) {
-        const voucher = availableVoucher.rows[0];
-
-        await db.query(
-          `update vouchers
-           set status = 'ASSIGNED',
-               order_id = $1,
-               assigned_at = now(),
-               used_at = null
-           where id = $2`,
-          [order.id, voucher.id]
-        );
-
-        await db.query(
-          `update orders
-           set voucher_id = $2,
-               status = 'VOUCHER_ASSIGNED',
-               updated_at = now()
-           where id = $1`,
-          [order.id, voucher.id]
-        );
+      if (orderResult.rowCount === 0) {
+        await client.query('rollback');
+        return res.status(404).json({
+          error: 'ORDER_NOT_FOUND',
+          message: 'Order reference from PalPluss callback was not found locally.'
+        });
       }
+
+      const order = orderResult.rows[0];
+
+      // Idempotency: once a voucher has been assigned the order is terminal.
+      // Re-delivered success callbacks are acknowledged without side effects.
+      if (order.voucher_id || order.status === 'VOUCHER_ASSIGNED') {
+        await client.query('rollback');
+        return res.status(200).json({
+          success: true,
+          message: 'Order already fulfilled. Duplicate callback ignored.',
+          idempotent: true,
+          status: 'VOUCHER_ASSIGNED'
+        });
+      }
+
+      await client.query(
+        `update orders
+         set status = $1,
+             payment_provider = $2,
+             provider_transaction_id = $3,
+             amount = coalesce($4, amount),
+             updated_at = now(),
+             paid_at = case when $1 = 'PAID' then now() else paid_at end
+         where id = $5`,
+        [status, paymentProvider, providerTransactionId, amount || null, order.id]
+      );
+
+      // Only a verified successful payment ever leads to voucher assignment.
+      if (status === 'PAID') {
+        const availableVoucher = await client.query(
+          `select id, code
+           from vouchers
+           where package_id = $1 and status = 'AVAILABLE'
+           order by created_at asc
+           limit 1
+           for update skip locked`,
+          [order.package_id]
+        );
+
+        if (availableVoucher.rowCount > 0) {
+          const voucher = availableVoucher.rows[0];
+
+          await client.query(
+            `update vouchers
+             set status = 'ASSIGNED',
+                 order_id = $1,
+                 assigned_at = now(),
+                 used_at = null
+             where id = $2 and status = 'AVAILABLE'`,
+            [order.id, voucher.id]
+          );
+
+          await client.query(
+            `update orders
+             set voucher_id = $2,
+                 status = 'VOUCHER_ASSIGNED',
+                 updated_at = now()
+             where id = $1 and voucher_id is null`,
+            [order.id, voucher.id]
+          );
+
+          assignedVoucherCode = voucher.code;
+          finalStatus = 'VOUCHER_ASSIGNED';
+        } else {
+          console.warn(`No AVAILABLE voucher in inventory for package ${order.package_id} (order ${order.reference}).`);
+        }
+      }
+
+      await client.query('commit');
+    } catch (txErr) {
+      await client.query('rollback').catch(() => {});
+      throw txErr;
+    } finally {
+      client.release();
     }
 
     return res.status(200).json({
@@ -508,7 +553,8 @@ app.post('/api/webhooks/palpluss', async (req, res) => {
       message: 'PalPluss webhook accepted and processed.',
       eventType,
       transactionId,
-      status
+      status: finalStatus,
+      voucherAssigned: Boolean(assignedVoucherCode)
     });
   } catch (err) {
     console.error('POST /api/webhooks/palpluss error:', err.message);
