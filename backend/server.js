@@ -104,20 +104,24 @@ function normalizePhone(phone) {
   return cleaned;
 }
 
-function normalizePalPlussState(status) {
+  function normalizePalPlussState(status) {
   const map = {
-  SUCCESS: 'PAID',
-  SUCCESSFUL: 'PAID',
-  COMPLETED: 'PAID',
-  COMPLETE: 'PAID',
-  PAID: 'PAID',
-  FAILED: 'FAILED',
+    SUCCESS: 'PAID',
+    SUCCESSFUL: 'PAID',
+    COMPLETED: 'PAID',
+    COMPLETE: 'PAID',
+    CONFIRMED: 'PAID',
+    SUCCEEDED: 'PAID',
+    PAID: 'PAID',
+    FAILED: 'FAILED',
+    FAILURE: 'FAILED',
     CANCELLED: 'FAILED',
+    CANCELED: 'FAILED',
     EXPIRED: 'EXPIRED'
   };
 
-  return map[status] || 'PENDING';
-}
+  return map[String(status || '').trim().toUpperCase()] || 'PENDING';
+  }
 
 function getDefaultCallbackUrl() {
   if (process.env.CALLBACK_URL) {
@@ -474,9 +478,10 @@ app.post('/api/webhooks/palpluss', async (req, res) => {
   const body = req.body || {};
   const eventType = body.event_type || body.event || body.type || 'transaction.updated';
   const transaction = body.transaction || body.data?.transaction || body.data || body;
-  const transactionId = transaction.id || transaction.transaction_id || body.transaction_id || null;
+  const result = transaction.result || transaction.response || body.result || body.response || {};
+  const transactionId = transaction.id || transaction.transaction_id || transaction.checkout_id || result.transaction_id || body.transaction_id || null;
   const metadata = transaction.metadata || body.metadata || {};
-  const externalReference = transaction.external_reference || transaction.accountReference || transaction.account_reference || transaction.reference || transaction.order_reference || metadata.external_reference || metadata.accountReference || metadata.order_reference || body.external_reference || body.accountReference || body.reference || null;
+  const externalReference = transaction.external_reference || transaction.externalReference || transaction.accountReference || transaction.account_reference || transaction.reference || transaction.order_reference || result.external_reference || result.accountReference || result.reference || metadata.external_reference || metadata.externalReference || metadata.accountReference || metadata.order_reference || body.external_reference || body.externalReference || body.accountReference || body.account_reference || body.reference || null;
 
   if (!transactionId || !externalReference) {
     return res.status(400).json({
@@ -491,9 +496,9 @@ app.post('/api/webhooks/palpluss', async (req, res) => {
     // transaction with a different UUID. The locked order lookup below is the
     // authoritative idempotency check and also handles callback races safely.
     const status = normalizePalPlussState(
-      transaction.status || (eventType === 'transaction.success' ? 'SUCCESS' : 'PENDING')
+      transaction.status || transaction.payment_status || transaction.state || result.status || body.status || (eventType === 'transaction.success' ? 'SUCCESS' : 'PENDING')
     );
-    const amount = Number(transaction.amount || 0);
+    const amount = Number(transaction.amount || transaction.amount_paid || result.amount || body.amount || 0);
     const paymentProvider = process.env.PAYMENT_PROVIDER || 'PALPLUSS';
     const providerTransactionId = transaction.id;
 
@@ -564,27 +569,36 @@ app.post('/api/webhooks/palpluss', async (req, res) => {
         if (availableVoucher.rowCount > 0) {
           const voucher = availableVoucher.rows[0];
 
-          await client.query(
+          const voucherClaim = await client.query(
             `update vouchers
              set status = 'ASSIGNED',
                  order_id = $1,
                  assigned_at = now(),
                  used_at = null
-             where id = $2 and status = 'AVAILABLE'`,
+             where id = $2 and status = 'AVAILABLE'
+             returning id, code`,
             [order.id, voucher.id]
           );
 
-          await client.query(
-            `update orders
-             set voucher_id = $2,
-                 status = 'VOUCHER_ASSIGNED',
-                 updated_at = now()
-             where id = $1 and voucher_id is null`,
-            [order.id, voucher.id]
-          );
+          if (voucherClaim.rowCount > 0) {
+            const orderClaim = await client.query(
+              `update orders
+               set voucher_id = $2,
+                   status = 'VOUCHER_ASSIGNED',
+                   paid_at = coalesce(paid_at, now()),
+                   updated_at = now()
+               where id = $1 and voucher_id is null
+               returning voucher_id`,
+              [order.id, voucher.id]
+            );
 
-          assignedVoucherCode = voucher.code;
-          finalStatus = 'VOUCHER_ASSIGNED';
+            if (orderClaim.rowCount > 0) {
+              assignedVoucherCode = voucherClaim.rows[0].code;
+              finalStatus = 'VOUCHER_ASSIGNED';
+            } else {
+              throw new Error(`Voucher claim could not be attached to order ${order.reference}`);
+            }
+          }
         } else {
           console.warn(`No AVAILABLE voucher in inventory for package ${order.package_id} (order ${order.reference}).`);
         }

@@ -277,13 +277,14 @@ function pollForVoucher(orderId, status)
                 return;
             }
 
-            if (order.status === "VOUCHER_ASSIGNED" && order.voucher_code)
+            if ((order.status === "VOUCHER_ASSIGNED" || order.status === "PAID") && order.voucher_code)
             {
                 clearInterval(timer);
                 var paymentProgress = document.getElementById("paymentProgress");
                 if (paymentProgress) paymentProgress.hidden = true;
                 status.textContent = "Payment verified. Your Wi-Fi voucher is ready.";
                 voucherResult.textContent = "Voucher: " + order.voucher_code;
+                voucherResult.classList.add("voucher-ready");
                 button.disabled = false;
                 return;
             }
