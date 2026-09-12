@@ -1,0 +1,760 @@
+/* =========================================================
+   ANONYMIKETECH SUPA LAN
+   PREMIUM MOTION + LOADING SYSTEM
+   Added without changing MyPublicWiFi functionality
+   ========================================================= */
+
+/* ---------------------------------------------------------
+   PAGE ENTRANCE
+   --------------------------------------------------------- */
+
+body {
+    animation: supaPageIn 0.7s ease both;
+}
+
+@keyframes supaPageIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+
+/* ---------------------------------------------------------
+   BACKGROUND AMBIENT LIGHT
+   --------------------------------------------------------- */
+
+body::before,
+body::after {
+    content: "";
+    position: fixed;
+    z-index: -1;
+
+    width: 280px;
+    height: 280px;
+
+    border-radius: 50%;
+
+    pointer-events: none;
+
+    filter: blur(70px);
+
+    opacity: 0.22;
+}
+
+body::before {
+    left: -130px;
+    top: 15%;
+
+    background: rgba(30, 144, 255, 0.35);
+
+    animation: ambientFloatOne 9s ease-in-out infinite;
+}
+
+body::after {
+    right: -130px;
+    bottom: 10%;
+
+    background: rgba(0, 210, 255, 0.24);
+
+    animation: ambientFloatTwo 11s ease-in-out infinite;
+}
+
+@keyframes ambientFloatOne {
+    0%,
+    100% {
+        transform: translate3d(0, 0, 0);
+    }
+
+    50% {
+        transform: translate3d(35px, 25px, 0);
+    }
+}
+
+@keyframes ambientFloatTwo {
+    0%,
+    100% {
+        transform: translate3d(0, 0, 0);
+    }
+
+    50% {
+        transform: translate3d(-35px, -30px, 0);
+    }
+}
+
+
+/* ---------------------------------------------------------
+   HERO ANIMATION
+   --------------------------------------------------------- */
+
+.hero {
+    animation: heroReveal 0.7s 0.05s ease both;
+}
+
+@keyframes heroReveal {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+/* ---------------------------------------------------------
+   LOGO GLOW
+   --------------------------------------------------------- */
+
+.brand-logo {
+    transition:
+        transform 0.3s ease,
+        box-shadow 0.3s ease;
+}
+
+.brand-logo:hover {
+    transform: translateY(-2px) scale(1.03);
+
+    box-shadow:
+        0 15px 40px rgba(0, 0, 0, 0.42),
+        0 0 25px rgba(30, 150, 255, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+
+/* ---------------------------------------------------------
+   ONLINE INDICATOR PULSE
+   --------------------------------------------------------- */
+
+.online-dot {
+    animation: onlinePulse 2s ease-in-out infinite;
+}
+
+@keyframes onlinePulse {
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.35);
+        opacity: 0.65;
+    }
+}
+
+
+/* ---------------------------------------------------------
+   WELCOME CARD
+   --------------------------------------------------------- */
+
+.welcome-card {
+    animation: cardReveal 0.7s 0.12s cubic-bezier(.2,.8,.2,1) both;
+}
+
+@keyframes cardReveal {
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.welcome-icon {
+    animation: welcomeIconFloat 4s ease-in-out infinite;
+}
+
+@keyframes welcomeIconFloat {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-4px);
+    }
+}
+
+
+/* ---------------------------------------------------------
+   QUICK ACTIONS
+   --------------------------------------------------------- */
+
+.quick-actions {
+    animation: quickReveal 0.6s 0.2s ease both;
+}
+
+@keyframes quickReveal {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.quick-btn {
+    position: relative;
+    overflow: hidden;
+}
+
+.quick-btn::after {
+    content: "";
+
+    position: absolute;
+
+    width: 80px;
+    height: 80px;
+
+    left: -100px;
+    top: -30px;
+
+    border-radius: 50%;
+
+    background: rgba(255, 255, 255, 0.07);
+
+    transition: left 0.5s ease;
+}
+
+.quick-btn:hover::after {
+    left: calc(100% + 30px);
+}
+
+
+/* ---------------------------------------------------------
+   LOGIN CARD
+   --------------------------------------------------------- */
+
+.login-card {
+    animation: cardReveal 0.7s 0.27s cubic-bezier(.2,.8,.2,1) both;
+}
+
+
+/* ---------------------------------------------------------
+   INPUT FOCUS
+   --------------------------------------------------------- */
+
+.voucher-input {
+    transition:
+        border-color 0.25s ease,
+        box-shadow 0.25s ease,
+        transform 0.2s ease;
+}
+
+.voucher-input:focus {
+    transform: translateY(-1px);
+}
+
+
+/* ---------------------------------------------------------
+   CONNECT BUTTON
+   --------------------------------------------------------- */
+
+.connect-button {
+    position: relative;
+    overflow: hidden;
+}
+
+.connect-button::before {
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+    left: -120%;
+
+    width: 80%;
+    height: 100%;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(255,255,255,0.18),
+            transparent
+        );
+
+    transform: skewX(-20deg);
+
+    transition: left 0.65s ease;
+}
+
+.connect-button:hover::before {
+    left: 140%;
+}
+
+.connect-button:active {
+    transform: scale(0.985);
+}
+
+
+/* ---------------------------------------------------------
+   PACKAGE REVEAL
+   --------------------------------------------------------- */
+
+.packages-section {
+    animation: packagesReveal 0.8s 0.35s ease both;
+}
+
+@keyframes packagesReveal {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+/* ---------------------------------------------------------
+   PACKAGE CARD MOTION
+   --------------------------------------------------------- */
+
+.package-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.package-card::before {
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+    left: -130%;
+
+    width: 70%;
+    height: 100%;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(255,255,255,0.06),
+            transparent
+        );
+
+    transform: skewX(-20deg);
+
+    transition: left 0.7s ease;
+
+    pointer-events: none;
+}
+
+.package-card:hover::before {
+    left: 150%;
+}
+
+.package-card:active {
+    transform: scale(0.985);
+}
+
+
+/* ---------------------------------------------------------
+   FEATURED PACKAGE GLOW
+   --------------------------------------------------------- */
+
+.package-card.featured {
+    animation: featuredGlow 3s ease-in-out infinite;
+}
+
+@keyframes featuredGlow {
+    0%,
+    100% {
+        box-shadow:
+            0 14px 38px rgba(0,100,220,0.13);
+    }
+
+    50% {
+        box-shadow:
+            0 18px 48px rgba(0,120,255,0.22);
+    }
+}
+
+
+/* ---------------------------------------------------------
+   POPULAR TAG
+   --------------------------------------------------------- */
+
+.popular-tag {
+    animation: tagPulse 2.5s ease-in-out infinite;
+}
+
+@keyframes tagPulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.68;
+    }
+}
+
+
+/* ---------------------------------------------------------
+   MODAL ENTRY
+   --------------------------------------------------------- */
+
+.modal-overlay {
+    animation: overlayIn 0.22s ease both;
+}
+
+@keyframes overlayIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.payment-modal,
+.contact-modal {
+    animation:
+        modalPremiumIn
+        0.38s
+        cubic-bezier(.16,1,.3,1)
+        both;
+}
+
+@keyframes modalPremiumIn {
+    from {
+        opacity: 0;
+        transform: translateY(25px) scale(0.94);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+
+/* ---------------------------------------------------------
+   PAYMENT BUTTON LOADING STATE
+   --------------------------------------------------------- */
+
+.pay-button.loading {
+    pointer-events: none;
+    opacity: 0.82;
+}
+
+.pay-button.loading .pay-loading-spinner {
+    display: inline-block;
+}
+
+.pay-loading-spinner {
+    display: none;
+
+    width: 16px;
+    height: 16px;
+
+    border-radius: 50%;
+
+    border: 2px solid rgba(255,255,255,0.35);
+    border-top-color: #ffffff;
+
+    animation:
+        paySpin
+        0.75s
+        linear
+        infinite;
+}
+
+@keyframes paySpin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+
+/* ---------------------------------------------------------
+   PAYMENT PROGRESS ENHANCEMENT
+   --------------------------------------------------------- */
+
+.payment-progress {
+    position: relative;
+    overflow: hidden;
+}
+
+.payment-progress::after {
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+    left: -100%;
+
+    width: 70%;
+    height: 100%;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(103,232,249,0.08),
+            transparent
+        );
+
+    animation:
+        progressSweep
+        1.8s
+        ease-in-out
+        infinite;
+}
+
+@keyframes progressSweep {
+    0% {
+        left: -100%;
+    }
+
+    100% {
+        left: 150%;
+    }
+}
+
+
+/* ---------------------------------------------------------
+   SPINNER
+   --------------------------------------------------------- */
+
+.payment-spinner {
+    animation:
+        voucher-spin
+        0.7s
+        linear
+        infinite;
+}
+
+
+/* ---------------------------------------------------------
+   STATUS APPEARANCE
+   --------------------------------------------------------- */
+
+.pay-status {
+    animation: statusAppear 0.3s ease both;
+}
+
+@keyframes statusAppear {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+/* ---------------------------------------------------------
+   CONTACT MODAL BUTTONS
+   --------------------------------------------------------- */
+
+.whatsapp-full-button,
+.call-full-button {
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.whatsapp-full-button:hover,
+.call-full-button:hover {
+    transform: translateY(-2px);
+}
+
+
+/* ---------------------------------------------------------
+   FOOTER
+   --------------------------------------------------------- */
+
+.page-footer {
+    animation: footerReveal 0.8s 0.5s ease both;
+}
+
+@keyframes footerReveal {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+
+/* ---------------------------------------------------------
+   CONNECTIVITY STATUS CARD
+   --------------------------------------------------------- */
+
+.portal-access-card {
+    margin: 18px 0;
+    padding: 15px 17px;
+    border: 1px solid rgba(103, 232, 249, .18);
+    border-radius: 16px;
+    background: rgba(8, 28, 45, .82);
+    color: #d9f6ff;
+    text-align: center;
+}
+
+.portal-loader,
+.portal-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    line-height: 1.55;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.portal-status a {
+    color: #67e8f9;
+    font-weight: 900;
+    overflow-wrap: anywhere;
+}
+
+.portal-status.online { color: #86efac; }
+.portal-status.offline { color: #fde68a; }
+
+.portal-open-button {
+    display: block;
+    width: min(100%, 330px);
+    margin: 14px auto 0;
+    padding: 12px 16px;
+    border: 1px solid #67e8f9;
+    border-radius: 10px;
+    color: #06283d;
+    background: linear-gradient(135deg, #67e8f9, #38bdf8);
+    box-shadow: 0 8px 18px rgba(14, 165, 233, .18);
+    font-size: 13px;
+    font-weight: 900;
+    line-height: 1.2;
+    text-align: center;
+    text-decoration: none;
+    transition: transform .18s ease, filter .18s ease, box-shadow .18s ease;
+}
+
+.portal-open-button:hover,
+.portal-open-button:focus-visible {
+    color: #031923;
+    filter: brightness(1.08);
+    box-shadow: 0 10px 24px rgba(14, 165, 233, .3);
+    transform: translateY(-1px);
+}
+
+.portal-open-button:focus-visible {
+    outline: 3px solid rgba(254, 240, 138, .9);
+    outline-offset: 3px;
+}
+
+.portal-spinner {
+    width: 17px;
+    height: 17px;
+    flex: 0 0 17px;
+    border: 2px solid rgba(186, 230, 253, .28);
+    border-top-color: #67e8f9;
+    border-radius: 50%;
+    animation: portalSpin .8s linear infinite;
+}
+
+@keyframes portalSpin {
+    to { transform: rotate(360deg); }
+}
+
+.portal-ip-note {
+    margin: 9px 0 0;
+    color: #8aa5b8;
+    font-size: 11px;
+}
+
+@media (max-width: 480px) {
+    .portal-access-card { margin: 14px 0; padding: 13px; }
+    .portal-loader, .portal-status { font-size: 12px; }
+    .portal-open-button { width: 100%; padding: 11px 12px; font-size: 12px; }
+}
+
+/* ---------------------------------------------------------
+   UNAVAILABLE PACKAGE RIBBON
+   --------------------------------------------------------- */
+
+.package-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.package-card.unavailable {
+    cursor: not-allowed;
+    opacity: .62;
+}
+
+.package-card.unavailable::before {
+    content: "NOT AVAILABLE";
+    position: absolute;
+    top: 13px;
+    right: -38px;
+    z-index: 2;
+    width: 142px;
+    padding: 6px 8px;
+    color: #fff7ed;
+    background: linear-gradient(135deg, #b45309, #c2410c);
+    box-shadow: 0 5px 14px rgba(124, 45, 18, .28);
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: .11em;
+    line-height: 1.2;
+    text-align: center;
+    transform: rotate(32deg);
+    transform-origin: center;
+    pointer-events: none;
+}
+
+.package-card.unavailable .package-cta {
+    color: #fed7aa;
+    font-weight: 900;
+}
+
+@media (max-width: 520px) {
+    .package-card.unavailable::before {
+        top: 10px;
+        right: -43px;
+        width: 132px;
+        padding: 5px 6px;
+        font-size: 8px;
+    }
+}
+
+/* ---------------------------------------------------------
+   REDUCED MOTION ACCESSIBILITY
+   --------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+    }
+
+}
