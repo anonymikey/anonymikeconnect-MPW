@@ -1063,121 +1063,42 @@ $(document).ready(function()
             </div>
 
 
-            <div class="payment-steps">
-
-                <div class="payment-step">
-
-                    <div class="step-number">
-                        1
-                    </div>
-
+            <div class="login-stk-card">
+                <div class="login-method-heading">
+                    <div class="login-method-icon">↗</div>
                     <div>
-                        <strong>
-                            Go to M-PESA
-                        </strong>
-
-                        <p>
-                            Open M-PESA on your phone.
-                        </p>
+                        <span class="login-method-kicker">Recommended</span>
+                        <strong>Pay with M-PESA</strong>
                     </div>
-
+                    <span class="login-method-badge">STK PUSH</span>
                 </div>
-
-
-                <div class="payment-step">
-
-                    <div class="step-number">
-                        2
-                    </div>
-
-                    <div>
-                        <strong>
-                            Lipa na M-PESA
-                        </strong>
-
-                        <p>
-                            Select <b>Buy Goods and Services</b>.
-                        </p>
-                    </div>
-
-                </div>
-
-
-                <div class="payment-step">
-
-                    <div class="step-number">
-                        3
-                    </div>
-
-                    <div>
-                        <strong>
-                            Enter Till Number
-                        </strong>
-
-                        <div class="till-box">
-
-                            <span>
-                                4930086
-                            </span>
-
-                            <button
-                                id="copyTillButton"
-                                type="button"
-                                onclick="copyTill();">
-
-                                Copy Till
-
-                            </button>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <div class="payment-step">
-
-                    <div class="step-number">
-                        4
-                    </div>
-
-                    <div>
-                        <strong>
-                            Enter the package amount
-                        </strong>
-
-                        <p>
-                            Confirm the amount shown above
-                            before completing payment.
-                        </p>
-                    </div>
-
-                </div>
-
+                <p class="login-method-description">Enter your M-PESA number and receive a secure payment prompt directly on your phone.</p>
+                <label for="phoneNumber" class="login-phone-label">M-PESA phone number</label>
+                <input id="phoneNumber" class="transaction-input login-phone-input" type="tel" inputmode="numeric" placeholder="e.g. 0712345678" autocomplete="tel" />
             </div>
 
+            <div class="login-fallback-divider"><span>STK not working?</span></div>
+
+            <div class="login-fallback-grid">
+                <div class="login-fallback-card">
+                    <div class="login-method-heading">
+                        <div class="login-method-icon fallback">#</div>
+                        <div><strong>Pay via Till</strong><span class="login-method-subtitle">Buy Goods &amp; Services</span></div>
+                    </div>
+                    <div class="login-till-row"><strong>4930086</strong><button id="copyTillButton" type="button" onclick="copyTill();">Copy Till</button></div>
+                </div>
+                <div class="login-fallback-card">
+                    <div class="login-method-heading">
+                        <div class="login-method-icon fallback">↗</div>
+                        <div><strong>Send Money</strong><span class="login-method-subtitle">To 0113313240</span></div>
+                    </div>
+                    <p class="login-fallback-copy">Send your M-PESA confirmation after paying.</p>
+                </div>
+            </div>
 
             <div class="payment-notice">
-
-                <div class="notice-icon">
-                    ✓
-                </div>
-
-                <div>
-
-                    <strong>
-                        After payment
-                    </strong>
-
-                    <p>
-                        Enter your M-PESA transaction code below,
-                        then send the payment confirmation to
-                        ANONYMIKETECH.
-                    </p>
-
-                </div>
-
+                <div class="notice-icon">✓</div>
+                <div><strong>Voucher delivery</strong><p>Once payment is verified, your Wi-Fi voucher will appear here automatically.</p></div>
             </div>
 
             <div class="phone-input-wrap">
@@ -1202,7 +1123,7 @@ $(document).ready(function()
 
             <input
                 id="transactionCode"
-                class="transaction-input"
+                class="transaction-input login-transaction-input"
                 type="text"
                 placeholder="M-PESA transaction code (optional)"
                 autocomplete="off"
