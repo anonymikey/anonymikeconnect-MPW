@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<!--
+ANONYMIKETECH SUPA LAN
+Powered by MyPublicWiFi
+-->
+
+<html>
+<head>
+
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="expires" content="0" />
+<meta http-equiv="pragma" content="no-cache" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="format-detection" content="telephone=no" />
+<meta name="HandheldFriendly" content="True" />
+<meta name="MobileOptimized" content="320" />
+
+<title>ANONYMIKETECH SUPA LAN</title>
+
+<script type="text/javascript" src="jquery-1.4.3.min.js"></script>
+
+<link rel="stylesheet" type="text/css" href="style.css" />
+
+<script type="text/javascript">
+/*<![CDATA[*/
+
+/* =========================================================
+   MYPUBLICWIFI MESSAGE SYSTEM
+   ========================================================= */
+
+function HideDialog(DialogId)
+{
+    var MessageDialog = document.getElementById(DialogId);
+
+    if (MessageDialog)
+    {
+        MessageDialog.style.display = 'none';
+    }
+}
+
+
+function ShowMessage(DialogId, Msg)
+{
+    var MessageDialog = document.getElementById(DialogId);
+
+    if (MessageDialog)
+    {
+        MessageDialog.style.display = 'flex';
+        MessageDialog.textContent = Msg;
+    }
+}
+
+
+function ShowErrorMessage(Error)
+{
+    HideDialog("InfoDialog");
+    HideDialog("WarningDialog");
+
+    ShowMessage(
+        "ErrorDialog",
+        document.getElementById(Error).textContent
+    );
+}
+
+
+function ShowInfoMessage(Info)
+{
+    HideDialog("ErrorDialog");
+    HideDialog("WarningDialog");
+
+    ShowMessage(
+        "InfoDialog",
+        document.getElementById(Info).textContent
+    );
+}
+
+
+function ShowWarningMessage(Warning)
+{
+    HideDialog("ErrorDialog");
+    HideDialog("InfoDialog");
+
+    ShowMessage(
+        "WarningDialog",
+        document.getElementById(Warning).textContent
+    );
+}
+
+
+/* =========================================================
+   VOUCHER LOGIN VALIDATION
+   ========================================================= */
+
+function VoucherAccountCheck()
+{
+    var voucher = document.getElementById("Voucher").value;
+
+    if (voucher == '')
+    {
+        ShowErrorMessage("VoucherInvalid");
+        return false;
+    }
+
+    return true;
+}
+
+
+/* =========================================================
+   PAYMENT PACKAGE SYSTEM
+   ========================================================= */
+
+var selectedPackage = "";
+var selectedPrice = "";
+var portalDestination = "https://supalan.anonymiketech.space";
+
+function setPortalMessage(message, isOnline)
+{
+    var status = document.getElementById("portalStatus");
+    var loader = document.getElementById("portalLoader");
+
+    if (status)
+    {
+        status.className = isOnline ? "portal-status online" : "portal-status offline";
+        status.innerHTML = message;
+    }
+
+    if (loader)
+    {
+        loader.style.display = "none";
+    }
+}
+
+function openOnlinePortal()
+{
+    var loader = document.getElementById("portalLoader");
+
+    if (loader)
+    {
+        loader.style.display = "flex";
+    }
+
+    window.location.href = portalDestination;
+}
+
+function checkInternetAccess()
+{
+    var controller = window.AbortController ? new AbortController() : null;
+    var timeout = window.setTimeout(function()
+    {
+        if (controller) controller.abort();
+        setPortalMessage(
+            "No internet detected. Open <a href=\"" + portalDestination + "\" target=\"_blank\" rel=\"noopener\">supalan.anonymiketech.space</a> to pay manually via Till or M-PESA, then send the transaction code by WhatsApp or SMS.",
+            false
+        );
+    }, 4500);
+
+    fetch(portalDestination + "/?portal-check=" + new Date().getTime(), {
+        method: "HEAD",
+        mode: "no-cors",
+        cache: "no-store",
+        signal: controller ? controller.signal : undefined
+    }).then(function()
+    {
+        window.clearTimeout(timeout);
+        setPortalMessage("Internet detected. Opening the payment portal...", true);
+        window.setTimeout(openOnlinePortal, 850);
+    }).catch(function()
+    {
+        window.clearTimeout(timeout);
+        setPortalMessage(
+            "No internet detected. Open <a href=\"" + portalDestination + "\" target=\"_blank\" rel=\"noopener\">supalan.anonymiketech.space</a> to pay manually via Till or M-PESA, then send the transaction code by WhatsApp or SMS.",
+            false
+        );
+    });
+}
+
+
+/*
+   Open payment modal
+*/
+function openPayment(packageName, price)
+{
+    selectedPackage = packageName;
+    selectedPrice = price;
+
+    document.getElementById("selectedPackage").textContent = packageName;
+    document.getElementById("selectedPrice").textContent = "KSh " + price;
+
+    document.getElementById("paymentModal").style.display = "flex";
+
+    document.body.classList.add("modal-open");
+}
+
+
+/*
+   Close payment modal
+*/
+function closePayment()
+{
+    document.getElementById("paymentModal").style.display = "none";
+
+    document.body.classList.remove("modal-open");
+}
+
+
+/*
+   Close modal when clicking outside
+*/
+window.onclick = function(event)
+{
+    var modal = document.getElementById("paymentModal");
+
+    if (event.target === modal)
+    {
+        closePayment();
+    }
+};
+
+
+/*
+   Build WhatsApp payment message
+*/
+function sendWhatsApp()
+{
+    var transactionCode =
+        document.getElementById("transactionCode").value.trim();
+
+    var message =
+        "Hello ANONYMIKETECH SUPA LAN.%0A%0A" +
+        "I have made payment for:%0A" +
+        "Package: " + selectedPackage + "%0A" +
+        "Amount: KSh " + selectedPrice + "%0A" +
+        "M-PESA Transaction Code: " +
+        (transactionCode || "I will attach/forward the M-PESA message") +
+        "%0A%0APlease send me my Wi-Fi voucher code.";
+
+    window.open(
+        "https://wa.me/254113313240?text=" + message,
+        "_blank"
+    );
+}
+
+
+/*
+   Build SMS payment message
+*/
+function sendSMS()
+{
+    var transactionCode =
+        document.getElementById("transactionCode").value.trim();
+
+    var message =
+        "ANONYMIKETECH SUPA LAN Payment%0A" +
+        "Package: " + selectedPackage +
+        "%0AAmount: KSh " + selectedPrice +
+        "%0AM-PESA Code: " +
+        (transactionCode || "See M-PESA confirmation") +
+        "%0APlease send my Wi-Fi voucher.";
+
+    window.location.href =
+        "sms:0113313240?body=" + message;
+}
+
+
+/*
+   Copy Till Number
+*/
+function copyTill()
+{
+    var till = "4930086";
+
+    if (navigator.clipboard)
+    {
+        navigator.clipboard.writeText(till);
+
+        var button = document.getElementById("copyTillButton");
+
+        button.textContent = "✓ Till Copied";
+
+        setTimeout(function()
+        {
+            button.textContent = "Copy Till";
+        }, 2000);
+    }
+}
+
+
+/*
+   Show package section
+*/
+function scrollToPackages()
+{
+    var packages = document.getElementById("packages");
+
+    if (packages)
+    {
+        packages.scrollIntoView({
+            behavior: "smooth"
+        });
+    }
+}
+
+
+/*
+   Show contact information
+*/
+function showContact()
+{
+    document.getElementById("contactModal").style.display = "flex";
+}
+
+
+/*
+   Close contact
+*/
+function closeContact()
+{
+    document.getElementById("contactModal").style.display = "none";
+}
+
+
+/* =========================================================
+   DOCUMENT READY
+   ========================================================= */
+
+$(document).ready(function()
+{
+    // Preserve MyPublicWiFi voucher handling while checking upstream access.
+    checkInternetAccess();
+});
+
+
+/*]]>*/
+</script>
+
+</head>
+
+
+<body>
+
+<div class="wrap">
+
+
+    <!-- =====================================================
+         HEADER
+         ===================================================== -->
+
+    <header class="hero">
+
+        <div class="brand-logo background-hotspot"></div>
+
+        <div class="brand-text">
+            <span class="brand-name">
+                ANONYMIKETECH
+            </span>
+
+            <span class="brand-network">
+                SUPA LAN
+            </span>
+        </div>
+
+        <div class="online-badge">
+            <span class="online-dot"></span>
+            NETWORK ONLINE
+        </div>
+
+    </header>
+
+
+
+    <!-- =====================================================
+         WELCOME SECTION
+         ===================================================== -->
+
+    <section class="welcome-card">
+
+        <div class="welcome-icon">
+            ◉
+        </div>
+
+        <div class="welcome-content">
+
+            <span class="eyebrow">
+                WELCOME TO
+            </span>
+
+            <h1>
+                Fast. Affordable.<br>
+                Always Connected.
+            </h1>
+
+            <p>
+                Get reliable internet access for your phone,
+                laptop, Smart TV and other Wi-Fi devices.
+            </p>
+
+        </div>
+
+    </section>
+
+    <section class="portal-access-card" aria-live="polite">
+        <div id="portalLoader" class="portal-loader">
+            <span class="portal-spinner" aria-hidden="true"></span>
+            <span>Checking internet access...</span>
+        </div>
+        <div id="portalStatus" class="portal-status offline" style="display:none;"></div>
+        <p class="portal-ip-note">Connected through the MyPublicWiFi portal at 192.168.10.1.</p>
+    </section>
+
+
+
+    <!-- =====================================================
+         VOUCHER LOGIN
+         ===================================================== -->
+
+    <section class="login-card">
+
+        <div class="section-heading">
+
+            <div class="section-icon">
+                🔐
+            </div>
+
+            <div>
+                <span class="eyebrow">
+                    ALREADY HAVE ACCESS?
+                </span>
+
+                <h2>
+                    Enter Your Voucher
+                </h2>
+            </div>
+
+        </div>
+
+
+        <p class="section-description">
+
+            Enter the voucher code you received after payment
+            and tap <strong>Connect</strong>.
+
+        </p>
+
+
+        <form
+            action="./"
+            method="post"
+            onsubmit="return VoucherAccountCheck();">
+
+            <input
+                type="hidden"
+                name="_action"
+                value="VoucherLogin"
+            />
+
+
+            <div class="voucher-input-wrap">
+
+                <span class="input-icon">
+                    🎟
+                </span>
+
+                <input
+                    tabindex="4"
+                    id="Voucher"
+                    class="voucher-input"
+                    placeholder="Enter voucher code"
+                    name="Voucher"
+                    value=""
+                    autocomplete="off"
+                    type="text"
+                />
+
+            </div>
+
+
+            <button
+                tabindex="5"
+                class="connect-button"
+                type="submit">
+
+                <span>
+                    Connect to SUPA LAN
+                </span>
+
+                <span class="button-arrow">
+                    →
+                </span>
+
+            </button>
+
+        </form>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         PACKAGE SECTION
+         ===================================================== -->
+
+    <section id="packages" class="packages-section">
+
+        <div class="packages-heading">
+
+            <span class="eyebrow">
+                CHOOSE YOUR PLAN
+            </span>
+
+            <h2>
+                Internet Packages
+            </h2>
+
+            <p>
+                Tap any package to view payment instructions.
+            </p>
+
+        </div>
+
+
+
+        <!-- PRIMARY PACKAGE -->
+
+        <button
+            type="button"
+            class="package-card featured"
+            onclick="openPayment('Monthly Unlimited', '600');">
+
+            <div class="package-top">
+
+                <div class="package-icon">
+                    ∞
+                </div>
+
+                <span class="popular-tag">
+                    MOST POPULAR
+                </span>
+
+            </div>
+
+            <div class="package-name">
+                Monthly Unlimited
+            </div>
+
+            <div class="package-price">
+                <span>KSh</span> 600
+            </div>
+
+            <div class="package-period">
+                Unlimited Internet • 30 Days
+            </div>
+
+            <div class="package-cta">
+                Get this package →
+            </div>
+
+        </button>
+
+
+
+        <!-- DATA PACKAGE -->
+
+        <button
+            type="button"
+            class="package-card"
+            onclick="openPayment('Monthly 100 GB', '400');">
+
+            <div class="package-top">
+
+                <div class="package-icon">
+                    ◉
+                </div>
+
+                <span class="package-label">
+                    DATA PLAN
+                </span>
+
+            </div>
+
+            <div class="package-name">
+                Monthly 100 GB
+            </div>
+
+            <div class="package-price">
+                <span>KSh</span> 400
+            </div>
+
+            <div class="package-period">
+                100 GB • 30 Days
+            </div>
+
+            <div class="package-cta">
+                Get this package →
+            </div>
+
+        </button>
+
+
+
+        <!-- WEEKLY -->
+
+        <button
+            type="button"
+            class="package-card"
+            onclick="openPayment('7 Days Unlimited', '150');">
+
+            <div class="package-top">
+
+                <div class="package-icon">
+                    7D
+                </div>
+
+                <span class="package-label">
+                    WEEKLY
+                </span>
+
+            </div>
+
+            <div class="package-name">
+                7 Days Unlimited
+            </div>
+
+            <div class="package-price">
+                <span>KSh</span> 150
+            </div>
+
+            <div class="package-period">
+                Unlimited Internet • 7 Days
+            </div>
+
+            <div class="package-cta">
+                Get this package →
+            </div>
+
+        </button>
+
+
+
+        <!-- DAILY PRO -->
+
+        <button
+            type="button"
+            class="package-card"
+            onclick="openPayment('Daily Unlimited Pro', '50');">
+
+            <div class="package-top">
+
+                <div class="package-icon">
+                    ⚡
+                </div>
+
+                <span class="package-label">
+                    PRO
+                </span>
+
+            </div>
+
+            <div class="package-name">
+                Daily Unlimited Pro
+            </div>
+
+            <div class="package-price">
+                <span>KSh</span> 50
+            </div>
+
+            <div class="package-period">
+                Unlimited Internet • 24 Hours
+            </div>
+
+            <div class="package-cta">
+                Get this package →
+            </div>
+
+        </button>
+
+
+
+        <!-- DAILY STANDARD -->
+
+        <button
+            type="button"
+            class="package-card"
+            onclick="openPayment('Daily Unlimited Standard', '30');">
+
+            <div class="package-top">
+
+                <div class="package-icon">
+                    24H
+                </div>
+
+                <span class="package-label">
+                    STANDARD
+                </span>
+
+            </div>
+
+            <div class="package-name">
+                Daily Unlimited Standard
+            </div>
+
+            <div class="package-price">
+                <span>KSh</span> 30
+            </div>
+
+            <div class="package-period">
+                Unlimited Internet • 24 Hours
+            </div>
+
+            <div class="package-cta">
+                Get this package →
+            </div>
+
+        </button>
+
+
+
+        <!-- 12 HOURS -->
+
+        <button
+            type="button"
+            class="package-card"
+            onclick="openPayment('12 Hours Unlimited', '20');">
+
+            <div class="package-top">
+
+                <div class="package-icon">
+                    12H
+                </div>
+
+            </div>
+
+            <div class="package-name">
+                12 Hours Unlimited
+            </div>
+
+            <div class="package-price">
+                <span>KSh</span> 20
+            </div>
+
+            <div class="package-period">
+                Unlimited Internet • 12 Hours
+            </div>
+
+            <div class="package-cta">
+                Get this package →
+            </div>
+
+        </button>
+
+
+
+        <!-- 5 HOURS -->
+
+        <button
+            type="button"
+            class="package-card"
+            onclick="openPayment('5 Hours Unlimited', '10');">
+
+            <div class="package-top">
+
+                <div class="package-icon">
+                    5H
+                </div>
+
+            </div>
+
+            <div class="package-name">
+                5 Hours Unlimited
+            </div>
+
+            <div class="package-price">
+                <span>KSh</span> 10
+            </div>
+
+            <div class="package-period">
+                Unlimited Internet • 5 Hours
+            </div>
+
+            <div class="package-cta">
+                Get this package →
+            </div>
+
+        </button>
+
+
+    </section>
+
+
+
+    <!-- =====================================================
+         PAYMENT MODAL
+         ===================================================== -->
+
+    <div
+        id="paymentModal"
+        class="modal-overlay"
+        style="display:none;">
+
+        <div class="payment-modal">
+
+            <button
+                type="button"
+                class="modal-close"
+                onclick="closePayment();">
+
+                ×
+
+            </button>
+
+
+            <div class="mpesa-logo">
+                M-PESA
+            </div>
+
+
+            <span class="eyebrow">
+                PAYMENT REQUIRED
+            </span>
+
+
+            <h2>
+                Complete Your Payment
+            </h2>
+
+
+            <div class="selected-package">
+
+                <span id="selectedPackage">
+                    Package
+                </span>
+
+                <strong id="selectedPrice">
+                    KSh 0
+                </strong>
+
+            </div>
+
+
+            <div class="payment-steps">
+
+                <div class="payment-step">
+
+                    <div class="step-number">
+                        1
+                    </div>
+
+                    <div>
+                        <strong>
+                            Go to M-PESA
+                        </strong>
+
+                        <p>
+                            Open M-PESA on your phone.
+                        </p>
+                    </div>
+
+                </div>
+
+
+                <div class="payment-step">
+
+                    <div class="step-number">
+                        2
+                    </div>
+
+                    <div>
+                        <strong>
+                            Lipa na M-PESA
+                        </strong>
+
+                        <p>
+                            Select <b>Buy Goods and Services</b>.
+                        </p>
+                    </div>
+
+                </div>
+
+
+                <div class="payment-step">
+
+                    <div class="step-number">
+                        3
+                    </div>
+
+                    <div>
+                        <strong>
+                            Enter Till Number
+                        </strong>
+
+                        <div class="till-box">
+
+                            <span>
+                                4930086
+                            </span>
+
+                            <button
+                                id="copyTillButton"
+                                type="button"
+                                onclick="copyTill();">
+
+                                Copy Till
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="payment-step">
+
+                    <div class="step-number">
+                        4
+                    </div>
+
+                    <div>
+                        <strong>
+                            Enter the package amount
+                        </strong>
+
+                        <p>
+                            Confirm the amount shown above
+                            before completing payment.
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="payment-notice">
+
+                <div class="notice-icon">
+                    ✓
+                </div>
+
+                <div>
+
+                    <strong>
+                        After payment
+                    </strong>
+
+                    <p>
+                        Enter your M-PESA transaction code below,
+                        then send the payment confirmation to
+                        ANONYMIKETECH.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <input
+                id="transactionCode"
+                class="transaction-input"
+                type="text"
+                placeholder="M-PESA transaction code (optional)"
+                autocomplete="off"
+            />
+
+
+            <div class="contact-payment-buttons">
+
+                <button
+                    type="button"
+                    class="whatsapp-button"
+                    onclick="sendWhatsApp();">
+
+                    <span>☘</span>
+                    Send via WhatsApp
+
+                </button>
+
+
+                <button
+                    type="button"
+                    class="sms-button"
+                    onclick="sendSMS();">
+
+                    <span>✉</span>
+                    Send SMS
+
+                </button>
+
+            </div>
+
+
+            <p class="payment-footer-text">
+
+                Once your payment is verified,
+                your Wi-Fi voucher code will be sent to you.
+
+            </p>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- =====================================================
+         CONTACT MODAL
+         ===================================================== -->
+
+    <div
+        id="contactModal"
+        class="modal-overlay"
+        style="display:none;">
+
+        <div class="contact-modal">
+
+            <button
+                type="button"
+                class="modal-close"
+                onclick="closeContact();">
+
+                ×
+
+            </button>
+
+
+            <div class="contact-icon">
+                ☎
+            </div>
+
+
+            <span class="eyebrow">
+                ANONYMIKETECH SUPPORT
+            </span>
+
+
+            <h2>
+                Need Help?
+            </h2>
+
+
+            <p>
+                Contact us for payments, voucher assistance,
+                connection problems or package information.
+            </p>
+
+
+            <div class="contact-number">
+
+                <span>
+                    Phone / M-PESA
+                </span>
+
+                <strong>
+                    0113313240
+                </strong>
+
+            </div>
+
+
+            <a
+                href="https://wa.me/254113313240"
+                target="_blank"
+                class="whatsapp-full-button">
+
+                Chat on WhatsApp →
+
+            </a>
+
+
+            <a
+                href="tel:0113313240"
+                class="call-full-button">
+
+                Call 0113313240 →
+
+            </a>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- =====================================================
+         FOOTER
+         ===================================================== -->
+
+    <footer class="page-footer">
+
+        <div class="footer-brand">
+            ANONYMIKETECH SUPA LAN
+        </div>
+
+        <p>
+            Affordable internet for your everyday connection.
+        </p>
+
+        <a href="termsofuse.html">
+            Terms of Use
+        </a>
+
+        <span class="footer-divider">•</span>
+
+        <a href="#" onclick="showContact(); return false;">
+            Contact Support
+        </a>
+
+        <div class="copyright">
+            © ANONYMIKETECH
+        </div>
+
+    </footer>
+
+
+
+</div>
+
+
+
+<!-- =========================================================
+     MYPUBLICWIFI SYSTEM MESSAGES
+     DO NOT REMOVE
+     ========================================================= -->
+
+<div style="display:none;">
+
+    <p id="ServiceDisabled">
+        Sorry, This service is currently unavailable for the selected action.
+    </p>
+
+    <p id="UsernameInvalid">
+        The entered username is invalid. Please try again.
+    </p>
+
+    <p id="VoucherInvalid">
+        The entered voucher is invalid. Please try again.
+    </p>
+
+    <p id="UserPasswordInvalid">
+        The entered user password is invalid. Please try again.
+    </p>
+
+    <p id="GuestPasswordInvalid">
+        The entered access password is invalid. Please try again.
+    </p>
+
+    <p id="MaxDailyLoginsExceeded">
+        You have reached the maximum number of daily logins with this method.
+        Please try again tomorrow or choose another login method.
+    </p>
+
+    <p id="UserAccountDisabled">
+        The specified user account is currently blocked.
+        Please contact support.
+    </p>
+
+    <p id="UserAccountExpired">
+        The specified user account has expired.
+        Please contact support.
+    </p>
+
+    <p id="UserTimeCreditNotEnough">
+        The specified user account does not have sufficient time credit.
+        Please top up your account.
+    </p>
+
+    <p id="UserTrafficCreditNotEnough">
+        The specified user account does not have sufficient data volume credit.
+        Please top up your account.
+    </p>
+
+    <p id="NoUserCredit">
+        The time and data volume credit for the specified user account
+        has been used up. Please try another account.
+    </p>
+
+    <p id="DailyUserQuotaExceeded">
+        The daily time or data limit for this account has been reached.
+    </p>
+
+    <p id="MonthlyUserQuotaExceeded">
+        The monthly time or data limit for this account has been reached.
+    </p>
+
+    <p id="UserAccountUsed">
+        The specified user account has already been used.
+        Please try another account.
+    </p>
+
+    <p id="MaxUserConcurrentLoginsExceeded">
+        The maximum number of simultaneous logins for this user account
+        has been reached.
+    </p>
+
+    <p id="VoucherDisabled">
+        The specified voucher is currently blocked.
+        Please contact support.
+    </p>
+
+    <p id="VoucherExpired">
+        The specified voucher has expired.
+        Please contact support.
+    </p>
+
+    <p id="VoucherTimeCreditNotEnough">
+        The specified voucher does not have sufficient time credit.
+        Please try another account.
+    </p>
+
+    <p id="VoucherTrafficCreditNotEnough">
+        The specified voucher does not have sufficient data volume credit.
+        Please try another account.
+    </p>
+
+    <p id="NoVoucherCredit">
+        The time and data volume credit for the specified voucher
+        has been used up.
+    </p>
+
+    <p id="DailyVoucherQuotaExceeded">
+        The daily time or data limit for this voucher has been reached.
+    </p>
+
+    <p id="MonthlyVoucherQuotaExceeded">
+        The monthly time or data limit for this voucher has been reached.
+    </p>
+
+    <p id="VoucherUsed">
+        The specified voucher has already been used.
+        Please try another account.
+    </p>
+
+    <p id="MaxVoucherConcurrentLoginsExceeded">
+        The maximum number of simultaneous logins for this voucher
+        has been reached.
+    </p>
+
+    <p id="PasswordConfirmInvalid">
+        The two passwords do not match. Please try again.
+    </p>
+
+    <p id="NewPasswordEmpty">
+        Empty passwords are not allowed. Please enter a password.
+    </p>
+
+    <p id="MaxUploadSizeExceeded">
+        Your data could not be transferred.
+        The maximum allowed file size has been exceeded.
+    </p>
+
+    <p id="FilesUploadRejected">
+        Your data could not be transferred.
+        The server rejected the upload.
+    </p>
+
+    <p id="FilesUploadAborted">
+        Your data could not be transferred.
+        The upload has been canceled.
+    </p>
+
+    <p id="GeneralFilesUploadError">
+        Your data could not be transferred.
+        An error occurred.
+    </p>
+
+    <p id="AccountRecharged">
+        Your account has been successfully topped up.
+        Thank you for your trust!
+    </p>
+
+    <p id="PasswordChanged">
+        Your password has been successfully changed.
+    </p>
+
+    <p id="LoginSuccessful">
+        You have successfully logged in.
+    </p>
+
+    <p id="LogoutSuccessful">
+        You have successfully logged out.
+    </p>
+
+    <p id="FilesUploadSuccessful">
+        Your data has been successfully transferred.
+        Please check if your files have been saved correctly.
+    </p>
+
+    <p id="UserType">
+        User:
+    </p>
+
+    <p id="VoucherType">
+        Voucher:
+    </p>
+
+    <p id="GuestType">
+        Guest
+    </p>
+
+</div>
+
+
+</body>
+</html>
