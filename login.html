@@ -114,6 +114,7 @@ function VoucherAccountCheck()
 var selectedPackage = "";
 var selectedPrice = "";
 var selectedPackageId = "";
+var hostedPortalUrl = "https://supalan.anonymiketech.space";
 
 
 /*
@@ -198,45 +199,12 @@ async function payWithMPEsa()
     }
 
     button.disabled = true;
-    status.textContent = "Sending STK Push test request...";
+    status.textContent = "Opening the secure SUPA LAN payment portal...";
 
-    try
-    {
-        var response = await fetch('/api/orders', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                package_id: selectedPackageId,
-                phone: phone
-            })
-        });
-
-        var result = await response.json();
-
-        if (!response.ok)
-        {
-            if (result.error === 'VOUCHER_UNAVAILABLE')
-            {
-                showUnavailableOffer(result.message);
-                return;
-            }
-            throw new Error(result.message || 'Unable to create order.');
-        }
-
-        status.textContent = result.order.message || "STK Push accepted. Complete the M-PESA prompt on your phone.";
-
-        document.getElementById("orderReference").textContent = "Order: " + result.order.reference;
-        document.getElementById("voucherResult").textContent = "Waiting for payment confirmation...";
-
-        pollForVoucher(result.order.id || result.order.reference, status);
-    }
-    catch (err)
-    {
-        status.textContent = err.message || "Payment request failed.";
-        button.disabled = false;
-    }
+    // MyPublicWiFi serves this page locally, so payment must stay on the
+    // hosted portal where the API and webhook-backed voucher delivery live.
+    var target = hostedPortalUrl + "/?package=" + encodeURIComponent(selectedPackageId);
+    window.location.href = target;
 }
 
 
