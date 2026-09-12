@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>SUPA LAN &middot; Voucher Admin</title>
+<style>
+  :root {
+    --bg: #070b12;
+    --panel: #0e1626;
+    --panel-2: #131f33;
+    --border: #1f2d45;
+    --text: #e8eef7;
+    --muted: #8ea2c0;
+    --accent: #22d3ee;
+    --accent-2: #34d399;
+    --danger: #f87171;
+    --warn: #fbbf24;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(34,211,238,0.08), transparent),
+      radial-gradient(900px 500px at 0% 10%, rgba(52,211,153,0.06), transparent),
+      var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+  a { color: var(--accent); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 28px 20px 80px; }
+
+  header.top {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 24px;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand .dot {
+    width: 38px; height: 38px; border-radius: 11px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    display: grid; place-items: center; color: #04121a; font-weight: 800;
+  }
+  .brand h1 { font-size: 18px; margin: 0; letter-spacing: .3px; }
+  .brand p { margin: 0; font-size: 12px; color: var(--muted); }
+
+  .btn {
+    appearance: none; border: 1px solid var(--border); cursor: pointer;
+    background: var(--panel-2); color: var(--text);
+    padding: 10px 16px; border-radius: 10px; font-size: 14px; font-weight: 600;
+    transition: .15s ease; display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #04121a; border: none;
+  }
+  .btn.primary:hover { filter: brightness(1.05); }
+  .btn.ghost { background: transparent; }
+  .btn.danger { color: var(--danger); border-color: rgba(248,113,113,.35); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 22px; margin-bottom: 22px;
+  }
+  .card h2 { margin: 0 0 4px; font-size: 16px; }
+  .card .sub { margin: 0 0 18px; font-size: 13px; color: var(--muted); }
+
+  /* Gate */
+  #gate { max-width: 420px; margin: 8vh auto 0; }
+  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  input[type=text], input[type=password], select, textarea {
+    width: 100%; background: var(--panel-2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px;
+    font-size: 14px; font-family: inherit; outline: none; transition: .15s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  textarea { min-height: 200px; resize: vertical; font-family: ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .5px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+  .pkg {
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px; position: relative;
+  }
+  .pkg .name { font-weight: 700; font-size: 14px; }
+  .pkg .price { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+  .stat-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    font-size: 11px; font-weight: 700; padding: 4px 9px; border-radius: 999px;
+    border: 1px solid var(--border); background: rgba(255,255,255,.02);
+  }
+  .chip .n { font-size: 13px; }
+  .chip.avail { color: var(--accent-2); border-color: rgba(52,211,153,.35); }
+  .chip.assigned { color: var(--accent); border-color: rgba(34,211,238,.3); }
+  .chip.low { color: var(--warn); border-color: rgba(251,191,36,.4); }
+  .chip.empty { color: var(--danger); border-color: rgba(248,113,113,.4); }
+
+  .form-row { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  .helper { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 16px; }
+  .count-pill {
+    font-size: 12px; color: var(--muted); margin-left: auto;
+    background: var(--panel-2); border: 1px solid var(--border);
+    padding: 6px 12px; border-radius: 999px;
+  }
+  .count-pill b { color: var(--accent); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; }
+  td.code { font-family: ui-monospace, Menlo, monospace; font-weight: 700; letter-spacing: 1px; }
+  .badge { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; }
+  .badge.AVAILABLE { color: var(--accent-2); background: rgba(52,211,153,.12); }
+  .badge.ASSIGNED { color: var(--accent); background: rgba(34,211,238,.12); }
+  .badge.USED { color: var(--muted); background: rgba(142,162,192,.12); }
+  .badge.BLOCKED { color: var(--danger); background: rgba(248,113,113,.12); }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--panel-2); border: 1px solid var(--border);
+    padding: 12px 18px; border-radius: 12px; font-size: 14px; font-weight: 600;
+    box-shadow: 0 12px 40px rgba(0,0,0,.5); opacity: 0; pointer-events: none;
+    transition: .25s; max-width: 90vw;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.ok { border-color: rgba(52,211,153,.5); color: var(--accent-2); }
+  .toast.err { border-color: rgba(248,113,113,.5); color: var(--danger); }
+  .hidden { display: none !important; }
+  .filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; margin-bottom: 16px; }
+  .filters > div { min-width: 160px; }
+  .empty-note { color: var(--muted); font-size: 13px; padding: 24px; text-align: center; }
+  .muted-inline { color: var(--muted); }
+</style>
+</head>
+<body>
+
+<!-- Token gate -->
+<div id="gate" class="card">
+  <div class="brand" style="margin-bottom:18px;">
+    <div class="dot">S</div>
+    <div>
+      <h1>SUPA LAN Voucher Admin</h1>
+      <p>ANONYMIKETECH &middot; restricted access</p>
+    </div>
+  </div>
+  <label for="tokenInput">Admin token</label>
+  <input id="tokenInput" type="password" placeholder="Enter ADMIN_TOKEN" autocomplete="off" />
+  <p class="helper">This matches the <code>ADMIN_TOKEN</code> set in your Render environment.</p>
+  <div style="margin-top:16px;">
+    <button class="btn primary" id="loginBtn" style="width:100%; justify-content:center;">Unlock dashboard</button>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div id="app" class="wrap hidden">
+  <header class="top">
+    <div class="brand">
+      <div class="dot">S</div>
+      <div>
+        <h1>Voucher Admin</h1>
+        <p>Load exported Wi-Fi codes and track inventory</p>
+      </div>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <button class="btn ghost" id="refreshBtn">Refresh</button>
+      <button class="btn ghost" id="logoutBtn">Lock</button>
+    </div>
+  </header>
+
+  <!-- Inventory -->
+  <section class="card">
+    <h2>Inventory by package</h2>
+    <p class="sub">Available codes are what a paying customer can be given. Keep this above zero for every package you sell.</p>
+    <div id="summaryGrid" class="grid"><div class="empty-note">Loading inventory&hellip;</div></div>
+  </section>
+
+  <!-- Import -->
+  <section class="card">
+    <h2>Add voucher codes</h2>
+    <p class="sub">Paste codes from your MyPublicWiFi export (one per line, or a CSV &mdash; the first column is used). Choose the package they belong to.</p>
+    <div class="form-row">
+      <div>
+        <label for="pkgSelect">Package</label>
+        <select id="pkgSelect"><option value="">Loading packages&hellip;</option></select>
+      </div>
+      <div>
+        <label for="codesInput">Voucher codes</label>
+        <textarea id="codesInput" placeholder="EIHHE&#10;KSBMM&#10;KMRII&#10;JHEHJ&#10;&#10;&mdash; or paste the CSV export directly &mdash;"></textarea>
+        <div class="helper">Header rows like &ldquo;Voucher code&rdquo; are ignored automatically. Duplicates are skipped.</div>
+      </div>
+    </div>
+    <div class="actions">
+      <input type="file" id="csvFile" accept=".csv,.txt" class="hidden" />
+      <button class="btn" id="uploadFileBtn">Load from file&hellip;</button>
+      <button class="btn primary" id="importBtn">Add to package</button>
+      <span class="count-pill">Detected: <b id="detectedCount">0</b> codes</span>
+    </div>
+  </section>
+
+  <!-- Recent -->
+  <section class="card">
+    <h2>Voucher records</h2>
+    <div class="filters">
+      <div>
+        <label for="filterPkg">Package</label>
+        <select id="filterPkg"><option value="">All packages</option></select>
+      </div>
+      <div>
+        <label for="filterStatus">Status</label>
+        <select id="filterStatus">
+          <option value="">All statuses</option>
+          <option value="AVAILABLE">Available</option>
+          <option value="ASSIGNED">Assigned</option>
+          <option value="USED">Used</option>
+          <option value="BLOCKED">Blocked</option>
+        </select>
+      </div>
+      <button class="btn ghost" id="applyFilter">Apply</button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Code</th><th>Package</th><th>Status</th><th>Order</th><th>Added</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="voucherRows">
+          <tr><td colspan="6" class="empty-note">No vouchers loaded yet.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+(function () {
+  var TOKEN_KEY = 'supalan_admin_token';
+  var token = sessionStorage.getItem(TOKEN_KEY) || '';
+
+  var gate = document.getElementById('gate');
+  var app = document.getElementById('app');
+
+  function toast(msg, kind) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + (kind || '');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function () { t.className = 'toast'; }, 3200);
+  }
+
+  function api(path, opts) {
+    opts = opts || {};
+    opts.headers = Object.assign({ 'x-admin-token': token }, opts.headers || {});
+    if (opts.body && typeof opts.body !== 'string') {
+      opts.headers['Content-Type'] = 'application/json';
+      opts.body = JSON.stringify(opts.body);
+    }
+    return fetch(path, opts).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (data) {
+        if (!r.ok) {
+          var err = new Error(data.message || data.error || ('HTTP ' + r.status));
+          err.status = r.status;
+          throw err;
+        }
+        return data;
+      });
+    });
+  }
+
+  // ---- Auth gate ----
+  function showApp() {
+    gate.classList.add('hidden');
+    app.classList.remove('hidden');
+    loadSummary();
+    loadVouchers();
+  }
+
+  function attemptLogin(candidate) {
+    token = candidate;
+    return api('/api/admin/session')
+      .then(function () {
+        sessionStorage.setItem(TOKEN_KEY, token);
+        showApp();
+      })
+      .catch(function (e) {
+        token = '';
+        sessionStorage.removeItem(TOKEN_KEY);
+        toast(e.status === 401 ? 'Invalid admin token.' : e.message, 'err');
+      });
+  }
+
+  document.getElementById('loginBtn').addEventListener('click', function () {
+    var val = document.getElementById('tokenInput').value.trim();
+    if (!val) { toast('Enter the admin token.', 'err'); return; }
+    attemptLogin(val);
+  });
+  document.getElementById('tokenInput').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.nativeEvent?.isComposing && e.keyCode !== 229) {
+      document.getElementById('loginBtn').click();
+    }
+  });
+  document.getElementById('logoutBtn').addEventListener('click', function () {
+    sessionStorage.removeItem(TOKEN_KEY);
+    token = '';
+    app.classList.add('hidden');
+    gate.classList.remove('hidden');
+    document.getElementById('tokenInput').value = '';
+  });
+
+  // ---- Code parsing ----
+  function parseCodes(raw) {
+    var out = [];
+    var seen = {};
+    raw.split(/\r?\n/).forEach(function (line) {
+      var cell = line.indexOf(',') >= 0 ? line.split(',')[0] : line;
+      cell = cell.replace(/^["']|["']$/g, '').trim();
+      if (!cell) return;
+      // Skip obvious header labels.
+      if (/^(voucher\s*code|code|username|password)$/i.test(cell)) return;
+      var key = cell.toUpperCase();
+      if (seen[key]) return;
+      seen[key] = true;
+      out.push(cell);
+    });
+    return out;
+  }
+
+  var codesInput = document.getElementById('codesInput');
+  function updateDetected() {
+    document.getElementById('detectedCount').textContent = parseCodes(codesInput.value).length;
+  }
+  codesInput.addEventListener('input', updateDetected);
+
+  document.getElementById('uploadFileBtn').addEventListener('click', function () {
+    document.getElementById('csvFile').click();
+  });
+  document.getElementById('csvFile').addEventListener('change', function (e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      codesInput.value = (codesInput.value ? codesInput.value + '\n' : '') + reader.result;
+      updateDetected();
+      toast('File loaded. Review the codes, then click Add.', 'ok');
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
+
+  // ---- Inventory summary ----
+  function chipClass(available) {
+    if (available === 0) return 'empty';
+    if (available <= 5) return 'low';
+    return 'avail';
+  }
+
+  function loadSummary() {
+    var grid = document.getElementById('summaryGrid');
+    return api('/api/admin/summary').then(function (data) {
+      var pkgs = data.packages || [];
+      // Populate both package selects.
+      var opts = '<option value="">Select a package&hellip;</option>';
+      var filterOpts = '<option value="">All packages</option>';
+      pkgs.forEach(function (p) {
+        opts += '<option value="' + p.id + '">' + p.name + ' (KES ' + p.price + ')</option>';
+        filterOpts += '<option value="' + p.id + '">' + p.name + '</option>';
+      });
+      document.getElementById('pkgSelect').innerHTML = opts;
+      document.getElementById('filterPkg').innerHTML = filterOpts;
+
+      if (!pkgs.length) {
+        grid.innerHTML = '<div class="empty-note">No packages found in the database.</div>';
+        return;
+      }
+      grid.innerHTML = pkgs.map(function (p) {
+        return '' +
+          '<div class="pkg">' +
+            '<div class="name">' + p.name + '</div>' +
+            '<div class="price">KES ' + p.price + '</div>' +
+            '<div class="stat-row">' +
+              '<span class="chip ' + chipClass(p.available) + '">Avail <span class="n">' + p.available + '</span></span>' +
+              '<span class="chip assigned">Assigned <span class="n">' + p.assigned + '</span></span>' +
+              (p.used ? '<span class="chip">Used <span class="n">' + p.used + '</span></span>' : '') +
+              (p.blocked ? '<span class="chip empty">Blocked <span class="n">' + p.blocked + '</span></span>' : '') +
+            '</div>' +
+          '</div>';
+      }).join('');
+    }).catch(function (e) {
+      grid.innerHTML = '<div class="empty-note">' + e.message + '</div>';
+      if (e.status === 401) document.getElementById('logoutBtn').click();
+    });
+  }
+
+  // ---- Import ----
+  document.getElementById('importBtn').addEventListener('click', function () {
+    var packageId = document.getElementById('pkgSelect').value;
+    var codes = parseCodes(codesInput.value);
+    if (!packageId) { toast('Choose a package first.', 'err'); return; }
+    if (!codes.length) { toast('No valid codes detected.', 'err'); return; }
+
+    var btn = this;
+    btn.disabled = true;
+    btn.textContent = 'Adding&hellip;';
+    api('/api/admin/vouchers', { method: 'POST', body: { packageId: packageId, codes: codes } })
+      .then(function (res) {
+        toast(res.message || 'Vouchers added.', 'ok');
+        codesInput.value = '';
+        updateDetected();
+        loadSummary();
+        loadVouchers();
+      })
+      .catch(function (e) { toast(e.message, 'err'); })
+      .finally(function () { btn.disabled = false; btn.textContent = 'Add to package'; });
+  });
+
+  // ---- Voucher records ----
+  function fmtDate(s) {
+    if (!s) return '<span class="muted-inline">&mdash;</span>';
+    var d = new Date(s);
+    return d.toLocaleString();
+  }
+
+  function loadVouchers() {
+    var pkg = document.getElementById('filterPkg').value;
+    var status = document.getElementById('filterStatus').value;
+    var q = [];
+    if (pkg) q.push('packageId=' + encodeURIComponent(pkg));
+    if (status) q.push('status=' + encodeURIComponent(status));
+    q.push('limit=200');
+    var tbody = document.getElementById('voucherRows');
+    return api('/api/admin/vouchers?' + q.join('&')).then(function (data) {
+      var rows = data.vouchers || [];
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-note">No vouchers match this filter.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = rows.map(function (v) {
+        var canDelete = v.status === 'AVAILABLE';
+        return '<tr>' +
+          '<td class="code">' + v.code + '</td>' +
+          '<td>' + (v.package_name || v.package_id) + '</td>' +
+          '<td><span class="badge ' + v.status + '">' + v.status + '</span></td>' +
+          '<td>' + (v.order_reference ? '<span class="muted-inline">' + v.order_reference + '</span>' : '<span class="muted-inline">&mdash;</span>') + '</td>' +
+          '<td class="muted-inline">' + fmtDate(v.created_at) + '</td>' +
+          '<td>' + (canDelete ? '<button class="btn danger" data-del="' + v.id + '" style="padding:5px 10px;font-size:12px;">Delete</button>' : '') + '</td>' +
+        '</tr>';
+      }).join('');
+    }).catch(function (e) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-note">' + e.message + '</td></tr>';
+      if (e.status === 401) document.getElementById('logoutBtn').click();
+    });
+  }
+
+  document.getElementById('voucherRows').addEventListener('click', function (e) {
+    var id = e.target.getAttribute && e.target.getAttribute('data-del');
+    if (!id) return;
+    if (!confirm('Delete this unassigned voucher?')) return;
+    api('/api/admin/vouchers/' + id, { method: 'DELETE' })
+      .then(function () { toast('Voucher deleted.', 'ok'); loadSummary(); loadVouchers(); })
+      .catch(function (err) { toast(err.message, 'err'); });
+  });
+
+  document.getElementById('applyFilter').addEventListener('click', loadVouchers);
+  document.getElementById('refreshBtn').addEventListener('click', function () {
+    loadSummary(); loadVouchers(); toast('Refreshed.', 'ok');
+  });
+
+  // ---- Boot ----
+  if (token) {
+    api('/api/admin/session').then(showApp).catch(function () {
+      sessionStorage.removeItem(TOKEN_KEY);
+      token = '';
+    });
+  }
+})();
+</script>
+</body>
+</html>
