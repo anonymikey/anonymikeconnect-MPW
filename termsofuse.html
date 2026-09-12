@@ -1502,9 +1502,45 @@ body {
 
 }
 
-</style>
-
-</head>
+  .payment-method-card {
+    padding: 15px;
+    margin-bottom: 12px;
+    border: 1px solid rgba(148, 163, 184, .13);
+    border-radius: 16px;
+    background: rgba(15, 27, 40, .78);
+  }
+  .stk-card { border-color: rgba(34, 211, 238, .28); background: linear-gradient(145deg, rgba(8, 58, 78, .58), rgba(11, 28, 43, .92)); box-shadow: 0 14px 36px rgba(2, 132, 199, .10); }
+  .method-heading { display: flex; align-items: center; gap: 10px; }
+  .method-icon { display: grid; place-items: center; flex: 0 0 auto; width: 30px; height: 30px; border-radius: 10px; color: #082f49; background: #67e8f9; font-size: 17px; font-weight: 950; }
+  .fallback-icon { color: #c4b5fd; background: rgba(139, 92, 246, .18); }
+  .method-kicker, .method-subtitle { color: #8da7ba; font-size: 9px; font-weight: 800; letter-spacing: .4px; text-transform: uppercase; }
+  .method-title { color: #f8fafc; font-size: 13px; font-weight: 900; }
+  .method-badge { margin-left: auto; padding: 5px 7px; border-radius: 999px; color: #a5f3fc; background: rgba(34, 211, 238, .12); font-size: 8px; font-weight: 900; letter-spacing: .6px; }
+  .method-description, .fallback-help { margin: 11px 0; color: #91a4b5; font-size: 10px; line-height: 1.5; }
+  .phone-label { display: block; margin-bottom: 6px; color: #cbd5e1; font-size: 9px; font-weight: 850; text-transform: uppercase; letter-spacing: .6px; }
+  .phone-input { width: 100%; padding: 12px 13px; border: 1px solid rgba(148, 163, 184, .18); border-radius: 11px; outline: none; color: #fff; background: rgba(2, 8, 23, .52); font: inherit; font-size: 11px; }
+  .phone-input:focus { border-color: #22d3ee; box-shadow: 0 0 0 3px rgba(34, 211, 238, .11); }
+  .phone-input::placeholder { color: #61778b; }
+  .stk-button { margin: 10px 0 0; border: 0; color: #082f49; background: linear-gradient(135deg, #67e8f9, #38bdf8); box-shadow: 0 10px 24px rgba(14, 165, 233, .2); cursor: pointer; }
+  .stk-button:disabled { cursor: wait; opacity: .65; }
+  .button-arrow { font-size: 18px; line-height: 0; }
+  .stk-status { min-height: 0; margin-top: 8px; color: #a5f3fc; font-size: 10px; line-height: 1.4; }
+  .stk-status.error { color: #fca5a5; }
+  .fallback-divider { display: flex; align-items: center; gap: 9px; margin: 17px 0 10px; color: #64748b; font-size: 9px; font-weight: 850; text-transform: uppercase; letter-spacing: .7px; }
+  .fallback-divider::before, .fallback-divider::after { content: ''; height: 1px; flex: 1; background: rgba(148, 163, 184, .12); }
+  .fallback-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .fallback-card { margin-bottom: 10px; padding: 13px; }
+  .till-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 13px; }
+  .till-row strong, .recipient-number { color: #f8fafc; font-size: 18px; font-weight: 950; letter-spacing: .8px; }
+  .copy-till { padding: 6px 8px; border: 1px solid rgba(103, 232, 249, .2); border-radius: 8px; color: #a5f3fc; background: rgba(34, 211, 238, .08); font-size: 8px; font-weight: 850; cursor: pointer; }
+  .recipient-number { margin-top: 13px; font-size: 15px; }
+  .fallback-help { margin-bottom: 0; font-size: 9px; }
+  .fallback-actions { display: flex; gap: 6px; margin-top: 12px; }
+  .fallback-actions .action-button { min-height: 34px; margin: 0; font-size: 9px; }
+  @media(max-width:430px) { .fallback-grid { grid-template-columns: 1fr; gap: 0; } }
+  </style>
+  
+  </head>
 
 
 <body>
@@ -2051,122 +2087,55 @@ body {
             </div>
 
 
-            <!-- M-PESA -->
-
-            <div class="modal-mpesa">
-
-
-                <div class="modal-mpesa-label">
-
-                    ● Lipa Na M-PESA
-
+            <div class="payment-method-card stk-card">
+                <div class="method-heading">
+                    <span class="method-icon">↗</span>
+                    <div>
+                        <div class="method-kicker">Recommended</div>
+                        <div class="method-title">Pay with M-PESA</div>
+                    </div>
+                    <span class="method-badge">STK PUSH</span>
                 </div>
-
-
-                <div style="
-                    color:#64748b;
-                    font-size:9px;
-                    margin-top:9px;
-                ">
-
-                    Buy Goods & Services Till
-
-                </div>
-
-
-                <div class="modal-till">
-
-                    4930086
-
-                </div>
-
-
-                <div class="modal-phone">
-
-                    📱 WhatsApp / SMS:
-                    0113313240
-
-                </div>
-
-
+                <p class="method-description">Enter your M-PESA number and we&apos;ll send a secure payment prompt directly to your phone.</p>
+                <label class="phone-label" for="stkPhone">M-PESA phone number</label>
+                <input id="stkPhone" class="phone-input" type="tel" inputmode="numeric" autocomplete="tel" placeholder="e.g. 0712345678" />
+                <button id="stkButton" class="action-button stk-button" type="button" onclick="payWithStk()">
+                    <span>Pay with M-PESA</span><span class="button-arrow">→</span>
+                </button>
+                <div id="stkStatus" class="stk-status" role="status" aria-live="polite"></div>
             </div>
 
+            <div class="fallback-divider"><span>STK not working?</span></div>
 
-            <!-- INSTRUCTIONS -->
-
-            <div class="instructions">
-
-
-                <div class="instructions-title">
-
-                    📲 How to activate
-
+            <div class="fallback-grid">
+                <div class="payment-method-card fallback-card">
+                    <div class="method-heading">
+                        <span class="method-icon fallback-icon">#</span>
+                        <div>
+                            <div class="method-title">Pay via Till</div>
+                            <div class="method-subtitle">Buy Goods &amp; Services</div>
+                        </div>
+                    </div>
+                    <div class="till-row"><strong>4930086</strong><button class="copy-till" type="button" onclick="copyTill()">Copy Till</button></div>
+                    <p class="fallback-help">Pay the amount above, then send your confirmation below.</p>
                 </div>
-
-
-                <b>1.</b>
-                Pay the displayed amount to
-                <b>Till 4930086</b>.
-
-                <br />
-
-
-                <b>2.</b>
-                Keep your M-PESA confirmation
-                message.
-
-                <br />
-
-
-                <b>3.</b>
-                Send the M-PESA confirmation
-                message or transaction code to
-                <b>0113313240</b>.
-
-                <br />
-
-
-                <b>4.</b>
-                Your WiFi voucher code will be
-                sent after payment verification.
-
-
+                <div class="payment-method-card fallback-card">
+                    <div class="method-heading">
+                        <span class="method-icon fallback-icon">↗</span>
+                        <div>
+                            <div class="method-title">Send Money</div>
+                            <div class="method-subtitle">Share your confirmation</div>
+                        </div>
+                    </div>
+                    <div class="recipient-number">0113313240</div>
+                    <div class="fallback-actions">
+                        <a id="whatsappButton" href="#" target="_blank" rel="noopener" class="action-button whatsapp-button">WhatsApp</a>
+                        <a id="smsButton" href="#" class="action-button sms-button">SMS</a>
+                    </div>
+                </div>
             </div>
 
-
-            <!-- WHATSAPP -->
-
-            <a
-                id="whatsappButton"
-                href="#"
-                target="_blank"
-                class="action-button whatsapp-button"
-            >
-
-                💬 Send M-PESA via WhatsApp
-
-            </a>
-
-
-            <!-- SMS -->
-
-            <a
-                id="smsButton"
-                href="#"
-                class="action-button sms-button"
-            >
-
-                📩 Send M-PESA via SMS
-
-            </a>
-
-
-            <div class="voucher-note">
-
-                Voucher delivery is subject to
-                successful payment verification.
-
-            </div>
+            <div class="voucher-note">Your WiFi voucher will be sent after successful payment verification.</div>
 
 
             <button
@@ -2301,6 +2270,54 @@ function openPayment(
 
 }
 
+
+function copyTill() {
+    navigator.clipboard?.writeText('4930086');
+    var button = document.querySelector('.copy-till');
+    if (button) {
+        button.textContent = 'Copied';
+        setTimeout(function () { button.textContent = 'Copy Till'; }, 1400);
+    }
+}
+
+async function payWithStk() {
+    var phoneInput = document.getElementById('stkPhone');
+    var button = document.getElementById('stkButton');
+    var status = document.getElementById('stkStatus');
+    var phone = phoneInput.value.trim();
+
+    if (!/^0?7\\d{8}$/.test(phone.replace(/\\s+/g, ''))) {
+        status.className = 'stk-status error';
+        status.textContent = 'Enter a valid M-PESA number, for example 0712345678.';
+        phoneInput.focus();
+        return;
+    }
+
+    button.disabled = true;
+    status.className = 'stk-status';
+    status.textContent = 'Sending payment prompt to your phone…';
+
+    try {
+        var response = await fetch('/api/payments/stk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                amount: Number(selectedPackagePrice),
+                phone: phone,
+                accountReference: selectedPackageName,
+                transactionDesc: 'ANONYMIKETECH WiFi - ' + selectedPackageName
+            })
+        });
+        var result = await response.json();
+        if (!response.ok || !result.success) throw new Error(result.message || 'Unable to start STK payment.');
+        status.textContent = 'Prompt sent. Complete the payment on your phone, then wait for verification.';
+    } catch (error) {
+        status.className = 'stk-status error';
+        status.textContent = 'STK is unavailable right now. Use Till 4930086 or Send Money below.';
+    } finally {
+        button.disabled = false;
+    }
+}
 
 /*
  * CLOSE PAYMENT
