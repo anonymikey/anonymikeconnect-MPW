@@ -114,13 +114,6 @@ function normalizePalPlussState(status) {
 app.post('/api/payments/stk', async (req, res) => {
   const provider = (process.env.PAYMENT_PROVIDER || 'TEST').toUpperCase();
 
-  if (provider === 'TEST' || testMode) {
-    return res.status(503).json({
-      error: 'PAYMENT_API_NOT_READY',
-      message: 'PalPluss STK flow is not enabled in TEST_MODE.'
-    });
-  }
-
   const body = req.body || {};
   const amount = Number(body.amount || 0);
   const phone = normalizePhone(body.phone || body.phonenumber || body.phone_number);
@@ -129,6 +122,40 @@ app.post('/api/payments/stk', async (req, res) => {
   const callbackUrl = String(body.callbackUrl || body.callback_url || '').trim();
   const channelId = body.channelId || body.channel_id || null;
   const credentialId = body.credential_id || null;
+
+  if (provider === 'TEST' || testMode) {
+    if (!amount || amount < 1 || !phone || !accountReference || !transactionDesc || !callbackUrl) {
+      return res.status(400).json({
+        error: 'VALIDATION_ERROR',
+        message: 'amount, phone, accountReference, transactionDesc, and callbackUrl are required'
+      });
+    }
+
+    const transactionId = crypto.randomUUID();
+    const providerRequestId = `TEST-${crypto.randomUUID().replace(/-/g, '').slice(0, 14).toUpperCase()}`;
+
+    return res.status(200).json({
+      success: true,
+      provider: 'TEST',
+      testMode: true,
+      data: {
+        transactionId,
+        tenantId: null,
+        channelId: channelId || null,
+        type: 'STK',
+        status: 'PENDING',
+        amount,
+        currency: 'KES',
+        phone,
+        providerRequestId,
+        providerCheckoutId: providerRequestId,
+        accountReference,
+        transactionDesc,
+        callbackUrl
+      },
+      message: 'TEST MODE: PalPluss STK simulation accepted. No real provider request was executed.'
+    });
+  }
 
   if (!amount || amount < 1 || !phone || !accountReference || !transactionDesc || !callbackUrl) {
     return res.status(400).json({
@@ -195,7 +222,7 @@ app.post('/api/payments/stk', async (req, res) => {
 });
 
 app.post('/api/orders', async (req, res) => {
-  const packageId = req.body.packageId || req.body.package_id;
+  const packageId = req.body.packageId || req.body.package_id || req.body.package;
   const phone = normalizePhone(req.body.phone);
 
   if (!packageId || !phone) {
@@ -242,6 +269,26 @@ app.post('/api/orders', async (req, res) => {
 
     const order = orderInsert.rows[0];
 
+    const voucherId = crypto.randomUUID();
+    const voucherCode = `SUPA-${crypto.randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase()}`;
+
+    await db.query(
+      `insert into vouchers
+        (id, code, package_id, status, order_id, created_at, assigned_at, used_at)
+       values
+        ($1, $2, $3, 'AVAILABLE', $4, now(), now(), null)
+       on conflict (code) do nothing`,
+      [voucherId, voucherCode, pkg.id, order.id]
+    );
+
+    await db.query(
+      `update orders
+       set voucher_id = $1,
+           updated_at = now()
+       where id = $2`,
+      [voucherId, order.id]
+    );
+
     return res.status(201).json({
       success: true,
       order: {
@@ -253,6 +300,13 @@ app.post('/api/orders', async (req, res) => {
         status: order.status,
         created_at: order.created_at,
         message: 'TEST MODE: STK Push accepted. No real PalPluss payment executed.'
+      },
+      voucher: {
+        id: voucherId,
+        code: voucherCode,
+        package_id: pkg.id,
+        status: 'AVAILABLE',
+        assigned_at: new Date().toISOString()
       }
     });
   } catch (err) {

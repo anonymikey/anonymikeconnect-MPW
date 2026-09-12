@@ -1035,6 +1035,25 @@ $(document).ready(function()
 
             </div>
 
+            <div class="phone-input-wrap">
+                <label for="phoneNumber" class="phone-label">
+                    M-PESA Phone Number
+                </label>
+                <input
+                    id="phoneNumber"
+                    class="transaction-input"
+                    type="text"
+                    placeholder="e.g. +254712345678"
+                    autocomplete="off"
+                />
+            </div>
+
+            <div class="pay-status" id="payStatus"></div>
+
+            <div class="order-reference-wrap">
+                <span id="orderReference">Order: --</span>
+                <span id="voucherResult">Voucher: pending</span>
+            </div>
 
             <input
                 id="transactionCode"
@@ -1044,8 +1063,18 @@ $(document).ready(function()
                 autocomplete="off"
             />
 
-
             <div class="contact-payment-buttons">
+
+                <button
+                    type="button"
+                    class="pay-button"
+                    id="payButton"
+                    onclick="payWithMPEsa();">
+
+                    <span>✓</span>
+                    Pay with M-PESA
+
+                </button>
 
                 <button
                     type="button"
