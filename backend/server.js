@@ -425,6 +425,108 @@ app.post('/api/orders', async (req, res) => {
   }
 });
 
+app.get('/api/orders/:id/voucher', async (req, res) => {
+  const idParam = String(req.params.id || '').trim();
+
+  if (!idParam || idParam.length > 120 || !/^[a-zA-Z0-9_-]+$/.test(idParam)) {
+    return res.status(400).json({ error: 'INVALID_ORDER_ID', message: 'A valid order ID is required.' });
+  }
+
+  const client = await db.connect();
+  try {
+    await client.query('begin');
+
+    const orderResult = await client.query(
+      `select o.id, o.reference, o.package_id, o.amount, o.status, o.voucher_id,
+              p.name as package_name, v.code as voucher_code
+       from orders o
+       join packages p on p.id = o.package_id
+       left join vouchers v on v.id = o.voucher_id
+       where o.id::text = $1 or o.reference = $1
+       limit 1
+       for update of o`,
+      [idParam]
+    );
+
+    if (!orderResult.rowCount) {
+      await client.query('rollback');
+      return res.status(404).json({ error: 'ORDER_NOT_FOUND', message: 'Order was not found.' });
+    }
+
+    const order = orderResult.rows[0];
+    if (!['PAID', 'VOUCHER_ASSIGNED'].includes(order.status)) {
+      await client.query('rollback');
+      return res.status(409).json({
+        error: order.status === 'FAILED' ? 'PAYMENT_NOT_COMPLETED' : 'PAYMENT_PENDING',
+        status: order.status,
+        message: order.status === 'FAILED' ? 'Payment was not completed.' : 'Payment verification is in progress.'
+      });
+    }
+
+    if (order.voucher_id && order.voucher_code) {
+      await client.query('commit');
+      return res.json({
+        order_id: order.id,
+        status: 'VOUCHER_ASSIGNED',
+        package_name: order.package_name,
+        amount: order.amount,
+        voucher: { code: order.voucher_code }
+      });
+    }
+
+    const availableVoucher = await client.query(
+      `select id, code from vouchers
+       where package_id = $1 and status = 'AVAILABLE'
+       order by created_at asc limit 1 for update skip locked`,
+      [order.package_id]
+    );
+
+    if (!availableVoucher.rowCount) {
+      await client.query('commit');
+      return res.status(503).json({
+        error: 'VOUCHER_UNAVAILABLE',
+        status: 'PAID',
+        package_name: order.package_name,
+        message: 'Payment received. Voucher delivery is temporarily unavailable. Please contact support.'
+      });
+    }
+
+    const voucher = availableVoucher.rows[0];
+    const claim = await client.query(
+      `update vouchers
+       set status = 'ASSIGNED', order_id = $1, assigned_at = coalesce(assigned_at, now())
+       where id = $2 and status = 'AVAILABLE'
+       returning id, code`,
+      [order.id, voucher.id]
+    );
+
+    if (!claim.rowCount) {
+      await client.query('rollback');
+      return res.status(503).json({ error: 'VOUCHER_ASSIGNMENT_RETRY', message: 'Voucher delivery is being prepared. Please refresh this page shortly.' });
+    }
+
+    await client.query(
+      `update orders set voucher_id = $2, status = 'VOUCHER_ASSIGNED', paid_at = coalesce(paid_at, now()), updated_at = now() where id = $1`,
+      [order.id, claim.rows[0].id]
+    );
+    await client.query('commit');
+
+    return res.json({
+      order_id: order.id,
+      status: 'VOUCHER_ASSIGNED',
+      package_name: order.package_name,
+      amount: order.amount,
+      voucher: { code: claim.rows[0].code }
+    });
+  } catch (err) {
+    await client.query('rollback').catch(() => {});
+    console.error('GET /api/orders/:id/voucher error:', err.message);
+    return res.status(500).json({ error: 'VOUCHER_LOOKUP_FAILED', message: 'Unable to retrieve your voucher.' });
+  } finally {
+    client.release();
+  }
+});
+
 app.get('/api/orders/:id', async (req, res) => {
   const idParam = req.params.id.trim();
 
