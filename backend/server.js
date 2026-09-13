@@ -466,11 +466,13 @@ app.get('/api/orders/:id/voucher', async (req, res) => {
     if (order.voucher_id && order.voucher_code) {
       await client.query('commit');
       return res.json({
+        status: 'READY',
+        orderId: order.id,
         order_id: order.id,
-        status: 'VOUCHER_ASSIGNED',
+        package: order.package_name,
         package_name: order.package_name,
         amount: order.amount,
-        voucher: { code: order.voucher_code }
+        voucher: order.voucher_code
       });
     }
 
@@ -512,11 +514,13 @@ app.get('/api/orders/:id/voucher', async (req, res) => {
     await client.query('commit');
 
     return res.json({
+      status: 'READY',
+      orderId: order.id,
       order_id: order.id,
-      status: 'VOUCHER_ASSIGNED',
+      package: order.package_name,
       package_name: order.package_name,
       amount: order.amount,
-      voucher: { code: claim.rows[0].code }
+      voucher: claim.rows[0].code
     });
   } catch (err) {
     await client.query('rollback').catch(() => {});
