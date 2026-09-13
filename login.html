@@ -226,22 +226,9 @@ async function payWithMPEsa()
 
         var paymentProgress = document.getElementById("paymentProgress");
         if (paymentProgress) paymentProgress.hidden = false;
-        status.textContent = "Payment prompt sent. Complete it on your phone while we reserve your voucher.";
+        status.textContent = "Payment prompt sent. Opening your secure order page...";
 
-        document.getElementById("orderReference").textContent = "Order: " + result.order.reference;
-
-        if (result.voucher && result.voucher.code)
-        {
-            document.getElementById("voucherResult").textContent = "Voucher: " + result.voucher.code;
-                if (paymentProgress) paymentProgress.hidden = true;
-                status.textContent = "Payment verified. Your Wi-Fi voucher is ready.";
-                button.disabled = false;
-        }
-        else
-        {
-            document.getElementById("voucherResult").textContent = "Waiting for payment confirmation...";
-            pollForVoucher(result.order.id || result.order.reference, status);
-        }
+        window.location.href = "success.html?order=" + encodeURIComponent(result.order.id || result.order.reference);
     }
     catch (err)
     {
@@ -634,92 +621,6 @@ $(document).ready(function()
         </div>
 
     </noscript>
-
-
-
-    <!-- =====================================================
-         VOUCHER LOGIN
-         ===================================================== -->
-
-    <section class="login-card">
-
-        <div class="section-heading">
-
-            <div class="section-icon">
-                🔐
-            </div>
-
-            <div>
-                <span class="eyebrow">
-                    ALREADY HAVE ACCESS?
-                </span>
-
-                <h2>
-                    Enter Your Voucher
-                </h2>
-            </div>
-
-        </div>
-
-
-        <p class="section-description">
-
-            Enter the voucher code you received after payment
-            and tap <strong>Connect</strong>.
-
-        </p>
-
-
-        <form
-            action="./"
-            method="post"
-            onsubmit="return VoucherAccountCheck();">
-
-            <input
-                type="hidden"
-                name="_action"
-                value="VoucherLogin"
-            />
-
-
-            <div class="voucher-input-wrap">
-
-                <span class="input-icon">
-                    🎟
-                </span>
-
-                <input
-                    tabindex="4"
-                    id="Voucher"
-                    class="voucher-input"
-                    placeholder="Enter voucher code"
-                    name="Voucher"
-                    value=""
-                    autocomplete="off"
-                    type="text"
-                />
-
-            </div>
-
-
-            <button
-                tabindex="5"
-                class="connect-button"
-                type="submit">
-
-                <span>
-                    Connect to SUPA LAN
-                </span>
-
-                <span class="button-arrow">
-                    →
-                </span>
-
-            </button>
-
-        </form>
-
-    </section>
 
 
 
