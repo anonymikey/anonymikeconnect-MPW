@@ -11,6 +11,7 @@ const app = express();
 const PORT = Number(process.env.PORT || 3000);
 const rootDir = path.join(__dirname, '..');
 const testMode = (process.env.TEST_MODE || 'true').toLowerCase() === 'true' || process.env.TEST_MODE === '1';
+const portalUrl = process.env.MYPUBLICWIFI_PORTAL_URL || 'http://192.168.10.1/';
 
 const db = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -26,6 +27,10 @@ app.use(express.static(rootDir));
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(rootDir, 'login.html'));
+});
+
+app.get('/api/config', (req, res) => {
+  return res.json({ portalUrl });
 });
 
 app.get('/api/health', async (req, res) => {
@@ -453,7 +458,7 @@ app.get('/api/orders/:id', async (req, res) => {
     const order = result.rows[0];
 
     // Only expose the voucher code once the payment is verified and a voucher assigned.
-    const voucherCode = order.status === 'VOUCHER_ASSIGNED' ? order.voucher_code : null;
+    const voucherCode = order.status === 'VOUCHER_ASSIGNED' && order.voucher_id ? order.voucher_code : null;
 
     return res.json({
       id: order.id,
@@ -627,6 +632,26 @@ app.post('/api/webhooks/palpluss', async (req, res) => {
       message: 'Unable to process PalPluss callback.'
     });
   }
+});
+
+// Manual Till/Send Money payments stay pending until an authenticated admin confirms them.
+app.post('/api/admin/orders/:id/confirm', requireAdmin, async (req, res) => {
+  const id = req.params.id.trim();
+  const client = await db.connect();
+  try {
+    await client.query('begin');
+    const orderResult = await client.query(`select id, package_id, status, voucher_id from orders where id::text = $1 or reference = $1 for update`, [id]);
+    if (!orderResult.rowCount) { await client.query('rollback'); return res.status(404).json({ error: 'ORDER_NOT_FOUND', message: 'Order was not found.' }); }
+    const order = orderResult.rows[0];
+    if (order.voucher_id) { await client.query('rollback'); return res.json({ success: true, status: 'VOUCHER_ASSIGNED', idempotent: true }); }
+    if (['FAILED', 'EXPIRED'].includes(order.status)) { await client.query('rollback'); return res.status(409).json({ error: 'ORDER_NOT_CONFIRMABLE', message: 'Failed or expired orders cannot be confirmed.' }); }
+    const voucher = await client.query(`select id, code from vouchers where package_id = $1 and status = 'AVAILABLE' order by created_at asc limit 1 for update skip locked`, [order.package_id]);
+    if (!voucher.rowCount) { await client.query(`update orders set status = 'PAID', paid_at = coalesce(paid_at, now()), updated_at = now() where id = $1`, [order.id]); await client.query('commit'); return res.status(409).json({ error: 'INVENTORY_EMPTY', message: 'Payment confirmed, but no matching voucher is available. Support must add inventory.' }); }
+    const claimed = await client.query(`update vouchers set status = 'ASSIGNED', order_id = $1, assigned_at = now() where id = $2 and status = 'AVAILABLE' returning id, code`, [order.id, voucher.rows[0].id]);
+    await client.query(`update orders set status = 'VOUCHER_ASSIGNED', voucher_id = $2, paid_at = coalesce(paid_at, now()), updated_at = now() where id = $1`, [order.id, claimed.rows[0].id]);
+    await client.query('commit');
+    return res.json({ success: true, status: 'VOUCHER_ASSIGNED', voucher: { code: claimed.rows[0].code } });
+  } catch (err) { await client.query('rollback').catch(() => {}); console.error('POST /api/admin/orders/:id/confirm error:', err.message); return res.status(500).json({ error: 'ORDER_CONFIRM_FAILED', message: 'Unable to confirm order.' }); } finally { client.release(); }
 });
 
 // ---------------------------------------------------------------------------
