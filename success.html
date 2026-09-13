@@ -408,6 +408,31 @@ body::after {
 }
 
 /* =========================================================
+   VOUCHER DELIVERY
+   ========================================================= */
+.voucher-card {
+    margin-top: 20px;
+    padding: 28px;
+    border-radius: 24px;
+    background: linear-gradient(135deg, rgba(39,229,155,.13), rgba(109,124,255,.12)), var(--card);
+    border: 1px solid rgba(39,229,155,.28);
+    box-shadow: 0 15px 50px rgba(0,0,0,.2);
+}
+.voucher-kicker { color: var(--success); font-size: 12px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+.voucher-code { display: block; margin: 12px 0 18px; color: #fff; font-size: clamp(26px, 6vw, 42px); font-weight: 850; letter-spacing: 2px; line-height: 1.15; overflow-wrap: anywhere; }
+.voucher-meta { display: flex; flex-wrap: wrap; gap: 12px 28px; margin-bottom: 20px; color: var(--muted); font-size: 14px; }
+.voucher-meta strong { color: #fff; }
+.voucher-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.voucher-actions button, .login-link { min-height: 48px; padding: 0 18px; border: 0; border-radius: 14px; color: #fff; font: inherit; font-weight: 750; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+.voucher-actions button { background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+.login-link { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12); }
+.voucher-status { margin: 0 0 18px; color: var(--muted); line-height: 1.55; }
+.instructions { margin-top: 20px; padding: 24px; border-radius: 22px; background: var(--card); border: 1px solid var(--card-border); }
+.instructions ol { margin: 0 0 18px; padding-left: 22px; color: var(--muted); line-height: 1.8; }
+.portal-address { display: inline-block; padding: 10px 14px; border-radius: 10px; background: rgba(109,124,255,.14); color: #fff; font-weight: 800; letter-spacing: .4px; }
+.voucher-loading, .voucher-error { color: var(--muted); }
+
+/* =========================================================
    STATS
    ========================================================= */
 
@@ -875,8 +900,65 @@ function ConvertToLocaleDateTime(Id)
     }
 }
 
+async function loadOrderVoucher()
+{
+    const content = document.getElementById('voucher-content');
+    const orderId = new URLSearchParams(window.location.search).get('order');
+
+    if (!orderId)
+    {
+        content.className = 'voucher-error';
+        content.textContent = 'Payment verification in progress. No order ID was provided.';
+        return;
+    }
+
+    try
+    {
+        const response = await fetch('/api/orders/' + encodeURIComponent(orderId) + '/voucher', { headers: { 'Accept': 'application/json' } });
+        const data = await response.json();
+
+        if (!response.ok)
+        {
+            content.className = 'voucher-error';
+            content.textContent = data.message || 'Payment verification in progress.';
+            return;
+        }
+
+        content.className = '';
+        content.innerHTML = '<p class="voucher-status"><strong>Payment Successful</strong><br>Your voucher is ready. Status: <strong>Ready to use</strong></p>' +
+            '<span class="voucher-code" id="voucher-code"></span>' +
+            '<div class="voucher-meta"><span>Package: <strong></strong></span></div>' +
+            '<div class="voucher-actions"><button type="button" id="copy-voucher">Copy Voucher</button><a class="login-link" href="http://192.168.10.1" target="_blank" rel="noopener">Open Login Page</a></div>';
+        document.getElementById('voucher-code').textContent = data.voucher.code;
+        content.querySelector('.voucher-meta strong').textContent = data.package_name;
+        document.getElementById('copy-voucher').addEventListener('click', async function ()
+        {
+            const code = data.voucher.code;
+            try
+            {
+                if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(code);
+                else
+                {
+                    const input = document.createElement('textarea');
+                    input.value = code; input.style.position = 'fixed'; input.style.opacity = '0';
+                    document.body.appendChild(input); input.focus(); input.select(); document.execCommand('copy'); input.remove();
+                }
+                this.textContent = 'Copied!';
+                setTimeout(() => { this.textContent = 'Copy Voucher'; }, 1800);
+            }
+            catch (error) { this.textContent = 'Copy failed'; }
+        });
+    }
+    catch (error)
+    {
+        content.className = 'voucher-error';
+        content.textContent = 'Payment verification in progress. Please refresh this page shortly.';
+    }
+}
+
 $(document).ready(function()
 {
+    loadOrderVoucher();
     ConvertToLocaleDateTime("StartTime");
     ConvertToLocaleDateTime("EndTime");
 
@@ -1149,21 +1231,24 @@ $(document).ready(function()
 
             <span class="status-dot"></span>
 
-            <span>CONNECTED • ONLINE</span>
+            <span>PAYMENT SUCCESSFUL</span>
 
         </div>
 
         <h1 class="hero-title">
-            You're Connected.
+            Payment Successful
         </h1>
 
         <p class="hero-text">
-            Welcome to ANONYMIKETECH SUPA LAN.
-            Your Internet session is active and ready to use.
+            Your internet package is ready. Copy your voucher below and use it on the MyPublicWiFi login page.
         </p>
 
     </div>
 
+    <section class="voucher-card" aria-live="polite" aria-labelledby="voucher-heading">
+        <div class="voucher-kicker" id="voucher-heading">Your Internet Voucher</div>
+        <div id="voucher-content" class="voucher-loading">Retrieving your voucher...</div>
+    </section>
 
     <!-- =====================================================
          STAT CARDS
