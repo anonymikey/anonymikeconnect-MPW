@@ -904,6 +904,10 @@ async function loadOrderVoucher()
 {
     const content = document.getElementById('voucher-content');
     const orderId = new URLSearchParams(window.location.search).get('order');
+    const retryButton = document.createElement('button');
+    let retryTimer;
+    let stopped = false;
+    let attempt = 0;
 
     if (!orderId)
     {
@@ -912,28 +916,50 @@ async function loadOrderVoucher()
         return;
     }
 
-    try
+    const setPaymentStatus = (label, title, description) =>
     {
-        const response = await fetch('/api/orders/' + encodeURIComponent(orderId) + '/voucher', { headers: { 'Accept': 'application/json' } });
-        const data = await response.json();
+        document.getElementById('payment-status-label').textContent = label;
+        document.getElementById('payment-status-title').textContent = title;
+        document.getElementById('payment-status-description').textContent = description;
+    };
 
-        if (!response.ok)
+    const showMessage = (message, allowRetry = false) =>
+    {
+        setPaymentStatus('PAYMENT PENDING', 'Payment Verification In Progress', 'We are confirming your payment before releasing your voucher.');
+        content.className = 'voucher-error';
+        content.textContent = '';
+        const text = document.createElement('p');
+        text.textContent = message;
+        content.appendChild(text);
+        if (allowRetry)
         {
-            content.className = 'voucher-error';
-            content.textContent = data.message || 'Payment verification in progress.';
-            return;
+            retryButton.type = 'button';
+            retryButton.textContent = 'Check again';
+            retryButton.onclick = () => { attempt = 0; stopped = false; clearTimeout(retryTimer); load(); };
+            content.appendChild(retryButton);
         }
+    };
 
+    const showVoucher = (data) =>
+    {
+        setPaymentStatus('PAYMENT SUCCESSFUL', 'Payment Successful', 'Your internet package is ready. Copy your voucher below and use it on the MyPublicWiFi login page.');
+        const code = typeof data.voucher === 'string' ? data.voucher : data.voucher?.code;
+        if (!code) return showMessage('Your payment was confirmed, but the voucher is still being prepared.', true);
+        stopped = true;
         content.className = '';
-        content.innerHTML = '<p class="voucher-status"><strong>Payment Successful</strong><br>Your voucher is ready. Status: <strong>Ready to use</strong></p>' +
+        content.innerHTML = '<p class="voucher-status"><strong>Voucher Ready</strong><br>Your payment has been confirmed and your internet voucher is ready.</p>' +
+            '<p>Copy the code below and enter it on the MyPublicWiFi login page.</p>' +
             '<span class="voucher-code" id="voucher-code"></span>' +
-            '<div class="voucher-meta"><span>Package: <strong></strong></span></div>' +
-            '<div class="voucher-actions"><button type="button" id="copy-voucher">Copy Voucher</button><a class="login-link" href="http://192.168.10.1" target="_blank" rel="noopener">Open Login Page</a></div>';
-        document.getElementById('voucher-code').textContent = data.voucher.code;
-        content.querySelector('.voucher-meta strong').textContent = data.package_name;
+            '<div class="voucher-meta"><span>Package: <strong></strong></span><span>Status: <strong>Ready</strong></span></div>' +
+            '<div class="voucher-actions"><button type="button" id="copy-voucher">Copy Voucher</button><a class="login-link" id="portal-link" href="#" target="_blank" rel="noopener">Open Wi-Fi Login</a></div>' +
+            '<ol class="voucher-instructions"><li>Copy your voucher.</li><li>Connect to the SUPA LAN Wi-Fi.</li><li>Open the MyPublicWiFi login page.</li><li>Enter the voucher code.</li><li>Click Login or Connect.</li></ol>';
+        document.getElementById('voucher-code').textContent = code;
+        content.querySelector('.voucher-meta strong').textContent = data.package || data.package_name || 'Selected package';
+        fetch('/api/config').then(response => response.json()).then(config => {
+            if (config.portalUrl) document.getElementById('portal-link').href = config.portalUrl;
+        }).catch(() => {});
         document.getElementById('copy-voucher').addEventListener('click', async function ()
         {
-            const code = data.voucher.code;
             try
             {
                 if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(code);
@@ -943,17 +969,32 @@ async function loadOrderVoucher()
                     input.value = code; input.style.position = 'fixed'; input.style.opacity = '0';
                     document.body.appendChild(input); input.focus(); input.select(); document.execCommand('copy'); input.remove();
                 }
-                this.textContent = 'Copied!';
-                setTimeout(() => { this.textContent = 'Copy Voucher'; }, 1800);
+                this.textContent = 'Voucher copied!';
             }
             catch (error) { this.textContent = 'Copy failed'; }
         });
-    }
-    catch (error)
+    };
+
+    const load = async () =>
     {
-        content.className = 'voucher-error';
-        content.textContent = 'Payment verification in progress. Please refresh this page shortly.';
-    }
+        if (stopped) return;
+        attempt += 1;
+        try
+        {
+            const response = await fetch('/api/orders/' + encodeURIComponent(orderId) + '/voucher', { headers: { 'Accept': 'application/json' } });
+            const data = await response.json();
+            if (response.ok && data.status === 'READY') return showVoucher(data);
+            if (data.error === 'PAYMENT_NOT_COMPLETED') return showMessage('Payment failed or expired. Please start a new payment.');
+            if (attempt >= 6) showMessage('Payment received. We are confirming your payment and preparing your voucher.', true);
+        }
+        catch (error)
+        {
+            if (attempt >= 6) showMessage('We are confirming your payment and preparing your voucher.', true);
+        }
+        if (!stopped && attempt < 9) retryTimer = setTimeout(load, Math.min(attempt * 1000, 3000));
+    };
+
+    load();
 }
 
 $(document).ready(function()
@@ -1231,17 +1272,19 @@ $(document).ready(function()
 
             <span class="status-dot"></span>
 
-            <span>PAYMENT SUCCESSFUL</span>
+            <span id="payment-status-label">PAYMENT STATUS</span>
 
         </div>
 
-        <h1 class="hero-title">
-            Payment Successful
-        </h1>
+<h1 class="hero-title" id="payment-status-title">
 
-        <p class="hero-text">
-            Your internet package is ready. Copy your voucher below and use it on the MyPublicWiFi login page.
-        </p>
+Checking Payment Status
+
+</h1>
+
+<p class="hero-text" id="payment-status-description">
+We are confirming your payment before releasing your voucher.
+</p>
 
     </div>
 
