@@ -981,7 +981,10 @@ async function loadOrderVoucher()
         attempt += 1;
         try
         {
-            const response = await fetch('/api/orders/' + encodeURIComponent(orderId) + '/voucher', { headers: { 'Accept': 'application/json' } });
+            const response = await fetch('/api/orders/' + encodeURIComponent(orderId) + '/voucher?poll=' + Date.now(), {
+                cache: 'no-store',
+                headers: { 'Accept': 'application/json', 'Cache-Control': 'no-cache' }
+            });
             const data = await response.json();
             if (response.ok && data.status === 'READY') return showVoucher(data);
             if (data.error === 'PAYMENT_NOT_COMPLETED') return showMessage('Payment failed or expired. Please start a new payment.');
@@ -992,7 +995,7 @@ async function loadOrderVoucher()
         {
             if (attempt >= 6) showMessage('We are confirming your payment and preparing your voucher.', true);
         }
-        if (!stopped && attempt < 9) retryTimer = setTimeout(load, Math.min(attempt * 1000, 3000));
+        if (!stopped && attempt < 40) retryTimer = setTimeout(load, Math.min(attempt * 1000, 5000));
     };
 
     load();
