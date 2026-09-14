@@ -20,6 +20,9 @@ CREATE TABLE IF NOT EXISTS orders (
   status TEXT NOT NULL DEFAULT 'PENDING',
   payment_provider TEXT NOT NULL DEFAULT 'TEST',
   provider_transaction_id TEXT,
+  provider_request_id TEXT,
+  provider_checkout_id TEXT,
+  mpesa_receipt TEXT,
   voucher_id TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   paid_at TIMESTAMPTZ,
@@ -36,6 +39,10 @@ CREATE TABLE IF NOT EXISTS vouchers (
   assigned_at TIMESTAMPTZ,
   used_at TIMESTAMPTZ
 );
+
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS provider_request_id TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS provider_checkout_id TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS mpesa_receipt TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_orders_reference ON orders(reference);
 CREATE INDEX IF NOT EXISTS idx_orders_package ON orders(package_id);
