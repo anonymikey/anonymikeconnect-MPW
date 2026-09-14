@@ -702,7 +702,7 @@ app.post('/api/webhooks/palpluss', async (req, res) => {
 
           const voucherClaim = await client.query(
             `update vouchers
-             set status = 'ASSIGNED',
+             set status = 'USED',
                  order_id = $1,
                  assigned_at = now(),
                  used_at = null
