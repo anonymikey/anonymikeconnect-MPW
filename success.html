@@ -989,7 +989,7 @@ async function loadOrderVoucher()
             if (response.ok && data.status === 'READY') return showVoucher(data);
             if (data.error === 'PAYMENT_NOT_COMPLETED') return showMessage('Payment failed or expired. Please start a new payment.');
             if (data.error === 'VOUCHER_UNAVAILABLE') return showMessage('Payment confirmed, but no voucher was assigned yet. Please contact support with order ' + orderId + '.', true);
-            if (attempt >= 6) showMessage('Payment received. We are confirming your payment and preparing your voucher.', true);
+            if (attempt >= 6) showMessage('Payment received. We are waiting for PalPluss payment confirmation before releasing your voucher.', true);
         }
         catch (error)
         {
