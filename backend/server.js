@@ -441,6 +441,7 @@ app.get('/api/orders/:id/voucher', async (req, res) => {
 
     const orderResult = await client.query(
       `select o.id, o.reference, o.package_id, o.amount, o.status, o.voucher_id,
+              o.provider_transaction_id, o.provider_request_id, o.provider_checkout_id,
               p.name as package_name, v.code as voucher_code
        from orders o
        join packages p on p.id = o.package_id
@@ -463,6 +464,8 @@ app.get('/api/orders/:id/voucher', async (req, res) => {
         error: order.status === 'FAILED' ? 'PAYMENT_NOT_COMPLETED' : 'PAYMENT_PENDING',
         status: order.status,
         providerTransactionId: order.provider_transaction_id || null,
+        providerRequestId: order.provider_request_id || null,
+        providerCheckoutId: order.provider_checkout_id || null,
         message: order.status === 'FAILED' ? 'Payment was not completed.' : 'Payment verification is in progress.'
       });
     }
@@ -602,8 +605,7 @@ app.post('/api/webhooks/palpluss', async (req, res) => {
     const isSuccessStatus = ['SUCCESS', 'COMPLETED', 'PAID'].includes(transactionStatus);
     const isSuccess = isSuccessEvent
       && isSuccessStatus
-      && resultCode === '0'
-      && Boolean(mpesaReceipt);
+      && resultCode === '0';
     const status = isSuccess
       ? 'PAID'
       : ['transaction.cancelled', 'payment.cancelled', 'cancelled', 'cancel'].includes(eventType)
@@ -652,9 +654,9 @@ app.post('/api/webhooks/palpluss', async (req, res) => {
         order_status_before: order.status
       }));
 
-      if (isSuccess && (!amountMatch || !mpesaReceipt)) {
+      if (isSuccess && !amountMatch) {
         await client.query('rollback');
-        return res.status(409).json({ error: 'WEBHOOK_VERIFICATION_FAILED', message: 'Successful callback did not contain a matching amount and M-Pesa receipt.' });
+        return res.status(409).json({ error: 'WEBHOOK_AMOUNT_MISMATCH', message: 'Successful callback amount does not match the order.' });
       }
 
       // Idempotency: once a voucher has been assigned the order is terminal.
