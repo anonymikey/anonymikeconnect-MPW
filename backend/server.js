@@ -143,6 +143,9 @@ function getDefaultCallbackUrl() {
 function isValidCallbackUrl(value) {
   try {
     const url = new URL(value);
+    const isPrivateHost = /^(localhost|127\.0\.0\.1|0\.0\.0\.0|192\.168\.|10\.|172\.(1[6-9]|2\d|3[0-1])\.)/i.test(url.hostname);
+    const isWebhookPath = url.pathname === '/api/webhooks/palpluss';
+    if (isPrivateHost || !isWebhookPath) return false;
     return url.protocol === 'https:' || (testMode && url.protocol === 'http:');
   } catch {
     return false;
@@ -218,8 +221,17 @@ async function sendPalPlussStk(payload) {
       };
     }
 
-    const transactionId = raw.data?.transactionId || raw.transactionId || null;
-    const providerRequestId = raw.data?.providerRequestId || raw.providerRequestId || null;
+    const transactionId = raw.data?.transaction?.id || raw.data?.transactionId || raw.transactionId || raw.id || null;
+    const providerRequestId = raw.data?.transaction?.provider_request_id || raw.data?.providerRequestId || raw.providerRequestId || null;
+    const providerCheckoutId = raw.data?.transaction?.provider_checkout_id || raw.data?.providerCheckoutId || raw.providerCheckoutId || null;
+
+    console.info('[PALPLUSS STK CREATED]', JSON.stringify({
+      callbackUrl: payload.callbackUrl,
+      callbackHttps: payload.callbackUrl.startsWith('https://'),
+      accountReference: payload.accountReference,
+      transactionIdPresent: Boolean(transactionId),
+      providerRequestIdPresent: Boolean(providerRequestId)
+    }));
 
     return {
       statusCode: 200,
@@ -228,6 +240,7 @@ async function sendPalPlussStk(payload) {
       data: raw.data || raw,
       transactionId,
       providerRequestId,
+      providerCheckoutId,
       callbackUrl: payload.callbackUrl,
       status: 'PENDING'
     };
@@ -363,48 +376,26 @@ app.post('/api/orders', async (req, res) => {
       });
     }
 
-    const providerRequestId = stkResult.providerRequestId || stkResult.transactionId || null;
+    const providerRequestId = stkResult.providerRequestId || null;
+    const providerCheckoutId = stkResult.providerCheckoutId || null;
 
     await db.query(
       `update orders
        set payment_provider = $1,
            provider_transaction_id = $2,
+           provider_request_id = $3,
+           provider_checkout_id = $4,
            updated_at = now()
-       where id = $3`,
-      [provider, providerRequestId, order.id]
+       where id = $5`,
+      [provider, stkResult.transactionId || null, providerRequestId, providerCheckoutId, order.id]
     );
 
-    let responseStatus = order.status;
-    let assignedVoucher = null;
-
-    if (testMode) {
-      const fulfillmentResult = await db.query(
-        `with next_voucher as (
-           select id, code
-           from vouchers
-           where package_id = $1 and status = 'AVAILABLE'
-           order by created_at asc
-           limit 1
-           for update skip locked
-         ), claimed as (
-           update vouchers v
-           set status = 'ASSIGNED', order_id = $2, assigned_at = now()
-           from next_voucher n
-           where v.id = n.id and v.status = 'AVAILABLE'
-           returning v.id, v.code
-         )
-         update orders o
-         set status = 'VOUCHER_ASSIGNED', voucher_id = claimed.id, paid_at = now(), updated_at = now()
-         from claimed
-         where o.id = $2 and o.voucher_id is null
-         returning claimed.code`,
-        [pkg.id, order.id]
-      );
-      if (fulfillmentResult.rowCount > 0) {
-        responseStatus = 'VOUCHER_ASSIGNED';
-        assignedVoucher = fulfillmentResult.rows[0].code;
-      }
-    }
+    console.info('[PALPLUSS STK REQUEST]', JSON.stringify({
+      callbackUrl,
+      callbackHttps: callbackUrl.startsWith('https://'),
+      accountReference: order.reference,
+      orderId: order.id
+    }));
 
     return res.status(201).json({
       success: true,
@@ -414,16 +405,15 @@ app.post('/api/orders', async (req, res) => {
         package_id: order.package_id,
         package_name: pkg.name,
         amount: order.amount,
-        status: responseStatus,
+        status: order.status,
         created_at: order.created_at,
-        message: assignedVoucher
-          ? 'TEST MODE: payment verified and voucher assigned.'
-          : 'STK Push accepted. Complete the M-PESA prompt on your phone.'
+        message: 'STK Push accepted. Complete the M-PESA prompt on your phone.'
       },
       provider: stkResult.provider || 'PALPLUSS',
       providerRequestId,
+      providerCheckoutId: stkResult.providerCheckoutId || null,
       transactionId: stkResult.transactionId || null,
-      voucher: assignedVoucher ? { code: assignedVoucher } : null
+      voucher: null
     });
   } catch (err) {
     console.error('POST /api/orders error:', err.message);
@@ -485,51 +475,12 @@ app.get('/api/orders/:id/voucher', async (req, res) => {
       });
     }
 
-    const availableVoucher = await client.query(
-      `select id, code from vouchers
-       where package_id = $1 and status = 'AVAILABLE'
-       order by created_at asc limit 1 for update skip locked`,
-      [order.package_id]
-    );
-
-    if (!availableVoucher.rowCount) {
-      await client.query('commit');
-      return res.status(503).json({
-        error: 'VOUCHER_UNAVAILABLE',
-        status: 'PAID',
-        package_name: order.package_name,
-        message: 'Payment received. Voucher delivery is temporarily unavailable. Please contact support.'
-      });
-    }
-
-    const voucher = availableVoucher.rows[0];
-    const claim = await client.query(
-      `update vouchers
-       set status = 'ASSIGNED', order_id = $1, assigned_at = coalesce(assigned_at, now())
-       where id = $2 and status = 'AVAILABLE'
-       returning id, code`,
-      [order.id, voucher.id]
-    );
-
-    if (!claim.rowCount) {
-      await client.query('rollback');
-      return res.status(503).json({ error: 'VOUCHER_ASSIGNMENT_RETRY', message: 'Voucher delivery is being prepared. Please refresh this page shortly.' });
-    }
-
-    await client.query(
-      `update orders set voucher_id = $2, status = 'VOUCHER_ASSIGNED', paid_at = coalesce(paid_at, now()), updated_at = now() where id = $1`,
-      [order.id, claim.rows[0].id]
-    );
     await client.query('commit');
-
-    return res.json({
-      status: 'READY',
-      orderId: order.id,
-      order_id: order.id,
-      package: order.package_name,
+    return res.status(503).json({
+      error: 'VOUCHER_UNAVAILABLE',
+      status: 'PAID',
       package_name: order.package_name,
-      amount: order.amount,
-      voucher: claim.rows[0].code
+      message: 'Payment received, but no voucher was assigned. Please contact support.'
     });
   } catch (err) {
     await client.query('rollback').catch(() => {});
@@ -596,14 +547,28 @@ app.get('/api/orders/:id', async (req, res) => {
 
 app.post('/api/webhooks/palpluss', async (req, res) => {
   const body = req.body || {};
-  const eventType = body.event_type || body.event || body.type || 'transaction.updated';
-  const transaction = body.transaction || body.data?.transaction || body.data || body;
-  const result = transaction.result || transaction.response || body.result || body.response || {};
-  const transactionId = transaction.id || transaction.transaction_id || transaction.checkout_id || result.transaction_id || body.transaction_id || null;
-  const metadata = transaction.metadata || body.metadata || {};
-  const externalReference = transaction.external_reference || transaction.externalReference || transaction.accountReference || transaction.account_reference || transaction.reference || transaction.order_reference || result.external_reference || result.accountReference || result.reference || metadata.external_reference || metadata.externalReference || metadata.accountReference || metadata.order_reference || body.external_reference || body.externalReference || body.accountReference || body.account_reference || body.reference || null;
+  const eventType = body.event_type;
+  const transaction = body.transaction || {};
+  const transactionId = transaction.id || null;
+  const transactionStatus = transaction.status || null;
+  const transactionAmount = Number(transaction.amount);
+  const externalReference = transaction.external_reference || null;
+  const mpesaReceipt = transaction.mpesa_receipt || null;
+  const resultCode = transaction.result_code == null ? null : String(transaction.result_code);
+  const providerRequestId = transaction.provider_request_id || null;
+  const providerCheckoutId = transaction.provider_checkout_id || null;
 
-  if (!transactionId || !externalReference) {
+  console.info('[PALPLUSS CALLBACK RECEIVED]', JSON.stringify({
+    event_type: eventType,
+    transaction_id: transactionId,
+    external_reference: externalReference,
+    status: transactionStatus,
+    amount: Number.isFinite(transactionAmount) ? transactionAmount : null,
+    result_code: resultCode,
+    mpesa_receipt_present: Boolean(mpesaReceipt)
+  }));
+
+  if (!transactionId || !externalReference || !eventType || !transactionStatus) {
     return res.status(400).json({
       error: 'WEBHOOK_VALIDATION_ERROR',
       message: 'transaction.id and transaction.external_reference are required.'
@@ -621,12 +586,22 @@ app.post('/api/webhooks/palpluss', async (req, res) => {
     // order stores PalPluss provider_request_id, while callbacks identify the
     // transaction with a different UUID. The locked order lookup below is the
     // authoritative idempotency check and also handles callback races safely.
-    const status = normalizePalPlussState(
-      transaction.status || transaction.payment_status || transaction.state || result.status || body.status || (eventType === 'transaction.success' ? 'SUCCESS' : 'PENDING')
-    );
-    const amount = Number(transaction.amount || transaction.amount_paid || result.amount || body.amount || 0);
+    const isSuccess = eventType === 'transaction.success'
+      && transactionStatus === 'SUCCESS'
+      && resultCode === '0'
+      && Boolean(mpesaReceipt);
+    const status = isSuccess
+      ? 'PAID'
+      : eventType === 'transaction.cancelled'
+        ? 'CANCELLED'
+        : eventType === 'transaction.expired'
+          ? 'EXPIRED'
+          : eventType === 'transaction.failed'
+            ? 'FAILED'
+            : 'PENDING';
+    const amount = transactionAmount;
     const paymentProvider = process.env.PAYMENT_PROVIDER || 'PALPLUSS';
-    const providerTransactionId = transaction.id;
+    const providerTransactionId = transactionId;
 
     // All state changes run inside one transaction with the order row locked,
     // so concurrent or replayed callbacks can never assign more than one voucher.
@@ -638,7 +613,7 @@ app.post('/api/webhooks/palpluss', async (req, res) => {
       await client.query('begin');
 
       const orderResult = await client.query(
-        `select id, reference, package_id, voucher_id, status
+        `select id, reference, package_id, amount, voucher_id, status
          from orders
          where reference = $1
          limit 1
@@ -656,13 +631,16 @@ app.post('/api/webhooks/palpluss', async (req, res) => {
 
       const order = orderResult.rows[0];
 
-      if (!Number.isFinite(amount) || amount <= 0) {
+      const amountMatch = Number.isFinite(amount) && Number(order.amount) === amount;
+      console.info('[PALPLUSS CALLBACK AUDIT]', JSON.stringify({
+        order_found: true,
+        amount_match: amountMatch,
+        order_status_before: order.status
+      }));
+
+      if (isSuccess && (!amountMatch || !mpesaReceipt)) {
         await client.query('rollback');
-        return res.status(400).json({ error: 'WEBHOOK_AMOUNT_MISSING', message: 'A valid payment amount is required.' });
-      }
-      if (Number(order.amount) !== amount) {
-        await client.query('rollback');
-        return res.status(409).json({ error: 'WEBHOOK_AMOUNT_MISMATCH', message: 'Callback amount does not match the order.' });
+        return res.status(409).json({ error: 'WEBHOOK_VERIFICATION_FAILED', message: 'Successful callback did not contain a matching amount and M-Pesa receipt.' });
       }
 
       // Idempotency: once a voucher has been assigned the order is terminal.
@@ -682,11 +660,13 @@ app.post('/api/webhooks/palpluss', async (req, res) => {
          set status = $1,
              payment_provider = $2,
              provider_transaction_id = $3,
-             amount = coalesce($4, amount),
+             provider_request_id = coalesce($4, provider_request_id),
+             provider_checkout_id = coalesce($5, provider_checkout_id),
+             mpesa_receipt = coalesce($6, mpesa_receipt),
              updated_at = now(),
-             paid_at = case when $1 = 'PAID' then now() else paid_at end
-         where id = $5`,
-        [status, paymentProvider, providerTransactionId, amount || null, order.id]
+             paid_at = case when $1 = 'PAID' then coalesce(paid_at, now()) else paid_at end
+         where id = $7`,
+        [status, paymentProvider, providerTransactionId, providerRequestId, providerCheckoutId, mpesaReceipt, order.id]
       );
 
       // Only a verified successful payment ever leads to voucher assignment.
@@ -740,6 +720,12 @@ app.post('/api/webhooks/palpluss', async (req, res) => {
       }
 
       await client.query('commit');
+      console.info('[PALPLUSS CALLBACK FULFILLMENT]', JSON.stringify({
+        order_status_after: finalStatus,
+        voucher_found: Boolean(assignedVoucherCode),
+        voucher_assigned: Boolean(assignedVoucherCode),
+        transaction_id: transactionId
+      }));
     } catch (txErr) {
       await client.query('rollback').catch(() => {});
       throw txErr;
