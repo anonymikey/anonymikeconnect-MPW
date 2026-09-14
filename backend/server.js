@@ -140,6 +140,15 @@ function getDefaultCallbackUrl() {
   return 'https://supalan.anonymiketech.space/api/webhooks/palpluss';
 }
 
+function isValidCallbackUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' || (testMode && url.protocol === 'http:');
+  } catch {
+    return false;
+  }
+}
+
 async function sendPalPlussStk(payload) {
   const provider = (process.env.PAYMENT_PROVIDER || 'TEST').toUpperCase();
 
@@ -242,10 +251,10 @@ app.post('/api/payments/stk', async (req, res) => {
   const callbackUrl = String(body.callbackUrl || body.callback_url || getDefaultCallbackUrl()).trim();
   const channelId = body.channelId || body.channel_id || null;
 
-  if (!amount || amount < 1 || !phone || !accountReference || !transactionDesc || !callbackUrl) {
+  if (!Number.isInteger(amount) || amount < 1 || !phone || !accountReference || !transactionDesc || !isValidCallbackUrl(callbackUrl)) {
     return res.status(400).json({
       error: 'VALIDATION_ERROR',
-      message: 'amount, phone, accountReference, transactionDesc, and callbackUrl are required'
+      message: 'amount must be a positive integer, phone and payment references are required, and callbackUrl must be a valid HTTPS URL'
     });
   }
 
@@ -456,7 +465,7 @@ app.get('/api/orders/:id/voucher', async (req, res) => {
     const order = orderResult.rows[0];
     if (!['PAID', 'VOUCHER_ASSIGNED'].includes(order.status)) {
       await client.query('rollback');
-      return res.status(409).json({
+      return res.status(order.status === 'FAILED' ? 409 : 200).json({
         error: order.status === 'FAILED' ? 'PAYMENT_NOT_COMPLETED' : 'PAYMENT_PENDING',
         status: order.status,
         message: order.status === 'FAILED' ? 'Payment was not completed.' : 'Payment verification is in progress.'
@@ -601,6 +610,12 @@ app.post('/api/webhooks/palpluss', async (req, res) => {
     });
   }
 
+  const webhookSecret = process.env.PALPLUSS_WEBHOOK_SECRET;
+  const receivedSecret = req.get('x-palpluss-webhook-secret') || req.get('x-webhook-secret');
+  if (!testMode && webhookSecret && receivedSecret !== webhookSecret) {
+    return res.status(401).json({ error: 'WEBHOOK_UNAUTHORIZED', message: 'Webhook authentication failed.' });
+  }
+
   try {
     // Do not use provider_transaction_id as the duplicate guard here. The initial
     // order stores PalPluss provider_request_id, while callbacks identify the
@@ -640,6 +655,15 @@ app.post('/api/webhooks/palpluss', async (req, res) => {
       }
 
       const order = orderResult.rows[0];
+
+      if (!Number.isFinite(amount) || amount <= 0) {
+        await client.query('rollback');
+        return res.status(400).json({ error: 'WEBHOOK_AMOUNT_MISSING', message: 'A valid payment amount is required.' });
+      }
+      if (Number(order.amount) !== amount) {
+        await client.query('rollback');
+        return res.status(409).json({ error: 'WEBHOOK_AMOUNT_MISMATCH', message: 'Callback amount does not match the order.' });
+      }
 
       // Idempotency: once a voucher has been assigned the order is terminal.
       // Re-delivered success callbacks are acknowledged without side effects.

@@ -985,6 +985,7 @@ async function loadOrderVoucher()
             const data = await response.json();
             if (response.ok && data.status === 'READY') return showVoucher(data);
             if (data.error === 'PAYMENT_NOT_COMPLETED') return showMessage('Payment failed or expired. Please start a new payment.');
+            if (data.error === 'VOUCHER_UNAVAILABLE') return showMessage('Payment confirmed. Voucher delivery is temporarily unavailable. Please check again shortly.', true);
             if (attempt >= 6) showMessage('Payment received. We are confirming your payment and preparing your voucher.', true);
         }
         catch (error)
