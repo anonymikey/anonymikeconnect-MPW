@@ -425,6 +425,10 @@ app.post('/api/orders', async (req, res) => {
 });
 
 app.get('/api/orders/:id/voucher', async (req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+
   const idParam = String(req.params.id || '').trim();
 
   if (!idParam || idParam.length > 120 || !/^[a-zA-Z0-9_-]+$/.test(idParam)) {
@@ -492,6 +496,10 @@ app.get('/api/orders/:id/voucher', async (req, res) => {
 });
 
 app.get('/api/orders/:id', async (req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+
   const idParam = req.params.id.trim();
 
   try {
