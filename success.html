@@ -942,17 +942,17 @@ async function loadOrderVoucher()
 
     const showVoucher = (data) =>
     {
-        setPaymentStatus('PAYMENT SUCCESSFUL', 'Payment Successful', 'Your internet package is ready. Copy your voucher below and use it on the MyPublicWiFi login page.');
+        setPaymentStatus('PAYMENT SUCCESSFUL', 'Payment Successful', 'Your internet package is ready. Copy your voucher below and use it on the SUPA LAN login page.');
         const code = typeof data.voucher === 'string' ? data.voucher : data.voucher?.code;
         if (!code) return showMessage('Your payment was confirmed, but the voucher is still being prepared.', true);
         stopped = true;
         content.className = '';
         content.innerHTML = '<p class="voucher-status"><strong>Voucher Ready</strong><br>Your payment has been confirmed and your internet voucher is ready.</p>' +
-            '<p>Copy the code below and enter it on the MyPublicWiFi login page.</p>' +
+            '<p>Copy the code below and enter it on the SUPA LAN login page.</p>' +
             '<span class="voucher-code" id="voucher-code"></span>' +
             '<div class="voucher-meta"><span>Package: <strong></strong></span><span>Status: <strong>Ready</strong></span></div>' +
             '<div class="voucher-actions"><button type="button" id="copy-voucher">Copy Voucher</button><a class="login-link" id="portal-link" href="#" target="_blank" rel="noopener">Open Wi-Fi Login</a></div>' +
-            '<ol class="voucher-instructions"><li>Copy your voucher.</li><li>Connect to the SUPA LAN Wi-Fi.</li><li>Open the MyPublicWiFi login page.</li><li>Enter the voucher code.</li><li>Click Login or Connect.</li></ol>';
+            '<ol class="voucher-instructions"><li>Copy your voucher.</li><li>Connect to the SUPA LAN Wi-Fi.</li><li>Open the SUPA LAN login page.</li><li>Enter the voucher code.</li><li>Click Login or Connect.</li></ol>';
         document.getElementById('voucher-code').textContent = code;
         content.querySelector('.voucher-meta strong').textContent = data.package || data.package_name || 'Selected package';
         fetch('/api/config').then(response => response.json()).then(config => {
