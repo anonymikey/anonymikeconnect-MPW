@@ -514,6 +514,30 @@ body::after {
     overflow-wrap: anywhere;
 }
 
+.session-notice {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 20px;
+    padding: 22px 25px;
+    border-radius: 22px;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    color: var(--muted);
+}
+
+.session-notice strong {
+    display: block;
+    color: var(--success);
+    font-size: 12px;
+    letter-spacing: .8px;
+}
+
+.session-notice p {
+    margin: 6px 0 0;
+    line-height: 1.5;
+}
+
 /* =========================================================
    SESSION DETAILS
    ========================================================= */
@@ -1297,181 +1321,18 @@ We are confirming your payment before releasing your voucher.
         <div id="voucher-content" class="voucher-loading">Retrieving your voucher...</div>
     </section>
 
-    <!-- =====================================================
-         STAT CARDS
-         ===================================================== -->
-
-    <div class="stats-grid">
-
-        <div class="stat-card">
-
-            <div class="stat-icon">
-                ↓
-            </div>
-
-            <span class="stat-label">
-                Download
-            </span>
-
-            <span class="stat-value">
-                <!--21F722D0-37E2-4A92-ADF9-0DE8CE733C20-->
-            </span>
-
+    <div class="session-notice">
+        <div class="stat-icon">◷</div>
+        <div>
+            <strong>YOUR SESSION IS ACTIVE</strong>
+            <p>Your internet access is ready. It will end when your package expires.</p>
         </div>
-
-
-        <div class="stat-card">
-
-            <div class="stat-icon">
-                ↑
-            </div>
-
-            <span class="stat-label">
-                Upload
-            </span>
-
-            <span class="stat-value">
-                <!--5161DB90-9946-41C7-85C3-3DC333B11211-->
-            </span>
-
-        </div>
-
-
-        <div class="stat-card">
-
-            <div class="stat-icon">
-                ◷
-            </div>
-
-            <span class="stat-label">
-                Connected Since
-            </span>
-
-            <span
-                class="stat-value"
-                id="StartTime"
-            >
-                <!--4F288B97-F112-4C1A-B2DE-FBDD78718DE2-->
-            </span>
-
-        </div>
-
-
-        <div class="stat-card">
-
-            <div class="stat-icon">
-                ⏱
-            </div>
-
-            <span class="stat-label">
-                Session Ends
-            </span>
-
-            <span
-                class="stat-value"
-                id="EndTime"
-            >
-                <!--114D9DA7-0360-4E3D-A023-04CFA04D4CC0-->
-            </span>
-
-        </div>
-
     </div>
 
 
-    <!-- =====================================================
-         SESSION DETAILS
-         ===================================================== -->
-
-    <div class="details-card">
-
-        <h2 class="section-heading">
-            Session Details
-        </h2>
-
-        <div>
-
-            <table class="data-table">
-
-                <tr>
-                    <td>
-                        IP Address
-                    </td>
-
-                    <td>
-                        <!--C811F149-5EBD-4500-AC23-991C41C626E7-->
-                    </td>
-                </tr>
-
-                <tr>
-                    <td>
-                        MAC Address
-                    </td>
-
-                    <td>
-                        <!--173DDC21-AF45-458F-A24C-D015E13275AB-->
-                    </td>
-                </tr>
-
-                <tr>
-                    <td>
-                        Hostname
-                    </td>
-
-                    <td>
-                        <!--7C35D645-1397-4637-A6A3-34FECB358D29-->
-                    </td>
-                </tr>
-
-                <tr>
-                    <td>
-                        Account
-                    </td>
-
-                    <td>
-                        <span id="AccountType">
-                            &nbsp;
-                        </span>
-
-                        <!--87495468-6AC9-4E8B-8DD1-1A728A6C3820-->
-                    </td>
-                </tr>
-
-                <tr
-                    class="<!--A91F7DA3-A405-4891-AC25-B6CFDF393CAE-->"
-                >
-                    <td>
-                        Account Security
-                    </td>
-
-                    <td>
-                        <a
-                            href="./changeuserpassword.html"
-                            style="color:#aeb8ff;text-decoration:none;"
-                        >
-                            Change Password
-                        </a>
-                    </td>
-                </tr>
-
-                <tr>
-                    <td>
-                        Data Volume
-                    </td>
-
-                    <td>
-                        <!--6922BCFC-BDBD-49F3-808A-B12F0A64F506-->
-                    </td>
-                </tr>
-
-            </table>
-
-        </div>
-
-
-        <!-- =================================================
-             ACTIONS
-             ================================================= -->
+    <!-- =================================================
+         ACTIONS
+         ================================================= -->
 
         <form
             action="./"
@@ -1492,7 +1353,7 @@ We are confirming your payment before releasing your voucher.
                     type="submit"
                 />
 
-                <a href="./addcredit.html">
+                <a href="http://192.168.10.1/addcredit.html">
 
                     <button
                         tabindex="2"
