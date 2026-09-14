@@ -149,7 +149,7 @@
   </div>
   <label for="tokenInput">Admin token</label>
   <input id="tokenInput" type="password" placeholder="Enter ADMIN_TOKEN" autocomplete="off" />
-  <p class="helper">This matches the <code>ADMIN_TOKEN</code> set in your Render environment.</p>
+  <p class="helper">Use the administrator access token configured for this service.</p>
   <div style="margin-top:16px;">
     <button class="btn primary" id="loginBtn" style="width:100%; justify-content:center;">Unlock dashboard</button>
   </div>
@@ -181,7 +181,7 @@
   <!-- Import -->
   <section class="card">
     <h2>Add voucher codes</h2>
-    <p class="sub">Paste codes from your MyPublicWiFi export (one per line, or a CSV &mdash; the first column is used). Choose the package they belong to.</p>
+    <p class="sub">Paste your Wi-Fi voucher codes (one per line, or a CSV &mdash; the first column is used). Choose the package they belong to.</p>
     <div class="form-row">
       <div>
         <label for="pkgSelect">Package</label>
@@ -375,7 +375,7 @@
       document.getElementById('filterPkg').innerHTML = filterOpts;
 
       if (!pkgs.length) {
-        grid.innerHTML = '<div class="empty-note">No packages found in the database.</div>';
+        grid.innerHTML = '<div class="empty-note">No packages are available yet.</div>';
         return;
       }
       grid.innerHTML = pkgs.map(function (p) {
