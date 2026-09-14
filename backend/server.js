@@ -462,6 +462,7 @@ app.get('/api/orders/:id/voucher', async (req, res) => {
       return res.status(order.status === 'FAILED' ? 409 : 200).json({
         error: order.status === 'FAILED' ? 'PAYMENT_NOT_COMPLETED' : 'PAYMENT_PENDING',
         status: order.status,
+        providerTransactionId: order.provider_transaction_id || null,
         message: order.status === 'FAILED' ? 'Payment was not completed.' : 'Payment verification is in progress.'
       });
     }
@@ -483,6 +484,7 @@ app.get('/api/orders/:id/voucher', async (req, res) => {
     return res.status(503).json({
       error: 'VOUCHER_UNAVAILABLE',
       status: 'PAID',
+      providerTransactionId: order.provider_transaction_id || null,
       package_name: order.package_name,
       message: 'Payment received, but no voucher was assigned. Please contact support.'
     });
@@ -555,16 +557,18 @@ app.get('/api/orders/:id', async (req, res) => {
 
 app.post('/api/webhooks/palpluss', async (req, res) => {
   const body = req.body || {};
-  const eventType = body.event_type;
-  const transaction = body.transaction || {};
-  const transactionId = transaction.id || null;
-  const transactionStatus = transaction.status || null;
-  const transactionAmount = Number(transaction.amount);
-  const externalReference = transaction.external_reference || null;
-  const mpesaReceipt = transaction.mpesa_receipt || null;
-  const resultCode = transaction.result_code == null ? null : String(transaction.result_code);
-  const providerRequestId = transaction.provider_request_id || null;
-  const providerCheckoutId = transaction.provider_checkout_id || null;
+  const transaction = body.transaction || body.data?.transaction || body.data || body;
+  const eventType = String(body.event_type || body.event || body.type || '').toLowerCase();
+  const transactionId = transaction.id || transaction.transaction_id || body.transaction_id || null;
+  const transactionStatus = String(transaction.status || transaction.payment_status || transaction.state || '').toUpperCase();
+  const transactionAmount = Number(transaction.amount ?? transaction.amount_paid ?? body.amount);
+  const externalReference = transaction.external_reference || transaction.externalReference || transaction.account_reference || transaction.accountReference || transaction.reference || body.external_reference || body.externalReference || body.accountReference || null;
+  const mpesaReceipt = transaction.mpesa_receipt || transaction.mpesaReceipt || transaction.receipt || transaction.receipt_number || null;
+  const resultCode = transaction.result_code == null
+    ? (transaction.resultCode == null ? null : String(transaction.resultCode))
+    : String(transaction.result_code);
+  const providerRequestId = transaction.provider_request_id || transaction.providerRequestId || null;
+  const providerCheckoutId = transaction.provider_checkout_id || transaction.providerCheckoutId || null;
 
   console.info('[PALPLUSS CALLBACK RECEIVED]', JSON.stringify({
     event_type: eventType,
@@ -594,17 +598,19 @@ app.post('/api/webhooks/palpluss', async (req, res) => {
     // order stores PalPluss provider_request_id, while callbacks identify the
     // transaction with a different UUID. The locked order lookup below is the
     // authoritative idempotency check and also handles callback races safely.
-    const isSuccess = eventType === 'transaction.success'
-      && transactionStatus === 'SUCCESS'
+    const isSuccessEvent = ['transaction.success', 'transaction.completed', 'payment.success', 'payment.completed', 'success', 'completed'].includes(eventType);
+    const isSuccessStatus = ['SUCCESS', 'COMPLETED', 'PAID'].includes(transactionStatus);
+    const isSuccess = isSuccessEvent
+      && isSuccessStatus
       && resultCode === '0'
       && Boolean(mpesaReceipt);
     const status = isSuccess
       ? 'PAID'
-      : eventType === 'transaction.cancelled'
+      : ['transaction.cancelled', 'payment.cancelled', 'cancelled', 'cancel'].includes(eventType)
         ? 'CANCELLED'
-        : eventType === 'transaction.expired'
+        : ['transaction.expired', 'payment.expired', 'expired'].includes(eventType)
           ? 'EXPIRED'
-          : eventType === 'transaction.failed'
+          : ['transaction.failed', 'payment.failed', 'failed', 'failure'].includes(eventType)
             ? 'FAILED'
             : 'PENDING';
     const amount = transactionAmount;
