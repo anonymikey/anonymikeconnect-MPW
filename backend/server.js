@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const path = require('path');
 const crypto = require('crypto');
 const { Pool } = require('pg');
+const { sendTextSms } = require('./textsms');
 
 dotenv.config({ path: path.join(__dirname, '.env') });
 
@@ -816,6 +817,20 @@ function requireAdmin(req, res, next) {
 
   return next();
 }
+
+app.post('/api/sms/test', requireAdmin, async (req, res) => {
+  const { phone, message } = req.body || {};
+  if (!phone || !message || Object.keys(req.body || {}).some((key) => !['phone', 'message'].includes(key))) {
+    return res.status(400).json({ error: 'INVALID_SMS_REQUEST', message: 'Provide only phone and message.' });
+  }
+  try {
+    const result = await sendTextSms({ phone, message });
+    return res.json({ success: true, status: 'accepted', messageId: result.messageId });
+  } catch (err) {
+    console.error('POST /api/sms/test failed:', err.message);
+    return res.status(502).json({ error: 'SMS_DELIVERY_FAILED', message: err.message });
+  }
+});
 
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(rootDir, 'admin.html'));
