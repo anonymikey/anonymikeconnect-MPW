@@ -57,6 +57,7 @@ CREATE TABLE IF NOT EXISTS sms_messages (
   status TEXT NOT NULL DEFAULT 'QUEUED',
   provider TEXT NOT NULL DEFAULT 'TextSMS',
   provider_message_id TEXT,
+  event_key TEXT,
   network TEXT,
   error_code TEXT,
   error_message TEXT,
@@ -72,3 +73,14 @@ CREATE INDEX IF NOT EXISTS idx_sms_messages_status ON sms_messages(status);
 CREATE INDEX IF NOT EXISTS idx_sms_messages_type ON sms_messages(message_type);
 CREATE INDEX IF NOT EXISTS idx_sms_messages_recipient ON sms_messages(recipient);
 CREATE INDEX IF NOT EXISTS idx_sms_messages_provider_id ON sms_messages(provider_message_id);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_sms_messages_event_key ON sms_messages(event_key) WHERE event_key IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS sms_automation_settings (
+  key TEXT PRIMARY KEY,
+  enabled BOOLEAN NOT NULL DEFAULT FALSE,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+INSERT INTO sms_automation_settings (key, enabled)
+VALUES ('master', FALSE)
+ON CONFLICT (key) DO NOTHING;
