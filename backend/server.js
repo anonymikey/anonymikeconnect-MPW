@@ -5,6 +5,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { Pool } = require('pg');
 const { sendTextSms } = require('./textsms');
+const { sendPurchaseConfirmation } = require('./sms-notifications');
 
 dotenv.config({ path: path.join(__dirname, '.env') });
 
@@ -630,7 +631,7 @@ app.post('/api/webhooks/palpluss', async (req, res) => {
       await client.query('begin');
 
       const orderResult = await client.query(
-        `select id, reference, package_id, amount, voucher_id, status
+        `select id, reference, package_id, amount, phone, voucher_id, status
          from orders
          where reference = $1
          limit 1
@@ -743,6 +744,22 @@ app.post('/api/webhooks/palpluss', async (req, res) => {
         voucher_assigned: Boolean(assignedVoucherCode),
         transaction_id: transactionId
       }));
+
+      if (assignedVoucherCode) {
+        try {
+          const packageResult = await db.query('select name, duration from packages where id = $1 limit 1', [order.package_id]);
+          const packageInfo = packageResult.rows[0] || {};
+          await sendPurchaseConfirmation({
+            db,
+            order,
+            voucherCode: assignedVoucherCode,
+            packageName: packageInfo.name || order.package_id,
+            duration: packageInfo.duration
+          });
+        } catch (smsError) {
+          console.error('[SMS AUTOMATION] Purchase confirmation failed:', smsError.message);
+        }
+      }
     } catch (txErr) {
       await client.query('rollback').catch(() => {});
       throw txErr;
