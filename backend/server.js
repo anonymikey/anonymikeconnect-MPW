@@ -860,17 +860,32 @@ app.get('/api/admin/sms/history', requireAdmin, async (req, res) => {
 app.post('/api/admin/sms/send', requireAdmin, async (req, res) => {
   const { phone, message } = req.body || {};
   if (!phone || !message || Object.keys(req.body || {}).some(key => !['phone', 'message'].includes(key))) return res.status(400).json({ error: 'INVALID_SMS_REQUEST', message: 'Provide only phone and message.' });
-  let normalizedPhone;
+  let result;
   try {
-    const result = await sendTextSms({ phone, message });
-    normalizedPhone = result.phone;
-    await db.query(`insert into sms_messages (recipient, message, message_type, status, provider, provider_message_id, network, created_by, source, sent_at) values ($1, $2, 'MANUAL', 'SENT', 'TextSMS', $3, 'Safaricom', 'admin', 'admin-sms-center', now())`, [normalizedPhone, String(message).trim(), result.messageId]);
-    return res.json({ success: true, status: 'SENT', messageId: result.messageId });
+    result = await sendTextSms({ phone, message });
   } catch (err) {
-    console.error('POST /api/admin/sms/send failed:', err.message);
-    if (normalizedPhone) await db.query(`insert into sms_messages (recipient, message, message_type, status, provider, error_message, network, created_by, source) values ($1, $2, 'MANUAL', 'FAILED', 'TextSMS', $3, 'Safaricom', 'admin', 'admin-sms-center')`, [normalizedPhone, String(message).trim(), err.message]).catch(() => {});
+    console.error('POST /api/admin/sms/send provider failed:', err.message);
     return res.status(502).json({ error: 'SMS_DELIVERY_FAILED', message: err.message });
   }
+
+  let historyRecorded = true;
+  let historyWarning = null;
+  try {
+    await db.query(`insert into sms_messages (recipient, message, message_type, status, provider, provider_message_id, network, created_by, source, sent_at) values ($1, $2, 'MANUAL', 'SENT', 'TextSMS', $3, 'Safaricom', 'admin', 'admin-sms-center', now())`, [result.phone, String(message).trim(), result.messageId]);
+  } catch (err) {
+    historyRecorded = false;
+    historyWarning = 'SMS was accepted by the provider, but delivery history could not be saved.';
+    console.error('POST /api/admin/sms/send history failed:', err.message);
+  }
+
+  return res.json({
+    success: true,
+    status: 'SENT',
+    phone: result.phone,
+    messageId: result.messageId,
+    historyRecorded,
+    historyWarning
+  });
 });
 
 app.get('/admin', (req, res) => {
