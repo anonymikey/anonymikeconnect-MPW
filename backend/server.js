@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const path = require('path');
 const crypto = require('crypto');
 const { Pool } = require('pg');
+const { sendTextSms } = require('./textsms');
 
 dotenv.config({ path: path.join(__dirname, '.env') });
 
@@ -816,6 +817,61 @@ function requireAdmin(req, res, next) {
 
   return next();
 }
+
+app.post('/api/sms/test', requireAdmin, async (req, res) => {
+  const { phone, message } = req.body || {};
+  if (!phone || !message || Object.keys(req.body || {}).some((key) => !['phone', 'message'].includes(key))) {
+    return res.status(400).json({ error: 'INVALID_SMS_REQUEST', message: 'Provide only phone and message.' });
+  }
+  try {
+    const result = await sendTextSms({ phone, message });
+    return res.json({ success: true, status: 'accepted', messageId: result.messageId });
+  } catch (err) {
+    console.error('POST /api/sms/test failed:', err.message);
+    return res.status(502).json({ error: 'SMS_DELIVERY_FAILED', message: err.message });
+  }
+});
+
+app.get('/admin/sms', (req, res) => {
+  res.sendFile(path.join(rootDir, 'admin-sms.html'));
+});
+
+app.get('/api/admin/sms/status', requireAdmin, (req, res) => {
+  res.json({
+    configured: Boolean(process.env.TEXTSMS_API_KEY && process.env.TEXTSMS_PARTNER_ID && process.env.TEXTSMS_SENDER_ID),
+    provider: 'TextSMS',
+    senderId: process.env.TEXTSMS_SENDER_ID || null,
+    partnerId: process.env.TEXTSMS_PARTNER_ID || null,
+    reachability: 'unknown'
+  });
+});
+
+app.get('/api/admin/sms/history', requireAdmin, async (req, res) => {
+  const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 25, 1), 100);
+  try {
+    const result = await db.query(`select id, recipient, message_type, message, status, provider_message_id, created_at from sms_messages order by created_at desc limit $1`, [limit]);
+    return res.json({ messages: result.rows.map(row => ({ id: row.id, recipient: `${row.recipient.slice(0, 6)}***${row.recipient.slice(-3)}`, messageType: row.message_type, message: row.message, status: row.status, providerMessageId: row.provider_message_id, createdAt: row.created_at })) });
+  } catch (err) {
+    console.error('GET /api/admin/sms/history error:', err.message);
+    return res.status(500).json({ error: 'SMS_HISTORY_FAILED', message: 'Unable to load SMS activity.' });
+  }
+});
+
+app.post('/api/admin/sms/send', requireAdmin, async (req, res) => {
+  const { phone, message } = req.body || {};
+  if (!phone || !message || Object.keys(req.body || {}).some(key => !['phone', 'message'].includes(key))) return res.status(400).json({ error: 'INVALID_SMS_REQUEST', message: 'Provide only phone and message.' });
+  let normalizedPhone;
+  try {
+    const result = await sendTextSms({ phone, message });
+    normalizedPhone = result.phone;
+    await db.query(`insert into sms_messages (recipient, message, message_type, status, provider, provider_message_id, network, created_by, source, sent_at) values ($1, $2, 'MANUAL', 'SENT', 'TextSMS', $3, 'Safaricom', 'admin', 'admin-sms-center', now())`, [normalizedPhone, String(message).trim(), result.messageId]);
+    return res.json({ success: true, status: 'SENT', messageId: result.messageId });
+  } catch (err) {
+    console.error('POST /api/admin/sms/send failed:', err.message);
+    if (normalizedPhone) await db.query(`insert into sms_messages (recipient, message, message_type, status, provider, error_message, network, created_by, source) values ($1, $2, 'MANUAL', 'FAILED', 'TextSMS', $3, 'Safaricom', 'admin', 'admin-sms-center')`, [normalizedPhone, String(message).trim(), err.message]).catch(() => {});
+    return res.status(502).json({ error: 'SMS_DELIVERY_FAILED', message: err.message });
+  }
+});
 
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(rootDir, 'admin.html'));
