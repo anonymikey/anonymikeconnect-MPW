@@ -22,7 +22,11 @@ const db = new Pool({
     : false
 });
 
-app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
+const corsOrigins = (process.env.CORS_ORIGIN || '').split(',').map((origin) => origin.trim()).filter(Boolean);
+app.use(cors({ origin: (requestOrigin, callback) => {
+  if (!corsOrigins.length) return callback(null, '*');
+  return callback(null, corsOrigins.includes(requestOrigin) ? requestOrigin : false);
+} }));
 app.use(express.json({ limit: '1mb' }));
 
 app.use(express.static(rootDir));
