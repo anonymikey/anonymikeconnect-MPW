@@ -1,7 +1,13 @@
 const { normalizeKenyanPhone, sendTextSms } = require('./textsms');
 
-const AUTOMATION_ENABLED = process.env.SMS_AUTOMATION_ENABLED === 'true';
+const ENV_AUTOMATION_ENABLED = process.env.SMS_AUTOMATION_ENABLED === 'true';
 const EVENT_TYPE = 'PURCHASE_CONFIRMATION';
+
+async function isAutomationEnabled(db) {
+  if (!ENV_AUTOMATION_ENABLED) return false;
+  const result = await db.query("select enabled from sms_automation_settings where key = 'master' limit 1");
+  return result.rows[0]?.enabled === true;
+}
 
 function maskPhone(phone) {
   const value = String(phone || '');
@@ -13,7 +19,7 @@ function purchaseMessage({ voucherCode, packageName, duration }) {
 }
 
 async function sendPurchaseConfirmation({ db, order, voucherCode, packageName, duration }) {
-  if (!AUTOMATION_ENABLED) return { attempted: false, reason: 'SMS_AUTOMATION_DISABLED' };
+  if (!(await isAutomationEnabled(db))) return { attempted: false, reason: 'SMS_AUTOMATION_DISABLED' };
   if (!order?.phone || !voucherCode) return { attempted: false, reason: 'MISSING_RECIPIENT_OR_VOUCHER' };
 
   const eventKey = `${EVENT_TYPE}:${order.id}`;
