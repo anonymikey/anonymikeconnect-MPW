@@ -5,7 +5,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { Pool } = require('pg');
 const { sendTextSms } = require('./textsms');
-const { sendPurchaseConfirmation } = require('./sms-notifications');
+const { sendPurchaseConfirmation, validateTemplate, DEFAULT_TEMPLATE, EVENT_TYPE } = require('./sms-notifications');
 
 dotenv.config({ path: path.join(__dirname, '.env') });
 
@@ -861,6 +861,36 @@ app.get('/api/admin/sms/status', requireAdmin, (req, res) => {
     partnerId: process.env.TEXTSMS_PARTNER_ID || null,
     reachability: 'unknown'
   });
+});
+
+app.get('/api/admin/sms/templates', requireAdmin, async (req, res) => {
+  try {
+    const result = await db.query('select message_type, template, updated_at, updated_by from sms_message_templates order by message_type');
+    return res.json({ templates: result.rows, supportedPlaceholders: ['{{voucher}}', '{{package}}', '{{duration}}', '{{portal_url}}', '{{support}}'], requiredPlaceholders: ['{{voucher}}'] });
+  } catch (err) {
+    return res.status(500).json({ error: 'SMS_TEMPLATES_FAILED', message: 'Unable to load message templates.' });
+  }
+});
+
+app.put('/api/admin/sms/templates/:messageType', requireAdmin, async (req, res) => {
+  if (req.params.messageType !== EVENT_TYPE) return res.status(400).json({ error: 'UNSUPPORTED_MESSAGE_TYPE', message: 'Unsupported message type.' });
+  try {
+    const template = validateTemplate(req.body?.template);
+    const result = await db.query(`insert into sms_message_templates (message_type, template, updated_by) values ($1, $2, 'admin') on conflict (message_type) do update set template = excluded.template, updated_at = now(), updated_by = excluded.updated_by returning message_type, template, updated_at, updated_by`, [EVENT_TYPE, template]);
+    return res.json({ template: result.rows[0] });
+  } catch (err) {
+    return res.status(400).json({ error: 'INVALID_SMS_TEMPLATE', message: err.message });
+  }
+});
+
+app.post('/api/admin/sms/templates/:messageType/reset', requireAdmin, async (req, res) => {
+  if (req.params.messageType !== EVENT_TYPE) return res.status(400).json({ error: 'UNSUPPORTED_MESSAGE_TYPE', message: 'Unsupported message type.' });
+  try {
+    const result = await db.query(`insert into sms_message_templates (message_type, template, updated_by) values ($1, $2, 'system') on conflict (message_type) do update set template = excluded.template, updated_at = now(), updated_by = excluded.updated_by returning message_type, template, updated_at, updated_by`, [EVENT_TYPE, DEFAULT_TEMPLATE]);
+    return res.json({ template: result.rows[0] });
+  } catch (err) {
+    return res.status(500).json({ error: 'SMS_TEMPLATE_RESET_FAILED', message: 'Unable to reset message template.' });
+  }
 });
 
 app.get('/api/admin/sms/history', requireAdmin, async (req, res) => {

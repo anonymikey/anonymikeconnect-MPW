@@ -2,6 +2,9 @@ const { normalizeKenyanPhone, sendTextSms } = require('./textsms');
 
 const ENV_AUTOMATION_ENABLED = process.env.SMS_AUTOMATION_ENABLED === 'true';
 const EVENT_TYPE = 'PURCHASE_CONFIRMATION';
+const REQUIRED_PLACEHOLDER = '{{voucher}}';
+const SUPPORTED_PLACEHOLDERS = new Set(['{{voucher}}', '{{package}}', '{{duration}}', '{{portal_url}}', '{{support}}']);
+const DEFAULT_TEMPLATE = 'SUPA LAN payment confirmed. Voucher: {{voucher}}. Package: {{package}}{{duration}}. Connect to SUPA LAN and enter your voucher.';
 
 async function isAutomationEnabled(db) {
   if (!ENV_AUTOMATION_ENABLED) return false;
@@ -14,8 +17,24 @@ function maskPhone(phone) {
   return value.length > 5 ? `${value.slice(0, 6)}***${value.slice(-3)}` : '***';
 }
 
-function purchaseMessage({ voucherCode, packageName, duration }) {
-  return `SUPA LAN payment confirmed. Voucher: ${voucherCode}. Package: ${packageName}${duration ? ` (${duration})` : ''}. Connect to SUPA LAN and enter your voucher.`;
+function validateTemplate(template) {
+  const value = String(template || '').trim();
+  if (!value) throw new Error('Template cannot be empty.');
+  if (!value.includes(REQUIRED_PLACEHOLDER)) throw new Error('Template must include {{voucher}}.');
+  const placeholders = value.match(/\{\{[^}]+\}\}/g) || [];
+  const unsupported = [...new Set(placeholders.filter((placeholder) => !SUPPORTED_PLACEHOLDERS.has(placeholder)))];
+  if (unsupported.length) throw new Error(`Unsupported placeholder: ${unsupported.join(', ')}`);
+  if (value.length > 480) throw new Error('Template cannot exceed 480 characters.');
+  return value;
+}
+
+function renderTemplate(template, values) {
+  return validateTemplate(template).replace(/\{\{(voucher|package|duration|portal_url|support)\}\}/g, (_, key) => values[key] || '');
+}
+
+async function getPurchaseTemplate(db) {
+  const result = await db.query("select template from sms_message_templates where message_type = $1 limit 1", [EVENT_TYPE]);
+  return result.rows[0]?.template || DEFAULT_TEMPLATE;
 }
 
 async function sendPurchaseConfirmation({ db, order, voucherCode, packageName, duration }) {
@@ -23,7 +42,14 @@ async function sendPurchaseConfirmation({ db, order, voucherCode, packageName, d
   if (!order?.phone || !voucherCode) return { attempted: false, reason: 'MISSING_RECIPIENT_OR_VOUCHER' };
 
   const eventKey = `${EVENT_TYPE}:${order.id}`;
-  const message = purchaseMessage({ voucherCode, packageName, duration });
+  const template = await getPurchaseTemplate(db);
+  const message = renderTemplate(template, {
+    voucher: voucherCode,
+    package: packageName,
+    duration: duration ? ` (${duration})` : '',
+    portal_url: 'http://192.168.10.1/success',
+    support: 'SUPA LAN support'
+  });
   const existing = await db.query('select id, status, provider_message_id from sms_messages where event_key = $1 limit 1', [eventKey]);
   if (existing.rowCount) return { attempted: false, duplicate: true, status: existing.rows[0].status, messageId: existing.rows[0].provider_message_id };
 
@@ -41,4 +67,4 @@ async function sendPurchaseConfirmation({ db, order, voucherCode, packageName, d
   }
 }
 
-module.exports = { sendPurchaseConfirmation, EVENT_TYPE };
+module.exports = { sendPurchaseConfirmation, validateTemplate, renderTemplate, DEFAULT_TEMPLATE, EVENT_TYPE, SUPPORTED_PLACEHOLDERS };
