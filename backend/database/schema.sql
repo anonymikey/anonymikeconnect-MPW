@@ -114,8 +114,10 @@ CREATE TABLE IF NOT EXISTS free_access_claims (
 CREATE TABLE IF NOT EXISTS free_access_challenges (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(), token_hash TEXT NOT NULL UNIQUE,
   phone VARCHAR(16) NOT NULL, voucher VARCHAR(5) NOT NULL CHECK (voucher IN ('RYRNN', 'KSSSS')),
-  session_mac TEXT NOT NULL, expires_at TIMESTAMPTZ NOT NULL, consumed_at TIMESTAMPTZ,
+  session_mac TEXT NOT NULL, account_id INTEGER, start_time TEXT,
+  expires_at TIMESTAMPTZ NOT NULL, consumed_at TIMESTAMPTZ,
   event_key TEXT UNIQUE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS ix_free_access_challenges_match ON free_access_challenges (voucher, session_mac, expires_at, consumed_at);
+CREATE INDEX IF NOT EXISTS ix_free_access_challenges_session_tuple ON free_access_challenges (token_hash, voucher, session_mac, account_id, start_time, expires_at, consumed_at);
 INSERT INTO sms_message_templates (message_type, template, updated_by) VALUES ('FREE_ACCESS', 'SUPA LAN: Your 7-minute free access is now active! Voucher: {{voucher}}. Enjoy your connection. Support: {{support}}', 'system') ON CONFLICT (message_type) DO NOTHING;

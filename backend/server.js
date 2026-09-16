@@ -846,8 +846,22 @@ app.post('/api/integrations/mypublicwifi/session', async (req, res) => {
   try {
     await client.query('begin');
     const sessionMac = String(body.mac).replace(/[:-]/g, '').toUpperCase();
+    const voucher = String(body.voucher).toUpperCase();
+    const accountId = Number(body.account_id);
+    const startTime = String(body.start_time).trim();
     const tokenHash = crypto.createHash('sha256').update(String(body.challenge_token || '')).digest('hex');
-    const challenge = await client.query(`select id, phone from free_access_challenges where token_hash = $1 and voucher = $2 and session_mac = $3 and consumed_at is null and expires_at > now() for update`, [tokenHash, String(body.voucher).toUpperCase(), sessionMac]);
+
+    // Only this authenticated bridge route may populate AccountID and StartTime.
+    // The browser never submits either value, so it cannot invent the session tuple.
+    await client.query(`update free_access_challenges
+      set account_id = $4, start_time = $5
+      where token_hash = $1 and voucher = $2 and session_mac = $3
+        and account_id is null and start_time is null
+        and consumed_at is null and expires_at > now()`, [tokenHash, voucher, sessionMac, accountId, startTime]);
+    const challenge = await client.query(`select id, phone from free_access_challenges
+      where token_hash = $1 and voucher = $2 and session_mac = $3
+        and account_id = $4 and start_time = $5
+        and consumed_at is null and expires_at > now() for update`, [tokenHash, voucher, sessionMac, accountId, startTime]);
     if (!challenge.rowCount) { await client.query('commit'); return res.status(409).json({ accepted: false, reason: 'NO_MATCHING_SESSION_CHALLENGE' }); }
     const eventKey = body.event_key;
     const claimed = await client.query(`update free_access_challenges set consumed_at = now(), event_key = $1 where id = $2 and consumed_at is null returning id, phone`, [eventKey, challenge.rows[0].id]);
