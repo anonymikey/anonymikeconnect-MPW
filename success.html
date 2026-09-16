@@ -924,8 +924,30 @@ function ConvertToLocaleDateTime(Id)
     }
 }
 
-async function loadOrderVoucher()
-{
+  async function requestFreeAccessConfirmation()
+  {
+    const status = document.getElementById('freeAccessStatus');
+    const phone = document.getElementById('freeAccessPhone').value.trim();
+    const macElement = document.getElementById('173DDC21-AF45-458F-A24C-D015E13275AB');
+    const accountElement = document.getElementById('55FC9BE7-5A3D-4643-ABCE-B1DFAA3BA57E');
+    const voucherElement = document.getElementById('voucher-code');
+    const sessionMac = macElement?.textContent?.trim() || '';
+    const voucher = voucherElement?.textContent?.trim().toUpperCase() || accountElement?.textContent?.trim().toUpperCase() || '';
+    if (!/^\+?[0-9]{9,13}$/.test(phone.replace(/\s|-/g, ''))) { status.textContent = 'Enter a valid Kenyan phone number.'; return; }
+    if (!sessionMac || !voucher) { status.textContent = 'Session details are not available yet. Refresh after connecting.'; return; }
+    status.textContent = 'Binding this session…';
+    try {
+      const response = await fetch('/api/free-access/challenges', { method: 'POST', headers: {'content-type':'application/json'}, body: JSON.stringify({ phone, voucher, sessionMac }) });
+      const challenge = await response.json();
+      if (!response.ok) throw new Error(challenge.message || 'Unable to create a session challenge.');
+      const bridgeResponse = await fetch('http://192.168.10.1:8765/challenge', { method: 'POST', headers: {'content-type':'application/json'}, body: JSON.stringify({ challengeToken: challenge.challengeToken, sessionMac }) });
+      if (!bridgeResponse.ok) throw new Error('The local Wi-Fi bridge could not be reached.');
+      status.textContent = 'Session bound. Your confirmation SMS will be sent when the bridge verifies the active session.';
+    } catch (error) { status.textContent = error.message; }
+  }
+
+  async function loadOrderVoucher()
+  {
     const content = document.getElementById('voucher-content');
     const orderId = new URLSearchParams(window.location.search).get('order');
     const retryButton = document.createElement('button');
@@ -1025,9 +1047,10 @@ async function loadOrderVoucher()
     load();
 }
 
-$(document).ready(function()
-{
-    loadOrderVoucher();
+  $(document).ready(function()
+  {
+  document.getElementById('claimFreeAccess')?.addEventListener('click', requestFreeAccessConfirmation);
+  loadOrderVoucher();
     ConvertToLocaleDateTime("StartTime");
     ConvertToLocaleDateTime("EndTime");
 
@@ -1319,6 +1342,15 @@ We are confirming your payment before releasing your voucher.
     <section class="voucher-card" aria-live="polite" aria-labelledby="voucher-heading">
         <div class="voucher-kicker" id="voucher-heading">Your Internet Voucher</div>
         <div id="voucher-content" class="voucher-loading">Retrieving your voucher...</div>
+    </section>
+
+    <section class="voucher-card" aria-labelledby="free-access-heading">
+        <div class="voucher-kicker" id="free-access-heading">Free-access confirmation</div>
+        <p class="voucher-status">Already connected? Enter your phone number to bind this authenticated session and receive the connection confirmation SMS.</p>
+        <label for="freeAccessPhone">Phone number</label>
+        <input id="freeAccessPhone" type="tel" inputmode="numeric" autocomplete="tel" placeholder="0712345678" />
+        <button type="button" id="claimFreeAccess">Send connection confirmation</button>
+        <p id="freeAccessStatus" class="voucher-status" role="status" aria-live="polite"></p>
     </section>
 
     <div class="session-notice">

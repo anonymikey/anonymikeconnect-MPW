@@ -1,6 +1,8 @@
 {
   "backend_url": "https://anonymikeconnect-mpw.onrender.com",
   "bridge_id": "supalan-office-1",
+  "local_bind": "0.0.0.0",
+  "local_port": 8765,
   "bridge_secret": "GENERATE_A_LONG_RANDOM_SECRET",
   "data_db_path": "C:\\Program Files (x86)\\MyPublicWiFi\\Data.db",
   "poll_seconds": 3,

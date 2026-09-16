@@ -807,16 +807,21 @@ app.post('/api/admin/orders/:id/confirm', requireAdmin, async (req, res) => {
 // ---------------------------------------------------------------------------
 // Isolated MyPublicWiFi free-access SMS automation
 // ---------------------------------------------------------------------------
-app.post('/api/free-access/claims', async (req, res) => {
+app.post('/api/free-access/challenges', async (req, res) => {
   try {
     const phone = normalizeKenyanPhone(req.body?.phone);
+    const voucher = String(req.body?.voucher || '').trim().toUpperCase();
+    const sessionMac = String(req.body?.sessionMac || '').trim().toUpperCase();
+    if (!['RYRNN', 'KSSSS'].includes(voucher) || !/^[0-9A-F]{12}$/.test(sessionMac.replace(/[:-]/g, ''))) return res.status(400).json({ error: 'INVALID_SESSION_BINDING' });
     const setting = await db.query('select enabled, active_voucher from free_access_settings where id = true');
-    if (!setting.rows[0]?.enabled) return res.status(409).json({ error: 'FREE_ACCESS_DISABLED', message: 'Free access is currently disabled.' });
-    const recent = await db.query(`select 1 from free_access_claims where phone = $1 and created_at > now() - interval '10 minutes' limit 1`, [phone]);
-    if (recent.rowCount) return res.status(429).json({ error: 'CLAIM_RATE_LIMITED', message: 'Please wait before requesting another claim.' });
-    const result = await db.query(`insert into free_access_claims (phone, voucher, expires_at) values ($1, $2, now() + interval '10 minutes') returning id, voucher, expires_at`, [phone, setting.rows[0].active_voucher]);
-    return res.status(201).json({ claimId: result.rows[0].id, voucher: result.rows[0].voucher, expiresAt: result.rows[0].expires_at });
-  } catch (err) { return res.status(400).json({ error: 'INVALID_FREE_ACCESS_CLAIM', message: err.message }); }
+    if (!setting.rows[0]?.enabled || setting.rows[0].active_voucher !== voucher) return res.status(409).json({ error: 'FREE_ACCESS_DISABLED', message: 'Free access is currently disabled.' });
+    const recent = await db.query(`select 1 from free_access_challenges where phone = $1 and consumed_at is null and expires_at > now() limit 1`, [phone]);
+    if (recent.rowCount) return res.status(429).json({ error: 'CHALLENGE_RATE_LIMITED', message: 'Please wait before requesting another challenge.' });
+    const token = crypto.randomBytes(32).toString('base64url');
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    const result = await db.query(`insert into free_access_challenges (token_hash, phone, voucher, session_mac, expires_at) values ($1,$2,$3,$4,now() + interval '5 minutes') returning id, voucher, expires_at`, [tokenHash, phone, voucher, sessionMac.replace(/[:-]/g, '')]);
+    return res.status(201).json({ challengeId: result.rows[0].id, challengeToken: token, voucher: result.rows[0].voucher, expiresAt: result.rows[0].expires_at });
+  } catch (err) { return res.status(400).json({ error: 'INVALID_FREE_ACCESS_CHALLENGE', message: err.message }); }
 });
 
 app.get('/api/free-access/config', async (req, res) => {
@@ -826,10 +831,12 @@ app.get('/api/free-access/config', async (req, res) => {
 
 app.post('/api/integrations/mypublicwifi/session', async (req, res) => {
   const secret = process.env.MYPUBLICWIFI_BRIDGE_SECRET || '';
+  const expectedBridgeId = process.env.MYPUBLICWIFI_BRIDGE_ID || '';
   const bridgeId = req.get('x-bridge-id') || '';
   const signature = req.get('x-bridge-signature') || '';
   const raw = JSON.stringify(req.body || {});
-  if (!secret || !bridgeId || !safeEqual(bridgeId, process.env.MYPUBLICWIFI_BRIDGE_ID || bridgeId) || !safeEqual(signature, crypto.createHmac('sha256', secret).update(raw).digest('hex'))) return res.status(401).json({ error: 'INVALID_BRIDGE_AUTH' });
+  if (!secret || !expectedBridgeId) return res.status(503).json({ error: 'BRIDGE_NOT_CONFIGURED' });
+  if (!bridgeId || !safeEqual(bridgeId, expectedBridgeId) || !safeEqual(signature, crypto.createHmac('sha256', secret).update(raw).digest('hex'))) return res.status(401).json({ error: 'INVALID_BRIDGE_AUTH' });
   const body = req.body || {};
   if (body.event_type !== 'SESSION_STARTED' || !/^FREE_ACCESS:[A-Z0-9]+:[0-9]+:.+$/.test(body.event_key || '') || !['RYRNN', 'KSSSS'].includes(String(body.voucher || '').toUpperCase()) || !body.mac || !body.start_time || !Number.isInteger(body.account_id)) return res.status(400).json({ error: 'INVALID_SESSION_EVENT' });
   if (Math.abs(Date.now() - Date.parse(body.occurred_at || '')) > 5 * 60 * 1000) return res.status(400).json({ error: 'STALE_SESSION_EVENT' });
@@ -838,10 +845,12 @@ app.post('/api/integrations/mypublicwifi/session', async (req, res) => {
   const client = await db.connect();
   try {
     await client.query('begin');
-    const claim = await client.query(`select id, phone from free_access_claims where voucher = $1 and consumed_at is null and expires_at > now() and created_at > now() - interval '15 minutes' order by created_at asc for update skip locked limit 1`, [body.voucher]);
-    if (!claim.rowCount) { await client.query('commit'); return res.json({ accepted: true, delivered: false, reason: 'NO_MATCHING_CLAIM' }); }
+    const sessionMac = String(body.mac).replace(/[:-]/g, '').toUpperCase();
+    const tokenHash = crypto.createHash('sha256').update(String(body.challenge_token || '')).digest('hex');
+    const challenge = await client.query(`select id, phone from free_access_challenges where token_hash = $1 and voucher = $2 and session_mac = $3 and consumed_at is null and expires_at > now() for update`, [tokenHash, String(body.voucher).toUpperCase(), sessionMac]);
+    if (!challenge.rowCount) { await client.query('commit'); return res.status(409).json({ accepted: false, reason: 'NO_MATCHING_SESSION_CHALLENGE' }); }
     const eventKey = body.event_key;
-    const claimed = await client.query(`update free_access_claims set consumed_at = now(), event_key = $1, session_mac = $2, session_account_id = $3, session_start_time = $4 where id = $5 and consumed_at is null returning id, phone`, [eventKey, body.mac, body.account_id, body.start_time, claim.rows[0].id]);
+    const claimed = await client.query(`update free_access_challenges set consumed_at = now(), event_key = $1 where id = $2 and consumed_at is null returning id, phone`, [eventKey, challenge.rows[0].id]);
     if (!claimed.rowCount) { await client.query('rollback'); return res.json({ accepted: true, delivered: false, duplicate: true }); }
     await client.query('commit');
     const sms = await sendFreeAccessConfirmation({ db, phone: claimed.rows[0].phone, voucherCode: body.voucher, eventKey, claimId: claimed.rows[0].id, mac: body.mac, accountId: body.account_id, startTime: body.start_time });
