@@ -67,4 +67,37 @@ async function sendPurchaseConfirmation({ db, order, voucherCode, packageName, d
   }
 }
 
-module.exports = { sendPurchaseConfirmation, validateTemplate, renderTemplate, DEFAULT_TEMPLATE, EVENT_TYPE, SUPPORTED_PLACEHOLDERS };
+const FREE_ACCESS_EVENT_TYPE = 'FREE_ACCESS';
+const FREE_ACCESS_DEFAULT_TEMPLATE = 'SUPA LAN: Your 7-minute free access is now active! Voucher: {{voucher}}. Enjoy your connection. Support: {{support}}';
+const FREE_ACCESS_SUPPORTED_PLACEHOLDERS = new Set(['{{voucher}}', '{{portal_url}}', '{{support}}']);
+
+function validateFreeAccessTemplate(template) {
+  const value = String(template || '').trim();
+  if (!value || !value.includes(REQUIRED_PLACEHOLDER)) throw new Error('Template must include {{voucher}}.');
+  const placeholders = value.match(/\{\{[^}]+\}\}/g) || [];
+  const unsupported = [...new Set(placeholders.filter((placeholder) => !FREE_ACCESS_SUPPORTED_PLACEHOLDERS.has(placeholder)))];
+  if (unsupported.length) throw new Error(`Unsupported placeholder: ${unsupported.join(', ')}`);
+  if (value.length > 480) throw new Error('Template cannot exceed 480 characters.');
+  return value;
+}
+
+async function sendFreeAccessConfirmation({ db, phone, voucherCode, eventKey, claimId, mac, accountId, startTime }) {
+  if (!phone || !voucherCode || !eventKey) return { attempted: false, reason: 'MISSING_FREE_ACCESS_FIELDS' };
+  const existing = await db.query('select status, provider_message_id from sms_messages where event_key = $1 limit 1', [eventKey]);
+  if (existing.rowCount) return { attempted: false, duplicate: true, status: existing.rows[0].status, messageId: existing.rows[0].provider_message_id };
+  const templateResult = await db.query('select template from sms_message_templates where message_type = $1 limit 1', [FREE_ACCESS_EVENT_TYPE]);
+  const template = validateFreeAccessTemplate(templateResult.rows[0]?.template || FREE_ACCESS_DEFAULT_TEMPLATE);
+  const message = template.replace(/\{\{(voucher|portal_url|support)\}\}/g, (_, key) => ({ voucher: voucherCode, portal_url: 'http://192.168.10.1/', support: 'SUPA LAN support' }[key] || ''));
+  let normalizedPhone;
+  try {
+    normalizedPhone = normalizeKenyanPhone(phone);
+    const result = await sendTextSms({ phone: normalizedPhone, message });
+    await db.query(`insert into sms_messages (recipient, message, message_type, status, provider, provider_message_id, event_key, network, created_by, source, sent_at) values ($1,$2,$3,'SENT','TextSMS',$4,$5,'Safaricom','system','mypublicwifi-free-access',now())`, [normalizedPhone, message, FREE_ACCESS_EVENT_TYPE, result.messageId, eventKey]);
+    return { attempted: true, status: 'SENT', messageId: result.messageId, claimId, mac, accountId, startTime };
+  } catch (error) {
+    await db.query(`insert into sms_messages (recipient, message, message_type, status, provider, event_key, network, error_message, created_by, source) values ($1,$2,$3,'FAILED','TextSMS',$4,'Safaricom',$5,'system','mypublicwifi-free-access') on conflict (event_key) do nothing`, [normalizedPhone || String(phone), message, FREE_ACCESS_EVENT_TYPE, eventKey, error.message]).catch(() => {});
+    return { attempted: true, status: 'FAILED', error: error.message };
+  }
+}
+
+module.exports = { sendPurchaseConfirmation, sendFreeAccessConfirmation, validateTemplate, validateFreeAccessTemplate, renderTemplate, DEFAULT_TEMPLATE, EVENT_TYPE, FREE_ACCESS_EVENT_TYPE, FREE_ACCESS_DEFAULT_TEMPLATE, SUPPORTED_PLACEHOLDERS };

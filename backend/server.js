@@ -4,8 +4,8 @@ const dotenv = require('dotenv');
 const path = require('path');
 const crypto = require('crypto');
 const { Pool } = require('pg');
-const { sendTextSms } = require('./textsms');
-const { sendPurchaseConfirmation, validateTemplate, DEFAULT_TEMPLATE, EVENT_TYPE } = require('./sms-notifications');
+const { sendTextSms, normalizeKenyanPhone } = require('./textsms');
+const { sendPurchaseConfirmation, sendFreeAccessConfirmation, validateTemplate, validateFreeAccessTemplate, DEFAULT_TEMPLATE, EVENT_TYPE, FREE_ACCESS_EVENT_TYPE, FREE_ACCESS_DEFAULT_TEMPLATE } = require('./sms-notifications');
 
 dotenv.config({ path: path.join(__dirname, '.env') });
 
@@ -805,6 +805,51 @@ app.post('/api/admin/orders/:id/confirm', requireAdmin, async (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
+// Isolated MyPublicWiFi free-access SMS automation
+// ---------------------------------------------------------------------------
+app.post('/api/free-access/claims', async (req, res) => {
+  try {
+    const phone = normalizeKenyanPhone(req.body?.phone);
+    const setting = await db.query('select enabled, active_voucher from free_access_settings where id = true');
+    if (!setting.rows[0]?.enabled) return res.status(409).json({ error: 'FREE_ACCESS_DISABLED', message: 'Free access is currently disabled.' });
+    const recent = await db.query(`select 1 from free_access_claims where phone = $1 and created_at > now() - interval '10 minutes' limit 1`, [phone]);
+    if (recent.rowCount) return res.status(429).json({ error: 'CLAIM_RATE_LIMITED', message: 'Please wait before requesting another claim.' });
+    const result = await db.query(`insert into free_access_claims (phone, voucher, expires_at) values ($1, $2, now() + interval '10 minutes') returning id, voucher, expires_at`, [phone, setting.rows[0].active_voucher]);
+    return res.status(201).json({ claimId: result.rows[0].id, voucher: result.rows[0].voucher, expiresAt: result.rows[0].expires_at });
+  } catch (err) { return res.status(400).json({ error: 'INVALID_FREE_ACCESS_CLAIM', message: err.message }); }
+});
+
+app.get('/api/free-access/config', async (req, res) => {
+  const result = await db.query('select enabled, active_voucher from free_access_settings where id = true');
+  return res.json({ enabled: result.rows[0]?.enabled === true, activeVoucher: result.rows[0]?.active_voucher || null });
+});
+
+app.post('/api/integrations/mypublicwifi/session', async (req, res) => {
+  const secret = process.env.MYPUBLICWIFI_BRIDGE_SECRET || '';
+  const bridgeId = req.get('x-bridge-id') || '';
+  const signature = req.get('x-bridge-signature') || '';
+  const raw = JSON.stringify(req.body || {});
+  if (!secret || !bridgeId || !safeEqual(bridgeId, process.env.MYPUBLICWIFI_BRIDGE_ID || bridgeId) || !safeEqual(signature, crypto.createHmac('sha256', secret).update(raw).digest('hex'))) return res.status(401).json({ error: 'INVALID_BRIDGE_AUTH' });
+  const body = req.body || {};
+  if (body.event_type !== 'SESSION_STARTED' || !/^FREE_ACCESS:[A-Z0-9]+:[0-9]+:.+$/.test(body.event_key || '') || !['RYRNN', 'KSSSS'].includes(String(body.voucher || '').toUpperCase()) || !body.mac || !body.start_time || !Number.isInteger(body.account_id)) return res.status(400).json({ error: 'INVALID_SESSION_EVENT' });
+  if (Math.abs(Date.now() - Date.parse(body.occurred_at || '')) > 5 * 60 * 1000) return res.status(400).json({ error: 'STALE_SESSION_EVENT' });
+  const setting = await db.query('select enabled, active_voucher from free_access_settings where id = true');
+  if (!setting.rows[0]?.enabled || setting.rows[0].active_voucher !== String(body.voucher).toUpperCase()) return res.json({ accepted: false, reason: 'VOUCHER_NOT_ACTIVE' });
+  const client = await db.connect();
+  try {
+    await client.query('begin');
+    const claim = await client.query(`select id, phone from free_access_claims where voucher = $1 and consumed_at is null and expires_at > now() and created_at > now() - interval '15 minutes' order by created_at asc for update skip locked limit 1`, [body.voucher]);
+    if (!claim.rowCount) { await client.query('commit'); return res.json({ accepted: true, delivered: false, reason: 'NO_MATCHING_CLAIM' }); }
+    const eventKey = body.event_key;
+    const claimed = await client.query(`update free_access_claims set consumed_at = now(), event_key = $1, session_mac = $2, session_account_id = $3, session_start_time = $4 where id = $5 and consumed_at is null returning id, phone`, [eventKey, body.mac, body.account_id, body.start_time, claim.rows[0].id]);
+    if (!claimed.rowCount) { await client.query('rollback'); return res.json({ accepted: true, delivered: false, duplicate: true }); }
+    await client.query('commit');
+    const sms = await sendFreeAccessConfirmation({ db, phone: claimed.rows[0].phone, voucherCode: body.voucher, eventKey, claimId: claimed.rows[0].id, mac: body.mac, accountId: body.account_id, startTime: body.start_time });
+    return res.json({ accepted: true, delivered: sms.status === 'SENT', smsStatus: sms.status || null });
+  } catch (err) { await client.query('rollback').catch(() => {}); return res.status(500).json({ error: 'FREE_ACCESS_EVENT_FAILED' }); } finally { client.release(); }
+});
+
+// ---------------------------------------------------------------------------
 // Admin: voucher inventory management
 // ---------------------------------------------------------------------------
 
@@ -853,6 +898,18 @@ app.get('/admin/sms', (req, res) => {
   res.sendFile(path.join(rootDir, 'admin-sms.html'));
 });
 
+app.get('/api/admin/free-access', requireAdmin, async (req, res) => {
+  const result = await db.query('select enabled, active_voucher, updated_at from free_access_settings where id = true');
+  return res.json({ enabled: result.rows[0]?.enabled === true, activeVoucher: result.rows[0]?.active_voucher || 'KSSSS', approvedVouchers: ['RYRNN', 'KSSSS'], updatedAt: result.rows[0]?.updated_at || null });
+});
+
+app.put('/api/admin/free-access', requireAdmin, async (req, res) => {
+  const { enabled, activeVoucher } = req.body || {};
+  if (typeof enabled !== 'boolean' || !['RYRNN', 'KSSSS'].includes(activeVoucher)) return res.status(400).json({ error: 'INVALID_FREE_ACCESS_SETTINGS' });
+  const result = await db.query(`update free_access_settings set enabled = $1, active_voucher = $2, updated_at = now(), updated_by = 'admin' where id = true returning enabled, active_voucher, updated_at`, [enabled, activeVoucher]);
+  return res.json({ settings: result.rows[0] });
+});
+
 app.get('/api/admin/sms/status', requireAdmin, (req, res) => {
   res.json({
     configured: Boolean(process.env.TEXTSMS_API_KEY && process.env.TEXTSMS_PARTNER_ID && process.env.TEXTSMS_SENDER_ID),
@@ -873,10 +930,10 @@ app.get('/api/admin/sms/templates', requireAdmin, async (req, res) => {
 });
 
 app.put('/api/admin/sms/templates/:messageType', requireAdmin, async (req, res) => {
-  if (req.params.messageType !== EVENT_TYPE) return res.status(400).json({ error: 'UNSUPPORTED_MESSAGE_TYPE', message: 'Unsupported message type.' });
+  if (![EVENT_TYPE, FREE_ACCESS_EVENT_TYPE].includes(req.params.messageType)) return res.status(400).json({ error: 'UNSUPPORTED_MESSAGE_TYPE', message: 'Unsupported message type.' });
   try {
-    const template = validateTemplate(req.body?.template);
-    const result = await db.query(`insert into sms_message_templates (message_type, template, updated_by) values ($1, $2, 'admin') on conflict (message_type) do update set template = excluded.template, updated_at = now(), updated_by = excluded.updated_by returning message_type, template, updated_at, updated_by`, [EVENT_TYPE, template]);
+    const template = req.params.messageType === FREE_ACCESS_EVENT_TYPE ? validateFreeAccessTemplate(req.body?.template) : validateTemplate(req.body?.template);
+    const result = await db.query(`insert into sms_message_templates (message_type, template, updated_by) values ($1, $2, 'admin') on conflict (message_type) do update set template = excluded.template, updated_at = now(), updated_by = excluded.updated_by returning message_type, template, updated_at, updated_by`, [req.params.messageType, template]);
     return res.json({ template: result.rows[0] });
   } catch (err) {
     return res.status(400).json({ error: 'INVALID_SMS_TEMPLATE', message: err.message });
@@ -884,9 +941,11 @@ app.put('/api/admin/sms/templates/:messageType', requireAdmin, async (req, res) 
 });
 
 app.post('/api/admin/sms/templates/:messageType/reset', requireAdmin, async (req, res) => {
-  if (req.params.messageType !== EVENT_TYPE) return res.status(400).json({ error: 'UNSUPPORTED_MESSAGE_TYPE', message: 'Unsupported message type.' });
+  if (![EVENT_TYPE, FREE_ACCESS_EVENT_TYPE].includes(req.params.messageType)) return res.status(400).json({ error: 'UNSUPPORTED_MESSAGE_TYPE', message: 'Unsupported message type.' });
   try {
-    const result = await db.query(`insert into sms_message_templates (message_type, template, updated_by) values ($1, $2, 'system') on conflict (message_type) do update set template = excluded.template, updated_at = now(), updated_by = excluded.updated_by returning message_type, template, updated_at, updated_by`, [EVENT_TYPE, DEFAULT_TEMPLATE]);
+    const templateType = req.params.messageType;
+    const templateDefault = templateType === FREE_ACCESS_EVENT_TYPE ? FREE_ACCESS_DEFAULT_TEMPLATE : DEFAULT_TEMPLATE;
+    const result = await db.query(`insert into sms_message_templates (message_type, template, updated_by) values ($1, $2, 'system') on conflict (message_type) do update set template = excluded.template, updated_at = now(), updated_by = excluded.updated_by returning message_type, template, updated_at, updated_by`, [templateType, templateDefault]);
     return res.json({ template: result.rows[0] });
   } catch (err) {
     return res.status(500).json({ error: 'SMS_TEMPLATE_RESET_FAILED', message: 'Unable to reset message template.' });

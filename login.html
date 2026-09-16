@@ -468,6 +468,20 @@ $(document).ready(function()
 
 
 /*]]>*/
+async function requestFreeAccessClaim()
+{
+    var phone = document.getElementById('freeAccessPhone').value.trim();
+    var status = document.getElementById('freeAccessStatus');
+    if (!/^\+?[0-9]{9,13}$/.test(phone.replace(/\s|-/g, ''))) { status.textContent = 'Enter a valid Kenyan phone number.'; return; }
+    status.textContent = 'Preparing your free access claim…';
+    try {
+        var response = await fetch('/api/free-access/claims', { method: 'POST', headers: {'content-type':'application/json'}, body: JSON.stringify({phone: phone}) });
+        var result = await response.json();
+        if (!response.ok) throw new Error(result.message || 'Unable to create claim.');
+        status.textContent = 'Claim ready. Enter ' + result.voucher + ' in the Wi-Fi voucher field to connect.';
+    } catch (error) { status.textContent = error.message; }
+}
+
 </script>
 
 </head>
@@ -925,9 +939,18 @@ $(document).ready(function()
 
 
 
-    <!-- =====================================================
-         PAYMENT MODAL
-         ===================================================== -->
+  <section class="payment-modal" style="max-width:520px;margin:24px auto;padding:24px;">
+    <h2>7-minute free access</h2>
+    <p>Enter your phone number first, then use the voucher shown in the native Wi-Fi login form. Your connection is confirmed by the local Wi-Fi system.</p>
+    <label for="freeAccessPhone">Phone number</label>
+    <input id="freeAccessPhone" type="tel" inputmode="numeric" placeholder="0712345678" autocomplete="tel" />
+    <button type="button" class="pay-button" onclick="requestFreeAccessClaim();">Request free access</button>
+    <p id="freeAccessStatus" role="status" aria-live="polite"></p>
+  </section>
+
+  <!-- =====================================================
+  PAYMENT MODAL
+  ===================================================== -->
 
     <div
         id="paymentModal"
