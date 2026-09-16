@@ -4,8 +4,8 @@ const dotenv = require('dotenv');
 const path = require('path');
 const crypto = require('crypto');
 const { Pool } = require('pg');
-const { sendTextSms } = require('./textsms');
-const { sendPurchaseConfirmation, validateTemplate, DEFAULT_TEMPLATE, EVENT_TYPE } = require('./sms-notifications');
+const { sendTextSms, normalizeKenyanPhone } = require('./textsms');
+const { sendPurchaseConfirmation, sendFreeAccessConfirmation, validateTemplate, validateFreeAccessTemplate, DEFAULT_TEMPLATE, EVENT_TYPE, FREE_ACCESS_EVENT_TYPE, FREE_ACCESS_DEFAULT_TEMPLATE } = require('./sms-notifications');
 
 dotenv.config({ path: path.join(__dirname, '.env') });
 
@@ -805,6 +805,74 @@ app.post('/api/admin/orders/:id/confirm', requireAdmin, async (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
+// Isolated MyPublicWiFi free-access SMS automation
+// ---------------------------------------------------------------------------
+app.post('/api/free-access/challenges', async (req, res) => {
+  try {
+    const phone = normalizeKenyanPhone(req.body?.phone);
+    const voucher = String(req.body?.voucher || '').trim().toUpperCase();
+    const sessionMac = String(req.body?.sessionMac || '').trim().toUpperCase();
+    if (!['RYRNN', 'KSSSS'].includes(voucher) || !/^[0-9A-F]{12}$/.test(sessionMac.replace(/[:-]/g, ''))) return res.status(400).json({ error: 'INVALID_SESSION_BINDING' });
+    const setting = await db.query('select enabled, active_voucher from free_access_settings where id = true');
+    if (!setting.rows[0]?.enabled || setting.rows[0].active_voucher !== voucher) return res.status(409).json({ error: 'FREE_ACCESS_DISABLED', message: 'Free access is currently disabled.' });
+    const recent = await db.query(`select 1 from free_access_challenges where phone = $1 and consumed_at is null and expires_at > now() limit 1`, [phone]);
+    if (recent.rowCount) return res.status(429).json({ error: 'CHALLENGE_RATE_LIMITED', message: 'Please wait before requesting another challenge.' });
+    const token = crypto.randomBytes(32).toString('base64url');
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    const result = await db.query(`insert into free_access_challenges (token_hash, phone, voucher, session_mac, expires_at) values ($1,$2,$3,$4,now() + interval '5 minutes') returning id, voucher, expires_at`, [tokenHash, phone, voucher, sessionMac.replace(/[:-]/g, '')]);
+    return res.status(201).json({ challengeId: result.rows[0].id, challengeToken: token, voucher: result.rows[0].voucher, expiresAt: result.rows[0].expires_at });
+  } catch (err) { return res.status(400).json({ error: 'INVALID_FREE_ACCESS_CHALLENGE', message: err.message }); }
+});
+
+app.get('/api/free-access/config', async (req, res) => {
+  const result = await db.query('select enabled, active_voucher from free_access_settings where id = true');
+  return res.json({ enabled: result.rows[0]?.enabled === true, activeVoucher: result.rows[0]?.active_voucher || null });
+});
+
+app.post('/api/integrations/mypublicwifi/session', async (req, res) => {
+  const secret = process.env.MYPUBLICWIFI_BRIDGE_SECRET || '';
+  const expectedBridgeId = process.env.MYPUBLICWIFI_BRIDGE_ID || '';
+  const bridgeId = req.get('x-bridge-id') || '';
+  const signature = req.get('x-bridge-signature') || '';
+  const raw = JSON.stringify(req.body || {});
+  if (!secret || !expectedBridgeId) return res.status(503).json({ error: 'BRIDGE_NOT_CONFIGURED' });
+  if (!bridgeId || !safeEqual(bridgeId, expectedBridgeId) || !safeEqual(signature, crypto.createHmac('sha256', secret).update(raw).digest('hex'))) return res.status(401).json({ error: 'INVALID_BRIDGE_AUTH' });
+  const body = req.body || {};
+  if (body.event_type !== 'SESSION_STARTED' || !/^FREE_ACCESS:[A-Z0-9]+:[0-9]+:.+$/.test(body.event_key || '') || !['RYRNN', 'KSSSS'].includes(String(body.voucher || '').toUpperCase()) || !body.mac || !body.start_time || !Number.isInteger(body.account_id)) return res.status(400).json({ error: 'INVALID_SESSION_EVENT' });
+  if (Math.abs(Date.now() - Date.parse(body.occurred_at || '')) > 5 * 60 * 1000) return res.status(400).json({ error: 'STALE_SESSION_EVENT' });
+  const setting = await db.query('select enabled, active_voucher from free_access_settings where id = true');
+  if (!setting.rows[0]?.enabled || setting.rows[0].active_voucher !== String(body.voucher).toUpperCase()) return res.json({ accepted: false, reason: 'VOUCHER_NOT_ACTIVE' });
+  const client = await db.connect();
+  try {
+    await client.query('begin');
+    const sessionMac = String(body.mac).replace(/[:-]/g, '').toUpperCase();
+    const voucher = String(body.voucher).toUpperCase();
+    const accountId = Number(body.account_id);
+    const startTime = String(body.start_time).trim();
+    const tokenHash = crypto.createHash('sha256').update(String(body.challenge_token || '')).digest('hex');
+
+    // Only this authenticated bridge route may populate AccountID and StartTime.
+    // The browser never submits either value, so it cannot invent the session tuple.
+    await client.query(`update free_access_challenges
+      set account_id = $4, start_time = $5
+      where token_hash = $1 and voucher = $2 and session_mac = $3
+        and account_id is null and start_time is null
+        and consumed_at is null and expires_at > now()`, [tokenHash, voucher, sessionMac, accountId, startTime]);
+    const challenge = await client.query(`select id, phone from free_access_challenges
+      where token_hash = $1 and voucher = $2 and session_mac = $3
+        and account_id = $4 and start_time = $5
+        and consumed_at is null and expires_at > now() for update`, [tokenHash, voucher, sessionMac, accountId, startTime]);
+    if (!challenge.rowCount) { await client.query('commit'); return res.status(409).json({ accepted: false, reason: 'NO_MATCHING_SESSION_CHALLENGE' }); }
+    const eventKey = body.event_key;
+    const claimed = await client.query(`update free_access_challenges set consumed_at = now(), event_key = $1 where id = $2 and consumed_at is null returning id, phone`, [eventKey, challenge.rows[0].id]);
+    if (!claimed.rowCount) { await client.query('rollback'); return res.json({ accepted: true, delivered: false, duplicate: true }); }
+    await client.query('commit');
+    const sms = await sendFreeAccessConfirmation({ db, phone: claimed.rows[0].phone, voucherCode: body.voucher, eventKey, claimId: claimed.rows[0].id, mac: body.mac, accountId: body.account_id, startTime: body.start_time });
+    return res.json({ accepted: true, delivered: sms.status === 'SENT', smsStatus: sms.status || null });
+  } catch (err) { await client.query('rollback').catch(() => {}); return res.status(500).json({ error: 'FREE_ACCESS_EVENT_FAILED' }); } finally { client.release(); }
+});
+
+// ---------------------------------------------------------------------------
 // Admin: voucher inventory management
 // ---------------------------------------------------------------------------
 
@@ -853,6 +921,18 @@ app.get('/admin/sms', (req, res) => {
   res.sendFile(path.join(rootDir, 'admin-sms.html'));
 });
 
+app.get('/api/admin/free-access', requireAdmin, async (req, res) => {
+  const result = await db.query('select enabled, active_voucher, updated_at from free_access_settings where id = true');
+  return res.json({ enabled: result.rows[0]?.enabled === true, activeVoucher: result.rows[0]?.active_voucher || 'KSSSS', approvedVouchers: ['RYRNN', 'KSSSS'], updatedAt: result.rows[0]?.updated_at || null });
+});
+
+app.put('/api/admin/free-access', requireAdmin, async (req, res) => {
+  const { enabled, activeVoucher } = req.body || {};
+  if (typeof enabled !== 'boolean' || !['RYRNN', 'KSSSS'].includes(activeVoucher)) return res.status(400).json({ error: 'INVALID_FREE_ACCESS_SETTINGS' });
+  const result = await db.query(`update free_access_settings set enabled = $1, active_voucher = $2, updated_at = now(), updated_by = 'admin' where id = true returning enabled, active_voucher, updated_at`, [enabled, activeVoucher]);
+  return res.json({ settings: result.rows[0] });
+});
+
 app.get('/api/admin/sms/status', requireAdmin, (req, res) => {
   res.json({
     configured: Boolean(process.env.TEXTSMS_API_KEY && process.env.TEXTSMS_PARTNER_ID && process.env.TEXTSMS_SENDER_ID),
@@ -873,10 +953,10 @@ app.get('/api/admin/sms/templates', requireAdmin, async (req, res) => {
 });
 
 app.put('/api/admin/sms/templates/:messageType', requireAdmin, async (req, res) => {
-  if (req.params.messageType !== EVENT_TYPE) return res.status(400).json({ error: 'UNSUPPORTED_MESSAGE_TYPE', message: 'Unsupported message type.' });
+  if (![EVENT_TYPE, FREE_ACCESS_EVENT_TYPE].includes(req.params.messageType)) return res.status(400).json({ error: 'UNSUPPORTED_MESSAGE_TYPE', message: 'Unsupported message type.' });
   try {
-    const template = validateTemplate(req.body?.template);
-    const result = await db.query(`insert into sms_message_templates (message_type, template, updated_by) values ($1, $2, 'admin') on conflict (message_type) do update set template = excluded.template, updated_at = now(), updated_by = excluded.updated_by returning message_type, template, updated_at, updated_by`, [EVENT_TYPE, template]);
+    const template = req.params.messageType === FREE_ACCESS_EVENT_TYPE ? validateFreeAccessTemplate(req.body?.template) : validateTemplate(req.body?.template);
+    const result = await db.query(`insert into sms_message_templates (message_type, template, updated_by) values ($1, $2, 'admin') on conflict (message_type) do update set template = excluded.template, updated_at = now(), updated_by = excluded.updated_by returning message_type, template, updated_at, updated_by`, [req.params.messageType, template]);
     return res.json({ template: result.rows[0] });
   } catch (err) {
     return res.status(400).json({ error: 'INVALID_SMS_TEMPLATE', message: err.message });
@@ -884,9 +964,11 @@ app.put('/api/admin/sms/templates/:messageType', requireAdmin, async (req, res) 
 });
 
 app.post('/api/admin/sms/templates/:messageType/reset', requireAdmin, async (req, res) => {
-  if (req.params.messageType !== EVENT_TYPE) return res.status(400).json({ error: 'UNSUPPORTED_MESSAGE_TYPE', message: 'Unsupported message type.' });
+  if (![EVENT_TYPE, FREE_ACCESS_EVENT_TYPE].includes(req.params.messageType)) return res.status(400).json({ error: 'UNSUPPORTED_MESSAGE_TYPE', message: 'Unsupported message type.' });
   try {
-    const result = await db.query(`insert into sms_message_templates (message_type, template, updated_by) values ($1, $2, 'system') on conflict (message_type) do update set template = excluded.template, updated_at = now(), updated_by = excluded.updated_by returning message_type, template, updated_at, updated_by`, [EVENT_TYPE, DEFAULT_TEMPLATE]);
+    const templateType = req.params.messageType;
+    const templateDefault = templateType === FREE_ACCESS_EVENT_TYPE ? FREE_ACCESS_DEFAULT_TEMPLATE : DEFAULT_TEMPLATE;
+    const result = await db.query(`insert into sms_message_templates (message_type, template, updated_by) values ($1, $2, 'system') on conflict (message_type) do update set template = excluded.template, updated_at = now(), updated_by = excluded.updated_by returning message_type, template, updated_at, updated_by`, [templateType, templateDefault]);
     return res.json({ template: result.rows[0] });
   } catch (err) {
     return res.status(500).json({ error: 'SMS_TEMPLATE_RESET_FAILED', message: 'Unable to reset message template.' });

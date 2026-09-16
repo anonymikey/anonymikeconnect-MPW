@@ -95,3 +95,29 @@ CREATE TABLE IF NOT EXISTS sms_message_templates (
 INSERT INTO sms_message_templates (message_type, template, updated_by)
 VALUES ('PURCHASE_CONFIRMATION', 'SUPA LAN payment confirmed. Voucher: {{voucher}}. Package: {{package}}{{duration}}. Connect to SUPA LAN and enter your voucher.', 'system')
 ON CONFLICT (message_type) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS free_access_settings (
+  id BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (id = TRUE),
+  enabled BOOLEAN NOT NULL DEFAULT FALSE,
+  active_voucher VARCHAR(5) NOT NULL CHECK (active_voucher IN ('RYRNN', 'KSSSS')),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_by TEXT NOT NULL DEFAULT 'system'
+);
+INSERT INTO free_access_settings (id, enabled, active_voucher) VALUES (TRUE, FALSE, 'KSSSS') ON CONFLICT (id) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS free_access_claims (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(), phone VARCHAR(16) NOT NULL,
+  voucher VARCHAR(5) NOT NULL CHECK (voucher IN ('RYRNN', 'KSSSS')),
+  expires_at TIMESTAMPTZ NOT NULL, consumed_at TIMESTAMPTZ, event_key TEXT UNIQUE,
+  session_mac TEXT, session_account_id INTEGER, session_start_time TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS free_access_challenges (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(), token_hash TEXT NOT NULL UNIQUE,
+  phone VARCHAR(16) NOT NULL, voucher VARCHAR(5) NOT NULL CHECK (voucher IN ('RYRNN', 'KSSSS')),
+  session_mac TEXT NOT NULL, account_id INTEGER, start_time TEXT,
+  expires_at TIMESTAMPTZ NOT NULL, consumed_at TIMESTAMPTZ,
+  event_key TEXT UNIQUE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS ix_free_access_challenges_match ON free_access_challenges (voucher, session_mac, expires_at, consumed_at);
+CREATE INDEX IF NOT EXISTS ix_free_access_challenges_session_tuple ON free_access_challenges (token_hash, voucher, session_mac, account_id, start_time, expires_at, consumed_at);
+INSERT INTO sms_message_templates (message_type, template, updated_by) VALUES ('FREE_ACCESS', 'SUPA LAN: Your 7-minute free access is now active! Voucher: {{voucher}}. Enjoy your connection. Support: {{support}}', 'system') ON CONFLICT (message_type) DO NOTHING;
