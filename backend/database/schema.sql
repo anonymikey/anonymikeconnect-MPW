@@ -120,4 +120,4 @@ CREATE TABLE IF NOT EXISTS free_access_challenges (
 );
 CREATE INDEX IF NOT EXISTS ix_free_access_challenges_match ON free_access_challenges (voucher, session_mac, expires_at, consumed_at);
 CREATE INDEX IF NOT EXISTS ix_free_access_challenges_session_tuple ON free_access_challenges (token_hash, voucher, session_mac, account_id, start_time, expires_at, consumed_at);
-INSERT INTO sms_message_templates (message_type, template, updated_by) VALUES ('FREE_ACCESS', 'SUPA LAN: Your 7-minute free access is now active! Voucher: {{voucher}}. Enjoy your connection. Support: {{support}}', 'system') ON CONFLICT (message_type) DO NOTHING;
+INSERT INTO sms_message_templates (message_type, template, updated_by) VALUES ('FREE_ACCESS', 'SUPA LAN: Your 7-minute free access is now active! Voucher: {{voucher}}. Enjoy your connection. For unlimited premium packages, visit {{portal_url}}. Support: {{support}}', 'system') ON CONFLICT (message_type) DO NOTHING;

@@ -68,7 +68,8 @@ async function sendPurchaseConfirmation({ db, order, voucherCode, packageName, d
 }
 
 const FREE_ACCESS_EVENT_TYPE = 'FREE_ACCESS';
-const FREE_ACCESS_DEFAULT_TEMPLATE = 'SUPA LAN: Your 7-minute free access is now active! Voucher: {{voucher}}. Enjoy your connection. Support: {{support}}';
+const FREE_ACCESS_PORTAL_URL = 'https://supalan.anonymiketech.space';
+const FREE_ACCESS_DEFAULT_TEMPLATE = 'SUPA LAN: Your 7-minute free access is now active! Voucher: {{voucher}}. Enjoy your connection. For unlimited premium packages, visit {{portal_url}}. Support: {{support}}';
 const FREE_ACCESS_SUPPORTED_PLACEHOLDERS = new Set(['{{voucher}}', '{{portal_url}}', '{{support}}']);
 
 function validateFreeAccessTemplate(template) {
@@ -87,7 +88,7 @@ async function sendFreeAccessConfirmation({ db, phone, voucherCode, eventKey, cl
   if (existing.rowCount) return { attempted: false, duplicate: true, status: existing.rows[0].status, messageId: existing.rows[0].provider_message_id };
   const templateResult = await db.query('select template from sms_message_templates where message_type = $1 limit 1', [FREE_ACCESS_EVENT_TYPE]);
   const template = validateFreeAccessTemplate(templateResult.rows[0]?.template || FREE_ACCESS_DEFAULT_TEMPLATE);
-  const message = template.replace(/\{\{(voucher|portal_url|support)\}\}/g, (_, key) => ({ voucher: voucherCode, portal_url: 'http://192.168.10.1/', support: 'SUPA LAN support' }[key] || ''));
+  const message = template.replace(/\{\{(voucher|portal_url|support)\}\}/g, (_, key) => ({ voucher: voucherCode, portal_url: FREE_ACCESS_PORTAL_URL, support: 'SUPA LAN support' }[key] || ''));
   let normalizedPhone;
   try {
     normalizedPhone = normalizeKenyanPhone(phone);
