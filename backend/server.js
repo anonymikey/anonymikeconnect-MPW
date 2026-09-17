@@ -937,6 +937,34 @@ app.put('/api/admin/free-access', requireAdmin, async (req, res) => {
   return res.json({ settings: result.rows[0] });
 });
 
+app.get('/api/admin/bridge/startup-script', requireAdmin, (req, res) => {
+  const script = `# SUPA LAN Bridge automatic startup setup
+# Run this file once from an elevated PowerShell window.
+$ErrorActionPreference = 'Stop'
+$taskName = 'SUPA LAN Bridge'
+$workingDirectory = 'C:\\Users\\MIKE\\Desktop\\SupaLanBridge-Windows'
+$python = (Get-Command py -ErrorAction SilentlyContinue).Source
+if (-not $python) { $python = (Get-Command python -ErrorAction SilentlyContinue).Source }
+if (-not $python) { throw 'Python 3 was not found. Install Python 3 and try again.' }
+$action = New-ScheduledTaskAction -Execute $python -Argument '-3 "C:\\Users\\MIKE\\Desktop\\SupaLanBridge-Windows\\mypublicwifi-bridge.py" --config "C:\\Users\\MIKE\\Desktop\\SupaLanBridge-Windows\\config.json"' -WorkingDirectory $workingDirectory
+$trigger = New-ScheduledTaskTrigger -AtStartup
+$settings = New-ScheduledTaskSettingsSet -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit ([TimeSpan]::Zero)
+Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Settings $settings -Description 'Starts the existing SUPA LAN Bridge at Windows startup.' -RunLevel Highest -Force
+Start-ScheduledTask -TaskName $taskName
+Write-Host 'SUPA LAN Bridge startup task created and started.'
+`;
+  res.setHeader('content-type', 'application/octet-stream');
+  res.setHeader('content-disposition', 'attachment; filename="setup-supa-lan-bridge.ps1"');
+  return res.send(script);
+});
+
+app.get('/api/admin/bridge/remove-script', requireAdmin, (req, res) => {
+  const script = `# Remove the SUPA LAN Bridge automatic startup task\nUnregister-ScheduledTask -TaskName 'SUPA LAN Bridge' -Confirm:$false\nWrite-Host 'SUPA LAN Bridge startup task removed.'\n`;
+  res.setHeader('content-type', 'application/octet-stream');
+  res.setHeader('content-disposition', 'attachment; filename="remove-supa-lan-bridge-task.ps1"');
+  return res.send(script);
+});
+
 app.get('/api/admin/sms/status', requireAdmin, (req, res) => {
   res.json({
     configured: Boolean(process.env.TEXTSMS_API_KEY && process.env.TEXTSMS_PARTNER_ID && process.env.TEXTSMS_SENDER_ID),
