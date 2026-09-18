@@ -52,6 +52,11 @@ async function sendTextSms({ phone, message }) {
     const success = payload.success === true || String(payload.response_code) === '200' || payload.status === 'success' || payload.status === 'SUCCESS';
     if (!success) throw new Error('TextSMS did not accept the message.');
     return { phone: normalizedPhone, messageId: payload.message_id || payload.messageId || payload.request_id || null };
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      error.code = 'TEXTSMS_TIMEOUT';
+    }
+    throw error;
   } finally {
     clearTimeout(timeout);
   }

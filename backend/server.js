@@ -5,7 +5,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { Pool } = require('pg');
 const { sendTextSms, normalizeKenyanPhone } = require('./textsms');
-const { sendPurchaseConfirmation, sendFreeAccessConfirmation, validateTemplate, validateFreeAccessTemplate, DEFAULT_TEMPLATE, EVENT_TYPE, FREE_ACCESS_EVENT_TYPE, FREE_ACCESS_DEFAULT_TEMPLATE } = require('./sms-notifications');
+const { sendPurchaseConfirmation, enqueueFreeAccessConfirmation, processFreeAccessSmsQueue, validateTemplate, validateFreeAccessTemplate, DEFAULT_TEMPLATE, EVENT_TYPE, FREE_ACCESS_EVENT_TYPE, FREE_ACCESS_DEFAULT_TEMPLATE } = require('./sms-notifications');
 
 dotenv.config({ path: path.join(__dirname, '.env') });
 
@@ -870,9 +870,13 @@ app.post('/api/integrations/mypublicwifi/session', async (req, res) => {
     const eventKey = body.event_key;
     const claimed = await client.query(`update free_access_challenges set consumed_at = now(), event_key = $1 where id = $2 and consumed_at is null returning id, phone`, [eventKey, challenge.rows[0].id]);
     if (!claimed.rowCount) { await client.query('rollback'); return res.json({ accepted: true, delivered: false, duplicate: true }); }
+    const sms = await enqueueFreeAccessConfirmation({ db: client, phone: claimed.rows[0].phone, voucherCode: body.voucher, eventKey });
+    if (!sms.queued && !sms.duplicate) {
+      await client.query('rollback');
+      return res.status(500).json({ error: 'FREE_ACCESS_QUEUE_FAILED' });
+    }
     await client.query('commit');
-    const sms = await sendFreeAccessConfirmation({ db, phone: claimed.rows[0].phone, voucherCode: body.voucher, eventKey, claimId: claimed.rows[0].id, mac: body.mac, accountId: body.account_id, startTime: body.start_time });
-    return res.json({ accepted: true, delivered: sms.status === 'SENT', smsStatus: sms.status || null });
+    return res.json({ accepted: true, delivered: false, queued: true, duplicate: Boolean(sms.duplicate) });
   } catch (err) { await client.query('rollback').catch(() => {}); return res.status(500).json({ error: 'FREE_ACCESS_EVENT_FAILED' }); } finally { client.release(); }
 });
 
@@ -1015,6 +1019,20 @@ app.get('/api/admin/sms/history', requireAdmin, async (req, res) => {
   } catch (err) {
     console.error('GET /api/admin/sms/history error:', err.message);
     return res.status(500).json({ error: 'SMS_HISTORY_FAILED', message: 'Unable to load SMS activity.' });
+  }
+});
+
+app.post('/api/admin/sms/:id/retry', requireAdmin, async (req, res) => {
+  try {
+    const result = await db.query(`update sms_messages
+      set status = 'QUEUED', next_attempt_at = now(), locked_at = null, last_error = null, error_message = null
+      where id = $1 and message_type = 'FREE_ACCESS' and status in ('FAILED', 'UNKNOWN')
+      returning id, status`, [req.params.id]);
+    if (!result.rowCount) return res.status(409).json({ error: 'RETRY_NOT_AVAILABLE' });
+    return res.json({ success: true, message: result.rows[0] });
+  } catch (err) {
+    console.error('POST /api/admin/sms/:id/retry error:', err.message);
+    return res.status(500).json({ error: 'SMS_RETRY_FAILED' });
   }
 });
 
@@ -1244,7 +1262,25 @@ app.delete('/api/admin/vouchers/:id', requireAdmin, async (req, res) => {
   }
 });
 
+const queueIntervalMs = Number(process.env.FREE_ACCESS_QUEUE_INTERVAL_MS || 15000);
+let queueWorkerRunning = false;
+async function runFreeAccessQueueWorker() {
+  if (queueWorkerRunning) return;
+  queueWorkerRunning = true;
+  try {
+    await db.query(`update sms_messages set status = 'UNKNOWN', locked_at = null,
+      last_error = coalesce(last_error, 'Worker lease expired; manual review required')
+      where message_type = 'FREE_ACCESS' and status = 'SENDING'
+        and locked_at < now() - interval '2 minutes'`);
+    await processFreeAccessSmsQueue({ db });
+  } catch (error) {
+    console.error('[FREE_ACCESS QUEUE]', error.message);
+  } finally { queueWorkerRunning = false; }
+}
+
 app.listen(PORT, () => {
   console.log(`ANONYMIKECONNECT Phase 1 test backend running on http://localhost:${PORT}`);
   console.log(`TEST_MODE=${testMode}`);
+  setInterval(runFreeAccessQueueWorker, queueIntervalMs).unref();
+  runFreeAccessQueueWorker().catch((error) => console.error('[FREE_ACCESS QUEUE]', error.message));
 });
