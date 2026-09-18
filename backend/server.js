@@ -982,7 +982,11 @@ app.get('/api/admin/sms/status', requireAdmin, (req, res) => {
 app.get('/api/admin/sms/templates', requireAdmin, async (req, res) => {
   try {
     const result = await db.query('select message_type, template, updated_at, updated_by from sms_message_templates order by message_type');
-    return res.json({ templates: result.rows, supportedPlaceholders: ['{{voucher}}', '{{package}}', '{{duration}}', '{{portal_url}}', '{{support}}'], requiredPlaceholders: ['{{voucher}}'] });
+    const templates = [...result.rows];
+    if (!templates.some((row) => row.message_type === FREE_ACCESS_EVENT_TYPE)) {
+      templates.push({ message_type: FREE_ACCESS_EVENT_TYPE, template: FREE_ACCESS_DEFAULT_TEMPLATE, updated_at: null, updated_by: 'system-default' });
+    }
+    return res.json({ templates, supportedPlaceholders: ['{{voucher}}', '{{package}}', '{{duration}}', '{{portal_url}}', '{{support}}'], requiredPlaceholders: ['{{voucher}}'] });
   } catch (err) {
     return res.status(500).json({ error: 'SMS_TEMPLATES_FAILED', message: 'Unable to load message templates.' });
   }
@@ -1014,8 +1018,8 @@ app.post('/api/admin/sms/templates/:messageType/reset', requireAdmin, async (req
 app.get('/api/admin/sms/history', requireAdmin, async (req, res) => {
   const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 25, 1), 100);
   try {
-    const result = await db.query(`select id, recipient, message_type, message, status, provider_message_id, created_at from sms_messages order by created_at desc limit $1`, [limit]);
-    return res.json({ messages: result.rows.map(row => ({ id: row.id, recipient: `${row.recipient.slice(0, 6)}***${row.recipient.slice(-3)}`, messageType: row.message_type, message: row.message, status: row.status, providerMessageId: row.provider_message_id, createdAt: row.created_at })) });
+    const result = await db.query(`select id, recipient, message_type, message, status, provider_message_id, created_at, sent_at, attempt_count, last_error, error_message from sms_messages order by created_at desc limit $1`, [limit]);
+    return res.json({ messages: result.rows.map(row => ({ id: row.id, recipient: row.recipient, messageType: row.message_type, message: row.message, status: row.status, providerMessageId: row.provider_message_id, createdAt: row.created_at, sentAt: row.sent_at, attemptCount: row.attempt_count, lastError: row.last_error || row.error_message || null, ambiguous: row.status === 'UNKNOWN' })) });
   } catch (err) {
     console.error('GET /api/admin/sms/history error:', err.message);
     return res.status(500).json({ error: 'SMS_HISTORY_FAILED', message: 'Unable to load SMS activity.' });
@@ -1026,7 +1030,7 @@ app.post('/api/admin/sms/:id/retry', requireAdmin, async (req, res) => {
   try {
     const result = await db.query(`update sms_messages
       set status = 'QUEUED', next_attempt_at = now(), locked_at = null, last_error = null, error_message = null
-      where id = $1 and message_type = 'FREE_ACCESS' and status in ('FAILED', 'UNKNOWN')
+      where id = $1 and message_type = 'FREE_ACCESS' and status = 'FAILED'
       returning id, status`, [req.params.id]);
     if (!result.rowCount) return res.status(409).json({ error: 'RETRY_NOT_AVAILABLE' });
     return res.json({ success: true, message: result.rows[0] });
@@ -1037,8 +1041,8 @@ app.post('/api/admin/sms/:id/retry', requireAdmin, async (req, res) => {
 });
 
 app.post('/api/admin/sms/send', requireAdmin, async (req, res) => {
-  const { phone, message } = req.body || {};
-  if (!phone || !message || Object.keys(req.body || {}).some(key => !['phone', 'message'].includes(key))) return res.status(400).json({ error: 'INVALID_SMS_REQUEST', message: 'Provide only phone and message.' });
+  const { phone, message, messageType = 'MANUAL' } = req.body || {};
+  if (!phone || !message || ![ 'MANUAL', FREE_ACCESS_EVENT_TYPE ].includes(messageType) || Object.keys(req.body || {}).some(key => !['phone', 'message', 'messageType'].includes(key))) return res.status(400).json({ error: 'INVALID_SMS_REQUEST', message: 'Provide phone, message, and a supported message type.' });
   let result;
   try {
     result = await sendTextSms({ phone, message });
@@ -1050,7 +1054,7 @@ app.post('/api/admin/sms/send', requireAdmin, async (req, res) => {
   let historyRecorded = true;
   let historyWarning = null;
   try {
-    await db.query(`insert into sms_messages (recipient, message, message_type, status, provider, provider_message_id, network, created_by, source, sent_at) values ($1, $2, 'MANUAL', 'SENT', 'TextSMS', $3, 'Safaricom', 'admin', 'admin-sms-center', now())`, [result.phone, String(message).trim(), result.messageId]);
+    await db.query(`insert into sms_messages (recipient, message, message_type, status, provider, provider_message_id, network, created_by, source, sent_at) values ($1, $2, $3, 'SENT', 'TextSMS', $4, 'Safaricom', 'admin', 'admin-sms-center', now())`, [result.phone, String(message).trim(), messageType, result.messageId]);
   } catch (err) {
     historyRecorded = false;
     historyWarning = 'SMS was accepted by the provider, but delivery history could not be saved.';

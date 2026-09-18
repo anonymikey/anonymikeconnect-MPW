@@ -68,7 +68,7 @@ async function sendPurchaseConfirmation({ db, order, voucherCode, packageName, d
 }
 
 const FREE_ACCESS_EVENT_TYPE = 'FREE_ACCESS';
-const FREE_ACCESS_DEFAULT_TEMPLATE = 'SUPA LAN: Your 7-minute free access is now active! Voucher: {{voucher}}. Enjoy your connection. Support: {{support}}';
+const FREE_ACCESS_DEFAULT_TEMPLATE = 'Hello there! Your 7-minute free access is now active. Voucher: {{voucher}}. Enjoy your connection! Support: {{support}}. Visit https://supalan.anonymiketech.space to purchase a package before you get disconnected.';
 const FREE_ACCESS_SUPPORTED_PLACEHOLDERS = new Set(['{{voucher}}', '{{portal_url}}', '{{support}}']);
 
 function validateFreeAccessTemplate(template) {
