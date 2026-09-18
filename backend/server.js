@@ -5,7 +5,8 @@ const path = require('path');
 const crypto = require('crypto');
 const { Pool } = require('pg');
 const { sendTextSms, normalizeKenyanPhone } = require('./textsms');
-const { sendPurchaseConfirmation, sendFreeAccessConfirmation, validateTemplate, validateFreeAccessTemplate, DEFAULT_TEMPLATE, EVENT_TYPE, FREE_ACCESS_EVENT_TYPE, FREE_ACCESS_DEFAULT_TEMPLATE } = require('./sms-notifications');
+const { sendPurchaseConfirmation, queueFreeAccessConfirmation, validateTemplate, validateFreeAccessTemplate, DEFAULT_TEMPLATE, EVENT_TYPE, FREE_ACCESS_EVENT_TYPE, FREE_ACCESS_DEFAULT_TEMPLATE } = require('./sms-notifications');
+const { startFreeAccessSmsWorker, runFreeAccessSmsWorker } = require('./free-access-sms-worker');
 
 dotenv.config({ path: path.join(__dirname, '.env') });
 
@@ -870,9 +871,9 @@ app.post('/api/integrations/mypublicwifi/session', async (req, res) => {
     const eventKey = body.event_key;
     const claimed = await client.query(`update free_access_challenges set consumed_at = now(), event_key = $1 where id = $2 and consumed_at is null returning id, phone`, [eventKey, challenge.rows[0].id]);
     if (!claimed.rowCount) { await client.query('rollback'); return res.json({ accepted: true, delivered: false, duplicate: true }); }
+    const sms = await queueFreeAccessConfirmation({ db: client, phone: claimed.rows[0].phone, voucherCode: body.voucher, eventKey });
     await client.query('commit');
-    const sms = await sendFreeAccessConfirmation({ db, phone: claimed.rows[0].phone, voucherCode: body.voucher, eventKey, claimId: claimed.rows[0].id, mac: body.mac, accountId: body.account_id, startTime: body.start_time });
-    return res.json({ accepted: true, delivered: sms.status === 'SENT', smsStatus: sms.status || null });
+    return res.json({ accepted: true, delivered: false, queued: !sms.duplicate, smsStatus: sms.status });
   } catch (err) { await client.query('rollback').catch(() => {}); return res.status(500).json({ error: 'FREE_ACCESS_EVENT_FAILED' }); } finally { client.release(); }
 });
 
@@ -1010,12 +1011,20 @@ app.post('/api/admin/sms/templates/:messageType/reset', requireAdmin, async (req
 app.get('/api/admin/sms/history', requireAdmin, async (req, res) => {
   const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 25, 1), 100);
   try {
-    const result = await db.query(`select id, recipient, message_type, message, status, provider_message_id, created_at from sms_messages order by created_at desc limit $1`, [limit]);
-    return res.json({ messages: result.rows.map(row => ({ id: row.id, recipient: `${row.recipient.slice(0, 6)}***${row.recipient.slice(-3)}`, messageType: row.message_type, message: row.message, status: row.status, providerMessageId: row.provider_message_id, createdAt: row.created_at })) });
+    const result = await db.query(`select id, recipient, message_type, message, status, provider_message_id, attempt_count, next_attempt_at, last_error, created_at from sms_messages order by created_at desc limit $1`, [limit]);
+    return res.json({ messages: result.rows.map(row => ({ id: row.id, recipient: `${row.recipient.slice(0, 6)}***${row.recipient.slice(-3)}`, messageType: row.message_type, message: row.message, status: row.status, providerMessageId: row.provider_message_id, attemptCount: row.attempt_count, nextAttemptAt: row.next_attempt_at, lastError: row.last_error, createdAt: row.created_at })) });
   } catch (err) {
     console.error('GET /api/admin/sms/history error:', err.message);
     return res.status(500).json({ error: 'SMS_HISTORY_FAILED', message: 'Unable to load SMS activity.' });
   }
+});
+
+app.post('/api/admin/sms/:id/retry', requireAdmin, async (req, res) => {
+  if (!/^\\d+$/.test(req.params.id)) return res.status(400).json({ error: 'INVALID_SMS_ID' });
+  const result = await db.query(`update sms_messages set status = 'QUEUED', next_attempt_at = now(), locked_at = null, last_error = null
+    where id = $1 and message_type = 'FREE_ACCESS' and status = 'FAILED' returning id, status`, [req.params.id]);
+  if (!result.rowCount) return res.status(409).json({ error: 'RETRY_NOT_ALLOWED', message: 'Only confirmed, failed FREE_ACCESS messages can be retried automatically. UNKNOWN messages require manual review.' });
+  return res.json({ success: true, message: result.rows[0] });
 });
 
 app.post('/api/admin/sms/send', requireAdmin, async (req, res) => {
@@ -1243,6 +1252,8 @@ app.delete('/api/admin/vouchers/:id', requireAdmin, async (req, res) => {
     return res.status(500).json({ error: 'VOUCHER_DELETE_FAILED', message: 'Unable to delete voucher.' });
   }
 });
+
+startFreeAccessSmsWorker(db);
 
 app.listen(PORT, () => {
   console.log(`ANONYMIKECONNECT Phase 1 test backend running on http://localhost:${PORT}`);
