@@ -14,6 +14,10 @@ CREATE INDEX IF NOT EXISTS idx_sms_messages_free_access_queue
 COMMENT ON COLUMN sms_messages.locked_at IS 'Lease timestamp for an in-flight FREE_ACCESS worker claim.';
 COMMENT ON COLUMN sms_messages.last_error IS 'Most recent worker/provider error, retained for admin review.';
 
+INSERT INTO sms_message_templates (message_type, template, updated_by)
+VALUES ('FREE_ACCESS', 'Hello there! Your 7-minute free access is now active. Voucher: {{voucher}}. Enjoy your connection! Support: {{support}}. Visit https://supalan.anonymiketech.space to purchase a package before you get disconnected.', 'system-default')
+ON CONFLICT (message_type) DO NOTHING;
+
 UPDATE sms_messages
 SET next_attempt_at = COALESCE(next_attempt_at, created_at)
 WHERE next_attempt_at IS NULL;

@@ -1018,8 +1018,8 @@ app.post('/api/admin/sms/templates/:messageType/reset', requireAdmin, async (req
 app.get('/api/admin/sms/history', requireAdmin, async (req, res) => {
   const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 25, 1), 100);
   try {
-    const result = await db.query(`select id, recipient, message_type, message, status, provider_message_id, created_at, sent_at, attempt_count, last_error, error_message from sms_messages order by created_at desc limit $1`, [limit]);
-    return res.json({ messages: result.rows.map(row => ({ id: row.id, recipient: row.recipient, messageType: row.message_type, message: row.message, status: row.status, providerMessageId: row.provider_message_id, createdAt: row.created_at, sentAt: row.sent_at, attemptCount: row.attempt_count, lastError: row.last_error || row.error_message || null, ambiguous: row.status === 'UNKNOWN' })) });
+    const result = await db.query(`select id, recipient, message_type, message, status, provider_message_id, event_key, created_at, sent_at, attempt_count, last_error, error_message from sms_messages order by created_at desc limit $1`, [limit]);
+    return res.json({ messages: result.rows.map(row => ({ id: row.id, recipient: row.recipient, messageType: row.message_type, voucher: row.message_type === 'FREE_ACCESS' ? (row.message.match(/Voucher:\\s*([A-Z0-9]+)/i)?.[1] || null) : null, message: row.message, status: row.status, providerMessageId: row.provider_message_id, eventKey: row.event_key, createdAt: row.created_at, sentAt: row.sent_at, attemptCount: row.attempt_count || 0, lastError: row.last_error || row.error_message || null, ambiguous: row.status === 'UNKNOWN' })) });
   } catch (err) {
     console.error('GET /api/admin/sms/history error:', err.message);
     return res.status(500).json({ error: 'SMS_HISTORY_FAILED', message: 'Unable to load SMS activity.' });
