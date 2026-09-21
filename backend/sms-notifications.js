@@ -1,13 +1,15 @@
 const { normalizeKenyanPhone, sendTextSms } = require('./textsms');
 
-const ENV_AUTOMATION_ENABLED = process.env.SMS_AUTOMATION_ENABLED === 'true';
+function isEnvAutomationEnabled() {
+  return String(process.env.SMS_AUTOMATION_ENABLED || '').trim().toLowerCase() === 'true';
+}
 const EVENT_TYPE = 'PURCHASE_CONFIRMATION';
 const REQUIRED_PLACEHOLDER = '{{voucher}}';
 const SUPPORTED_PLACEHOLDERS = new Set(['{{voucher}}', '{{package}}', '{{duration}}', '{{portal_url}}', '{{support}}']);
 const DEFAULT_TEMPLATE = 'SUPA LAN payment confirmed. Voucher: {{voucher}}. Package: {{package}}{{duration}}. Connect to SUPA LAN and enter your voucher.';
 
 async function isAutomationEnabled(db) {
-  if (!ENV_AUTOMATION_ENABLED) return false;
+  if (!isEnvAutomationEnabled()) return false;
   const result = await db.query("select enabled from sms_automation_settings where key = 'master' limit 1");
   return result.rows[0]?.enabled === true;
 }
