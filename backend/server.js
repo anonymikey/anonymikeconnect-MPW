@@ -4,11 +4,12 @@ const dotenv = require('dotenv');
 const path = require('path');
 const crypto = require('crypto');
 const { Pool } = require('pg');
+
+dotenv.config({ path: path.join(__dirname, '.env') });
+
 const { sendTextSms, normalizeKenyanPhone } = require('./textsms');
 const { sendPurchaseConfirmation, queueFreeAccessConfirmation, validateTemplate, validateFreeAccessTemplate, DEFAULT_TEMPLATE, EVENT_TYPE, FREE_ACCESS_EVENT_TYPE, FREE_ACCESS_DEFAULT_TEMPLATE } = require('./sms-notifications');
 const { startFreeAccessSmsWorker, runFreeAccessSmsWorker } = require('./free-access-sms-worker');
-
-dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
