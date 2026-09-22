@@ -47,17 +47,20 @@ async function sendTextSms({ phone, message }) {
     });
     const raw = await response.text();
     let payload;
-    try { payload = raw ? JSON.parse(raw) : {}; } catch { payload = { raw: raw.slice(0, 200) }; }
+    try { payload = raw ? JSON.parse(raw) : {}; } catch { payload = { raw: raw.slice(0, 500) }; }
     if (!response.ok) throw new Error(`TextSMS request failed with HTTP ${response.status}.`);
-    const responseCode = payload.response_code ?? payload['response-code'] ?? payload.responseCode;
-    const status = String(payload.status ?? '').toLowerCase();
-    const success = payload.success === true || String(responseCode) === '200' || status === 'success' || status === 'accepted';
+    const data = Array.isArray(payload) ? payload[0] || {} : payload;
+    const responseCode = data.response_code ?? data['response-code'] ?? data.responseCode ?? data.code;
+    const responseDescription = data['response-description'] ?? data.response_description ?? data.responseDescription;
+    const status = String(data.status ?? '').toLowerCase();
+    const description = String(responseDescription ?? data.message ?? data.error ?? data.description ?? '').toLowerCase();
+    const success = data.success === true || ['200', '0'].includes(String(responseCode)) || status === 'success' || status === 'accepted' || description.includes('success') || description.includes('processed');
     if (!success) {
-      const providerCode = responseCode ? ` (code ${responseCode})` : '';
-      const providerMessage = payload.message || payload.error || payload.description || payload.raw;
-      throw new Error(`TextSMS rejected the message${providerCode}${providerMessage ? `: ${String(providerMessage).slice(0, 240)}` : '.'}`);
+      const providerCode = responseCode !== undefined && responseCode !== null ? ` (code ${responseCode})` : '';
+      const providerMessage = responseDescription || data.message || data.error || data.description || (Object.keys(data).length ? JSON.stringify(data) : raw);
+      throw new Error(`TextSMS rejected the message${providerCode}: ${String(providerMessage).slice(0, 400)}`);
     }
-    return { phone: normalizedPhone, messageId: payload.message_id || payload.messageId || payload.request_id || payload.requestId || null, providerResponse: payload };
+    return { phone: normalizedPhone, messageId: data.message_id || data.messageId || data.messageid || data.request_id || data.requestId || null, providerResponse: payload };
   } finally {
     clearTimeout(timeout);
   }
