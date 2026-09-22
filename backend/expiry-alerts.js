@@ -79,6 +79,7 @@ async function runExpiryScheduler(db) {
     await client.query('begin');
     const due = await client.query(`select e.*, r.package_name, r.expected_expires_at, r.status as expiry_status
       from expiry_events e join expiry_records r on r.id = e.expiry_record_id
+      join expiry_rules rule on rule.event_type = e.event_type and rule.offset_minutes = e.reminder_offset_minutes and rule.enabled = true
       where e.status = 'SCHEDULED' and e.scheduled_for <= now() and e.scheduled_for > now() - interval '5 minutes' and r.status in ('ACTIVE','EXPIRING_SOON')
       order by e.scheduled_for asc limit 20 for update of e skip locked`);
     const events = [];

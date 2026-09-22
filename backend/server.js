@@ -1314,12 +1314,28 @@ app.get('/api/admin/expiry/summary', requireAdmin, async (req, res) => {
 
 app.patch('/api/admin/expiry/rules/:id', requireAdmin, async (req, res) => {
   const enabled = req.body.enabled === true;
-  const offset = Number(req.body.offset_minutes);
-  if (!Number.isInteger(offset) || offset < 0) return res.status(400).json({ error: 'INVALID_OFFSET' });
-  const result = await db.query(`update expiry_rules set enabled=$1, offset_minutes=$2, updated_at=now() where id=$3 returning *`, [enabled, offset, req.params.id]);
-  if (!result.rowCount) return res.status(404).json({ error: 'RULE_NOT_FOUND' });
-  await db.query(`insert into expiry_audit_log (action, actor, details) values ('EXPIRY_SCHEDULE_CHANGED','admin',$1)`, [JSON.stringify({ ruleId: req.params.id, enabled, offset })]);
-  return res.json({ rule: result.rows[0] });
+  const hasOffset = Object.prototype.hasOwnProperty.call(req.body, 'offset_minutes');
+  const offset = hasOffset ? Number(req.body.offset_minutes) : null;
+  if (hasOffset && (!Number.isInteger(offset) || offset < 0)) return res.status(400).json({ error: 'INVALID_OFFSET' });
+
+  const client = await db.connect();
+  try {
+    await client.query('begin');
+    const current = await client.query('select id, name, event_type, offset_minutes, enabled from expiry_rules where id=$1 for update', [req.params.id]);
+    if (!current.rowCount) { await client.query('rollback'); return res.status(404).json({ error: 'RULE_NOT_FOUND' }); }
+    const previous = current.rows[0];
+    const result = await client.query(`update expiry_rules set enabled=$1, offset_minutes=coalesce($2, offset_minutes), updated_at=now() where id=$3 returning *`, [enabled, offset, req.params.id]);
+    if (!enabled) {
+      await client.query(`update expiry_events set status='CANCELLED', cancelled_at=now(), updated_at=now() where event_type=$1 and reminder_offset_minutes=$2 and status='SCHEDULED'`, [previous.event_type, previous.offset_minutes]);
+    }
+    await client.query(`insert into expiry_audit_log (action, actor, details) values ('EXPIRY_SCHEDULE_CHANGED','admin',$1)`, [JSON.stringify({ ruleId: req.params.id, rule: previous.name, oldEnabled: previous.enabled, newEnabled: enabled, offset: offset ?? previous.offset_minutes })]);
+    await client.query('commit');
+    return res.json({ rule: result.rows[0] });
+  } catch (error) {
+    await client.query('rollback').catch(() => {});
+    console.error('PATCH /api/admin/expiry/rules/:id error:', error.message);
+    return res.status(500).json({ error: 'RULE_UPDATE_FAILED', message: 'Unable to update reminder rule.' });
+  } finally { client.release(); }
 });
 
 app.post('/api/admin/expiry/:id/correct', requireAdmin, async (req, res) => {
