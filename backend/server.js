@@ -1296,12 +1296,19 @@ app.delete('/api/admin/vouchers/:id', requireAdmin, async (req, res) => {
 
 app.get('/api/admin/expiry/summary', requireAdmin, async (req, res) => {
   try {
-    const [summary, records, rules] = await Promise.all([
+    const [summary, records, rules, currentVouchers] = await Promise.all([
       db.query(`select count(*) filter (where status in ('ACTIVE','EXPIRING_SOON'))::int as active, count(*) filter (where expected_expires_at::date = current_date)::int as expiring_today, count(*) filter (where expected_expires_at between now() and now() + interval '1 hour')::int as expiring_hour, count(*) filter (where status = 'EXPIRED')::int as expired from expiry_records`),
       db.query(`select r.*, (select min(e.scheduled_for) from expiry_events e where e.expiry_record_id=r.id and e.status='SCHEDULED') as next_reminder, (select max(e.sent_at) from expiry_events e where e.expiry_record_id=r.id and e.status='SENT') as last_reminder from expiry_records r order by r.expected_expires_at asc limit 200`),
-      db.query('select * from expiry_rules order by sort_order, id')
+      db.query('select * from expiry_rules order by sort_order, id'),
+      db.query(`select r.id, r.order_id, r.order_reference, r.voucher_code, r.customer_phone, r.package_name, r.package_price, r.purchased_at, r.activation_reference_at, r.expected_expires_at, r.status
+        from expiry_records r
+        join orders o on o.id = r.order_id
+        where o.status = 'VOUCHER_ASSIGNED'
+          and r.status <> 'CANCELLED'
+          and r.expected_expires_at > now()
+        order by r.expected_expires_at asc`)
     ]);
-    return res.json({ summary: summary.rows[0], records: records.rows, rules: rules.rows, timeZone: 'Africa/Nairobi' });
+    return res.json({ summary: summary.rows[0], records: records.rows, currentVouchers: currentVouchers.rows, rules: rules.rows, timeZone: 'Africa/Nairobi' });
   } catch (error) { return res.status(500).json({ error: 'EXPIRY_SUMMARY_FAILED', message: error.message }); }
 });
 
