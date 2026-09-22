@@ -10,6 +10,7 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 const { sendTextSms, normalizeKenyanPhone } = require('./textsms');
 const { sendPurchaseConfirmation, queueFreeAccessConfirmation, validateTemplate, validateFreeAccessTemplate, DEFAULT_TEMPLATE, EVENT_TYPE, FREE_ACCESS_EVENT_TYPE, FREE_ACCESS_DEFAULT_TEMPLATE } = require('./sms-notifications');
 const { startFreeAccessSmsWorker, runFreeAccessSmsWorker } = require('./free-access-sms-worker');
+const { createAndScheduleExpiry, startExpiryScheduler } = require('./expiry-alerts');
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
@@ -35,6 +36,10 @@ app.use(express.static(rootDir));
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(rootDir, 'login.html'));
+});
+
+app.get('/admin/expiry', (req, res) => {
+  res.sendFile(path.join(rootDir, 'admin-expiry.html'));
 });
 
 app.get('/api/config', (req, res) => {
@@ -765,6 +770,13 @@ app.post('/api/webhooks/palpluss', async (req, res) => {
         } catch (smsError) {
           console.error('[SMS AUTOMATION] Purchase confirmation failed:', smsError.message);
         }
+        try {
+          const packageResult = await db.query('select name, price, duration from packages where id = $1 limit 1', [order.package_id]);
+          const packageInfo = packageResult.rows[0];
+          if (packageInfo) await createAndScheduleExpiry({ db, order, packageInfo, voucherCode: assignedVoucherCode });
+        } catch (expiryError) {
+          console.error('[EXPIRY AUTOMATION] Tracking failed without affecting fulfillment:', expiryError.message);
+        }
       }
     } catch (txErr) {
       await client.query('rollback').catch(() => {});
@@ -1282,7 +1294,67 @@ app.delete('/api/admin/vouchers/:id', requireAdmin, async (req, res) => {
   }
 });
 
+app.get('/api/admin/expiry/summary', requireAdmin, async (req, res) => {
+  try {
+    const [summary, records, rules] = await Promise.all([
+      db.query(`select count(*) filter (where status in ('ACTIVE','EXPIRING_SOON'))::int as active, count(*) filter (where expected_expires_at::date = current_date)::int as expiring_today, count(*) filter (where expected_expires_at between now() and now() + interval '1 hour')::int as expiring_hour, count(*) filter (where status = 'EXPIRED')::int as expired from expiry_records`),
+      db.query(`select r.*, (select min(e.scheduled_for) from expiry_events e where e.expiry_record_id=r.id and e.status='SCHEDULED') as next_reminder, (select max(e.sent_at) from expiry_events e where e.expiry_record_id=r.id and e.status='SENT') as last_reminder from expiry_records r order by r.expected_expires_at asc limit 200`),
+      db.query('select * from expiry_rules order by sort_order, id')
+    ]);
+    return res.json({ summary: summary.rows[0], records: records.rows, rules: rules.rows, timeZone: 'Africa/Nairobi' });
+  } catch (error) { return res.status(500).json({ error: 'EXPIRY_SUMMARY_FAILED', message: error.message }); }
+});
+
+app.patch('/api/admin/expiry/rules/:id', requireAdmin, async (req, res) => {
+  const enabled = req.body.enabled === true;
+  const offset = Number(req.body.offset_minutes);
+  if (!Number.isInteger(offset) || offset < 0) return res.status(400).json({ error: 'INVALID_OFFSET' });
+  const result = await db.query(`update expiry_rules set enabled=$1, offset_minutes=$2, updated_at=now() where id=$3 returning *`, [enabled, offset, req.params.id]);
+  if (!result.rowCount) return res.status(404).json({ error: 'RULE_NOT_FOUND' });
+  await db.query(`insert into expiry_audit_log (action, actor, details) values ('EXPIRY_SCHEDULE_CHANGED','admin',$1)`, [JSON.stringify({ ruleId: req.params.id, enabled, offset })]);
+  return res.json({ rule: result.rows[0] });
+});
+
+app.post('/api/admin/expiry/:id/correct', requireAdmin, async (req, res) => {
+  const expiresAt = new Date(req.body.expected_expires_at);
+  if (Number.isNaN(expiresAt.getTime())) return res.status(400).json({ error: 'INVALID_EXPIRY_TIME' });
+  const client = await db.connect();
+  try {
+    await client.query('begin');
+    const current = await client.query('select * from expiry_records where id=$1 for update', [req.params.id]);
+    if (!current.rowCount) throw new Error('Expiry record not found');
+    const oldExpiry = current.rows[0].expected_expires_at;
+    await client.query(`update expiry_records set expected_expires_at=$1, updated_at=now(), status=case when $1 <= now() then 'EXPIRED' when $1 <= now()+interval '1 hour' then 'EXPIRING_SOON' else 'ACTIVE' end where id=$2`, [expiresAt, req.params.id]);
+    await client.query(`update expiry_events set scheduled_for=$1 - make_interval(mins => reminder_offset_minutes), updated_at=now() where expiry_record_id=$2 and status='SCHEDULED' and custom_scheduled_for is null`, [expiresAt, req.params.id]);
+    await client.query(`insert into expiry_audit_log (expiry_record_id, action, actor, details) values ($1,'EXPIRY_CORRECTED','admin',$2)`, [req.params.id, JSON.stringify({ oldExpiry, newExpiry: expiresAt })]);
+    await client.query('commit');
+    return res.json({ success: true, expected_expires_at: expiresAt });
+  } catch (error) { await client.query('rollback').catch(() => {}); return res.status(400).json({ error: 'EXPIRY_CORRECTION_FAILED', message: error.message }); } finally { client.release(); }
+});
+
+app.post('/api/admin/expiry/:id/cancel', requireAdmin, async (req, res) => {
+  await db.query(`update expiry_records set status='CANCELLED', alerts_cancelled_at=now(), updated_at=now() where id=$1`, [req.params.id]);
+  await db.query(`update expiry_events set status='CANCELLED', cancelled_at=now(), updated_at=now() where expiry_record_id=$1 and status='SCHEDULED'`, [req.params.id]);
+  await db.query(`insert into expiry_audit_log (expiry_record_id, action, actor) values ($1,'EXPIRY_ALERT_CANCELLED','admin')`, [req.params.id]);
+  return res.json({ success: true });
+});
+
+app.post('/api/admin/expiry/:id/send', requireAdmin, async (req, res) => {
+  const recordResult = await db.query('select * from expiry_records where id=$1', [req.params.id]);
+  if (!recordResult.rowCount) return res.status(404).json({ error: 'EXPIRY_NOT_FOUND' });
+  const record = recordResult.rows[0];
+  const eventType = req.body.expired === true ? 'EXPIRY_MANUAL_EXPIRED' : 'EXPIRY_MANUAL_REMINDER';
+  const message = req.body.message || (eventType === 'EXPIRY_MANUAL_EXPIRED' ? `SUPA LAN: Your ${record.package_name} package has expired. Purchase another package to continue using SUPA LAN.` : `SUPA LAN: Your ${record.package_name} package is still active and expires at ${new Date(record.expected_expires_at).toLocaleString('en-KE', { timeZone: 'Africa/Nairobi' })}. Renew your package to continue browsing.`);
+  try {
+    const sent = await sendTextSms({ phone: record.customer_phone, message });
+    await db.query(`insert into sms_messages (recipient,message,message_type,status,provider,provider_message_id,event_key,network,created_by,source,order_reference,voucher_code,package_name,package_price,sent_at) values ($1,$2,$3,'SENT','TextSMS',$4,$5,'Safaricom','admin','expiry-manual',$6,$7,$8,$9,now())`, [record.customer_phone, message, eventType, sent.messageId, `${eventType}:${record.order_reference}:${crypto.randomUUID()}`, record.order_reference, record.voucher_code, record.package_name, record.package_price]);
+    await db.query(`insert into expiry_audit_log (expiry_record_id,action,actor,details) values ($1,'EXPIRY_MANUAL_SENT','admin',$2)`, [record.id, JSON.stringify({ eventType, message })]);
+    return res.json({ success: true, status: 'SENT', messageId: sent.messageId });
+  } catch (error) { return res.status(502).json({ error: 'EXPIRY_MANUAL_SEND_FAILED', message: error.message }); }
+});
+
 startFreeAccessSmsWorker(db);
+startExpiryScheduler(db);
 
 app.listen(PORT, () => {
   console.log(`ANONYMIKECONNECT Phase 1 test backend running on http://localhost:${PORT}`);
