@@ -9,6 +9,11 @@ function normalizeKenyanPhone(value) {
   return digits.startsWith('0') ? `254${digits.slice(1)}` : digits;
 }
 
+function maskPhone(phone) {
+  const value = String(phone || '');
+  return value.length > 5 ? `${value.slice(0, 6)}****${value.slice(-3)}` : '***';
+}
+
 function getConfig() {
   const config = {
     apiKey: process.env.TEXTSMS_API_KEY,
@@ -30,6 +35,7 @@ async function sendTextSms({ phone, message }) {
     throw new Error('Message must contain between 1 and 480 characters.');
   }
 
+  console.info('[SMS_PROVIDER_REQUEST]', JSON.stringify({ endpoint: config.endpoint, method: 'POST', contentType: 'application/json', senderId: config.senderId, partnerIdPresent: true, apiKeyPresent: true, mobileMasked: maskPhone(normalizedPhone), messageLength: text.length, messageEncoding: 'JSON UTF-8' }));
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000);
   try {
@@ -49,18 +55,20 @@ async function sendTextSms({ phone, message }) {
     let payload;
     try { payload = raw ? JSON.parse(raw) : {}; } catch { payload = { raw: raw.slice(0, 500) }; }
     if (!response.ok) throw new Error(`TextSMS request failed with HTTP ${response.status}.`);
-    const data = Array.isArray(payload) ? payload[0] || {} : payload;
-    const responseCode = data.response_code ?? data['response-code'] ?? data.responseCode ?? data.code;
-    const responseDescription = data['response-description'] ?? data.response_description ?? data.responseDescription;
-    const status = String(data.status ?? '').toLowerCase();
-    const description = String(responseDescription ?? data.message ?? data.error ?? data.description ?? '').toLowerCase();
-    const success = data.success === true || ['200', '0'].includes(String(responseCode)) || status === 'success' || status === 'accepted' || description.includes('success') || description.includes('processed');
+    const providerResponse = Array.isArray(payload?.responses) ? payload.responses[0] || {} : (Array.isArray(payload) ? payload[0] || {} : payload);
+    const responseCode = providerResponse['response-code'] ?? providerResponse['respose-code'] ?? providerResponse.response_code ?? providerResponse.responseCode ?? providerResponse.code;
+    const responseDescription = providerResponse['response-description'] ?? providerResponse.response_description ?? providerResponse.responseDescription ?? providerResponse.message ?? providerResponse.error ?? providerResponse.description;
+    const status = String(providerResponse.status ?? payload.status ?? '').toLowerCase();
+    const description = String(responseDescription ?? '').trim().toLowerCase();
+    const acceptedDescription = ['success', 'sent', 'accepted', 'processed'].some((value) => description === value || description.startsWith(`${value} `));
+    const rejectedDescription = ['reject', 'failed', 'error', 'invalid', 'insufficient'].some((value) => description.includes(value));
+    const success = !rejectedDescription && (acceptedDescription || providerResponse.success === true || status === 'success' || status === 'accepted');
+    console.info('[SMS_PROVIDER_RESPONSE]', JSON.stringify({ httpStatus: providerResponse.statusCode || providerResponse.status || 200, providerCode: responseCode ?? null, providerDescription: responseDescription || null, mobile: maskPhone(normalizedPhone), networkId: providerResponse.networkid ?? providerResponse.networkId ?? null }));
     if (!success) {
       const providerCode = responseCode !== undefined && responseCode !== null ? ` (code ${responseCode})` : '';
-      const providerMessage = responseDescription || data.message || data.error || data.description || (Object.keys(data).length ? JSON.stringify(data) : raw);
-      throw new Error(`TextSMS rejected the message${providerCode}: ${String(providerMessage).slice(0, 400)}`);
+      throw new Error(`TextSMS rejected the message${providerCode}: ${String(responseDescription || 'Unknown provider response').slice(0, 400)}`);
     }
-    return { phone: normalizedPhone, messageId: data.message_id || data.messageId || data.messageid || data.request_id || data.requestId || null, providerResponse: payload };
+    return { phone: normalizedPhone, messageId: providerResponse.messageid || providerResponse.message_id || providerResponse.messageId || providerResponse.request_id || providerResponse.requestId || null, providerResponse: payload };
   } finally {
     clearTimeout(timeout);
   }

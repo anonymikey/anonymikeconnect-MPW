@@ -1037,7 +1037,8 @@ app.post('/api/admin/sms/send', requireAdmin, async (req, res) => {
   } catch (err) {
     console.error('POST /api/admin/sms/send provider failed:', err.message);
     console.error('[SMS PROVIDER CONFIG]', JSON.stringify({ endpoint: process.env.TEXTSMS_ENDPOINT || 'default', senderId: process.env.TEXTSMS_SENDER_ID || null, partnerIdPresent: Boolean(process.env.TEXTSMS_PARTNER_ID), apiKeyPresent: Boolean(process.env.TEXTSMS_API_KEY) }));
-    return res.status(502).json({ error: 'SMS_DELIVERY_FAILED', message: err.message, hint: 'Check the TextSMS response code/message and confirm the approved sender ID, partner ID, API key, account balance, and destination number.' });
+    await db.query(`insert into sms_messages (recipient, message, message_type, status, provider, network, error_message, created_by, source) values ($1, $2, 'MANUAL', 'FAILED', 'TextSMS', 'Safaricom', $3, 'admin', 'admin-sms-center')`, [String(phone), String(message).trim(), err.message]).catch((historyError) => console.error('POST /api/admin/sms/send failure history failed:', historyError.message));
+    return res.status(502).json({ ok: false, error: 'SMS_DELIVERY_FAILED', message: err.message, provider: 'TextSMS', hint: 'The backend reached TextSMS but the provider rejected or could not process this message.' });
   }
 
   let historyRecorded = true;
