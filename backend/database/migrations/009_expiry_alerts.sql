@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS expiry_records (
   id BIGSERIAL PRIMARY KEY,
-  order_id BIGINT REFERENCES orders(id) ON DELETE SET NULL,
+  order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
   order_reference TEXT NOT NULL UNIQUE,
   voucher_code TEXT NOT NULL,
   customer_phone TEXT NOT NULL,
