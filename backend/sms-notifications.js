@@ -59,11 +59,13 @@ async function sendPurchaseConfirmation({ db, order, voucherCode, packageName, d
   try {
     phone = normalizeKenyanPhone(order.phone);
     const result = await sendTextSms({ phone, message });
-    await db.query(`insert into sms_messages (recipient, message, message_type, status, provider, provider_message_id, event_key, network, created_by, source, sent_at) values ($1, $2, $3, 'SENT', 'TextSMS', $4, $5, 'Safaricom', 'system', 'purchase-fulfillment', now())`, [phone, message, EVENT_TYPE, result.messageId, eventKey]);
+    const providerResponse = result.providerResponse?.responses?.[0] || result.providerResponse || {};
+    await db.query(`insert into sms_messages (recipient, message, message_type, status, provider, provider_message_id, event_key, network, created_by, source, order_reference, voucher_code, package_name, package_price, provider_response_code, provider_response_description, sent_at) values ($1, $2, $3, 'SENT', 'TextSMS', $4, $5, 'Safaricom', 'system', 'purchase-fulfillment', $6, $7, $8, $9, $10, $11, now())`, [phone, message, EVENT_TYPE, result.messageId, eventKey, order.reference, voucherCode, packageName, order.amount, providerResponse['response-code'] || providerResponse.response_code || null, providerResponse['response-description'] || providerResponse.response_description || null]);
     console.info('[SMS AUTOMATION]', JSON.stringify({ event: EVENT_TYPE, status: 'SENT', recipient: maskPhone(phone), order_id: order.id }));
     return { attempted: true, status: 'SENT', messageId: result.messageId };
   } catch (error) {
-    await db.query(`insert into sms_messages (recipient, message, message_type, status, provider, event_key, network, error_message, created_by, source) values ($1, $2, $3, 'FAILED', 'TextSMS', $4, 'Safaricom', $5, 'system', 'purchase-fulfillment') on conflict (event_key) do nothing`, [phone || String(order.phone), message, EVENT_TYPE, eventKey, error.message]).catch(() => {});
+    const providerResponse = error.providerResponse?.responses?.[0] || error.providerResponse || {};
+    await db.query(`insert into sms_messages (recipient, message, message_type, status, provider, event_key, network, error_message, created_by, source, order_reference, voucher_code, package_name, package_price, provider_response_code, provider_response_description, failed_at) values ($1, $2, $3, 'FAILED', 'TextSMS', $4, 'Safaricom', $5, 'system', 'purchase-fulfillment', $6, $7, $8, $9, $10, $11, now()) on conflict (event_key) do nothing`, [phone || String(order.phone), message, EVENT_TYPE, eventKey, error.message, order.reference, voucherCode, packageName, order.amount, providerResponse['response-code'] || providerResponse.response_code || null, providerResponse['response-description'] || providerResponse.response_description || error.message]).catch(() => {});
     console.error('[SMS AUTOMATION]', JSON.stringify({ event: EVENT_TYPE, status: 'FAILED', recipient: maskPhone(phone || order.phone), order_id: order.id, error: error.message }));
     return { attempted: true, status: 'FAILED', error: error.message };
   }
