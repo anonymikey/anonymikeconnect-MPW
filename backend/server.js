@@ -1021,9 +1021,17 @@ app.get('/api/admin/sms/history', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/admin/sms/attention', requireAdmin, async (req, res) => {
-  const result = await db.query(`select id, recipient, message, message_type, status, provider, provider_message_id, error_message, provider_response_code, provider_response_description, order_reference, voucher_code, package_name, package_price, attempt_number, parent_sms_id, created_at, failed_at
-    from sms_messages where status = 'FAILED' and parent_sms_id is null and message_type in ('PURCHASE_CONFIRMATION', 'FREE_ACCESS', 'MANUAL') order by failed_at desc nulls last, created_at desc limit 100`);
-  return res.json({ messages: result.rows, count: result.rowCount });
+  try {
+    const result = await db.query(`select sms.id, sms.recipient, sms.message, sms.message_type, sms.status, sms.provider, sms.provider_message_id, sms.error_message, sms.provider_response_code, sms.provider_response_description, sms.order_reference, sms.voucher_code, sms.package_name, sms.package_price, sms.attempt_number, sms.parent_sms_id, sms.created_at, sms.failed_at
+      from sms_messages sms
+      where sms.status = 'FAILED' and sms.parent_sms_id is null and sms.message_type in ('PURCHASE_CONFIRMATION', 'FREE_ACCESS', 'MANUAL')
+        and not exists (select 1 from sms_messages retry where retry.parent_sms_id = sms.id and retry.status = 'SENT')
+      order by sms.failed_at desc nulls last, sms.created_at desc limit 100`);
+    return res.json({ ok: true, messages: result.rows, count: result.rowCount });
+  } catch (error) {
+    console.error('GET /api/admin/sms/attention error:', error.message);
+    return res.status(500).json({ ok: false, error: 'SMS_ATTENTION_FAILED', message: 'Unable to load failed SMS.' });
+  }
 });
 
 app.post('/api/admin/sms/:id/retry', requireAdmin, async (req, res) => {
