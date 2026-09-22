@@ -1020,12 +1020,30 @@ app.get('/api/admin/sms/history', requireAdmin, async (req, res) => {
   }
 });
 
+app.get('/api/admin/sms/attention', requireAdmin, async (req, res) => {
+  const result = await db.query(`select id, recipient, message, message_type, status, provider, provider_message_id, error_message, provider_response_code, provider_response_description, order_reference, voucher_code, package_name, package_price, attempt_number, parent_sms_id, created_at, failed_at
+    from sms_messages where status = 'FAILED' and parent_sms_id is null and message_type in ('PURCHASE_CONFIRMATION', 'FREE_ACCESS', 'MANUAL') order by failed_at desc nulls last, created_at desc limit 100`);
+  return res.json({ messages: result.rows, count: result.rowCount });
+});
+
 app.post('/api/admin/sms/:id/retry', requireAdmin, async (req, res) => {
   if (!/^\\d+$/.test(req.params.id)) return res.status(400).json({ error: 'INVALID_SMS_ID' });
-  const result = await db.query(`update sms_messages set status = 'QUEUED', next_attempt_at = now(), locked_at = null, last_error = null
-    where id = $1 and message_type = 'FREE_ACCESS' and status = 'FAILED' returning id, status`, [req.params.id]);
-  if (!result.rowCount) return res.status(409).json({ error: 'RETRY_NOT_ALLOWED', message: 'Only confirmed, failed FREE_ACCESS messages can be retried automatically. UNKNOWN messages require manual review.' });
-  return res.json({ success: true, message: result.rows[0] });
+  const original = await db.query(`select * from sms_messages where id = $1 and status = 'FAILED'`, [req.params.id]);
+  if (!original.rowCount) return res.status(404).json({ error: 'SMS_NOT_RETRYABLE', message: 'Only failed SMS records can be retried.' });
+  const row = original.rows[0];
+  const attempt = await db.query(`select coalesce(max(attempt_number), 1) + 1 as next_attempt from sms_messages where id = $1 or parent_sms_id = $1`, [row.parent_sms_id || row.id]);
+  const parentId = row.parent_sms_id || row.id;
+  const created = await db.query(`insert into sms_messages (recipient, message, message_type, status, provider, network, created_by, source, order_reference, voucher_code, package_name, package_price, parent_sms_id, attempt_number) values ($1, $2, $3, 'SENDING', 'TextSMS', $4, 'admin', 'admin-sms-retry', $5, $6, $7, $8, $9, $10) returning id`, [row.recipient, row.message, row.message_type, row.network || 'Safaricom', row.order_reference, row.voucher_code, row.package_name, row.package_price, parentId, attempt.rows[0].next_attempt]);
+  const retryId = created.rows[0].id;
+  try {
+    const sent = await sendTextSms({ phone: row.recipient, message: row.message });
+    const providerResponse = sent.providerResponse?.responses?.[0] || sent.providerResponse || {};
+    await db.query(`update sms_messages set status = 'SENT', provider_message_id = $1, provider_response_code = $2, provider_response_description = $3, sent_at = now() where id = $4`, [sent.messageId, providerResponse['response-code'] || providerResponse.response_code || null, providerResponse['response-description'] || providerResponse.response_description || null, retryId]);
+    return res.json({ success: true, status: 'SENT', messageId: sent.messageId, retryId });
+  } catch (error) {
+    await db.query(`update sms_messages set status = 'FAILED', error_message = $1, failed_at = now() where id = $2`, [error.message, retryId]);
+    return res.status(502).json({ success: false, status: 'FAILED', retryId, message: error.message });
+  }
 });
 
 app.post('/api/admin/sms/send', requireAdmin, async (req, res) => {
