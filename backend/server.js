@@ -1036,6 +1036,7 @@ app.post('/api/admin/sms/send', requireAdmin, async (req, res) => {
     result = await sendTextSms({ phone, message });
   } catch (err) {
     console.error('POST /api/admin/sms/send provider failed:', err.message);
+    console.error('[SMS PROVIDER CONFIG]', JSON.stringify({ endpoint: process.env.TEXTSMS_ENDPOINT || 'default', senderId: process.env.TEXTSMS_SENDER_ID || null, partnerIdPresent: Boolean(process.env.TEXTSMS_PARTNER_ID), apiKeyPresent: Boolean(process.env.TEXTSMS_API_KEY) }));
     return res.status(502).json({ error: 'SMS_DELIVERY_FAILED', message: err.message });
   }
 
