@@ -49,9 +49,15 @@ async function sendTextSms({ phone, message }) {
     let payload;
     try { payload = raw ? JSON.parse(raw) : {}; } catch { payload = { raw: raw.slice(0, 200) }; }
     if (!response.ok) throw new Error(`TextSMS request failed with HTTP ${response.status}.`);
-    const success = payload.success === true || String(payload.response_code) === '200' || payload.status === 'success' || payload.status === 'SUCCESS';
-    if (!success) throw new Error('TextSMS did not accept the message.');
-    return { phone: normalizedPhone, messageId: payload.message_id || payload.messageId || payload.request_id || null };
+    const responseCode = payload.response_code ?? payload['response-code'] ?? payload.responseCode;
+    const status = String(payload.status ?? '').toLowerCase();
+    const success = payload.success === true || String(responseCode) === '200' || status === 'success' || status === 'accepted';
+    if (!success) {
+      const providerCode = responseCode ? ` (code ${responseCode})` : '';
+      const providerMessage = payload.message || payload.error || payload.description || payload.raw;
+      throw new Error(`TextSMS rejected the message${providerCode}${providerMessage ? `: ${String(providerMessage).slice(0, 240)}` : '.'}`);
+    }
+    return { phone: normalizedPhone, messageId: payload.message_id || payload.messageId || payload.request_id || payload.requestId || null, providerResponse: payload };
   } finally {
     clearTimeout(timeout);
   }
