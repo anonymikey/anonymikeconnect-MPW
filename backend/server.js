@@ -1308,8 +1308,30 @@ app.get('/api/admin/expiry/summary', requireAdmin, async (req, res) => {
           and r.expected_expires_at > now()
         order by r.expected_expires_at asc`)
     ]);
-    return res.json({ summary: summary.rows[0], records: records.rows, currentVouchers: currentVouchers.rows, rules: rules.rows, timeZone: 'Africa/Nairobi' });
+    const templates = await db.query('select event_type, template_text, enabled, updated_at from expiry_message_templates order by event_type');
+    return res.json({ summary: summary.rows[0], records: records.rows, currentVouchers: currentVouchers.rows, rules: rules.rows, templates: templates.rows, timeZone: 'Africa/Nairobi' });
   } catch (error) { return res.status(500).json({ error: 'EXPIRY_SUMMARY_FAILED', message: error.message }); }
+});
+
+const EXPIRY_TEMPLATE_TYPES = new Set(['EXPIRY_REMINDER','EXPIRY_FINAL_REMINDER','EXPIRY_EXPIRED']);
+const EXPIRY_TEMPLATE_KEYS = new Set(['voucher','package','expiry_time','remaining_time','portal_url','support']);
+app.patch('/api/admin/expiry/templates/:eventType', requireAdmin, async (req, res) => {
+  const eventType = String(req.params.eventType || '').toUpperCase();
+  const template = String(req.body.template_text || '').trim();
+  if (!EXPIRY_TEMPLATE_TYPES.has(eventType)) return res.status(400).json({ error: 'INVALID_EVENT_TYPE' });
+  if (!template) return res.status(400).json({ error: 'EMPTY_TEMPLATE', message: 'Message cannot be empty.' });
+  if (template.length > 480) return res.status(400).json({ error: 'TEMPLATE_TOO_LONG', message: 'Message cannot exceed 480 characters.' });
+  const placeholders = template.match(/\{\{.*?\}\}/g) || [];
+  const malformed = template.replace(/\{\{.*?\}\}/g, '').match(/\{\{|\}\}/g);
+  const unsupported = [...new Set(placeholders.map((item) => item.slice(2, -2).trim()).filter((key) => !EXPIRY_TEMPLATE_KEYS.has(key)))];
+  if (malformed || unsupported.length) return res.status(400).json({ error: 'INVALID_PLACEHOLDER', message: unsupported.length ? `Unsupported placeholder: {{${unsupported[0]}}}` : 'Malformed placeholder syntax.' });
+  try {
+    const client = await db.connect(); await client.query('begin');
+    const old = await client.query('select template_text from expiry_message_templates where event_type=$1 for update', [eventType]);
+    await client.query(`insert into expiry_message_templates (event_type, template_text, updated_by) values ($1,$2,'admin') on conflict (event_type) do update set template_text=excluded.template_text, updated_by='admin', updated_at=now()`, [eventType, template]);
+    await client.query(`insert into expiry_audit_log (action, actor, details) values ('EXPIRY_TEMPLATE_CHANGED','admin',$1)`, [JSON.stringify({ eventType, oldTemplate: old.rows[0]?.template_text || null, newTemplate: template })]);
+    await client.query('commit'); client.release(); return res.json({ event_type: eventType, template_text: template, message: 'Expiry message saved.' });
+  } catch (error) { return res.status(500).json({ error: 'EXPIRY_TEMPLATE_SAVE_FAILED', message: 'Could not save expiry message.' }); }
 });
 
 app.patch('/api/admin/expiry/rules/:id', requireAdmin, async (req, res) => {
