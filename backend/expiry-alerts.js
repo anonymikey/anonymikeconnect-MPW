@@ -37,12 +37,18 @@ function remainingText(expiresAt, now = new Date()) {
   return `${minutes} minute${minutes === 1 ? '' : 's'}`;
 }
 
-function renderExpiryMessage(event, record) {
-  const expiryTime = formatNairobi(record.expected_expires_at);
-  const remaining = remainingText(record.expected_expires_at);
-  if (event.event_type === 'EXPIRY_EXPIRED') return `SUPA LAN: Your ${record.package_name} package has expired. Purchase another package to continue using SUPA LAN.`;
-  return `SUPA LAN: Your ${record.package_name} package expires in ${remaining} at ${expiryTime}. Renew your package to continue browsing.`;
+const DEFAULT_EXPIRY_TEMPLATES = {
+  EXPIRY_REMINDER: 'SUPA LAN: Your {{package}} package expires in {{remaining_time}} at {{expiry_time}}. Renew your package to continue browsing.',
+  EXPIRY_FINAL_REMINDER: 'SUPA LAN: Your {{package}} package expires in {{remaining_time}} at {{expiry_time}}. Renew your package to continue browsing.',
+  EXPIRY_EXPIRED: 'SUPA LAN: Your {{package}} package has expired. Purchase another package to continue using SUPA LAN.'
+};
+const EXPIRY_PLACEHOLDERS = new Set(['voucher','package','expiry_time','remaining_time','portal_url','support']);
+function renderExpiryTemplate(template, event, record) {
+  const values = { voucher: record.voucher_code, package: record.package_name, expiry_time: formatNairobi(record.expected_expires_at), remaining_time: remainingText(record.expected_expires_at), portal_url: PORTAL_URL, support: SUPPORT };
+  return String(template).replace(/\{\{([a-z_]+)\}\}/g, (_, key) => values[key] ?? '');
 }
+function renderExpiryMessage(event, record, template = DEFAULT_EXPIRY_TEMPLATES[event.event_type]) { return renderExpiryTemplate(template, event, record); }
+async function getExpiryTemplate(db, eventType) { const result = await db.query('select template_text from expiry_message_templates where event_type=$1 and enabled=true', [eventType]); return result.rows[0]?.template_text || DEFAULT_EXPIRY_TEMPLATES[eventType]; }
 
 async function createExpiryRecord({ db, order, packageInfo, voucherCode }) {
   const purchasedAt = order.paid_at || new Date();
@@ -92,7 +98,7 @@ async function runExpiryScheduler(db) {
       const recordResult = await db.query('select * from expiry_records where id = $1', [event.expiry_record_id]);
       if (!recordResult.rowCount) continue;
       const record = recordResult.rows[0];
-      const message = renderExpiryMessage(event, record);
+      const message = event.status === 'FAILED' && event.message ? event.message : renderExpiryMessage(event, record, await getExpiryTemplate(db, event.event_type));
       try {
         const sent = await sendTextSms({ phone: record.customer_phone, message });
         await db.query(`update expiry_events set status='SENT', message=$1, sent_at=now(), updated_at=now() where id=$2`, [message, event.id]);
