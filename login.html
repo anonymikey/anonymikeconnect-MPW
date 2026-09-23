@@ -412,6 +412,57 @@ function closeContact()
 }
 
 
+function escapePackageText(value)
+{
+    return String(value == null ? '' : value).replace(/[&<>\"']/g, function(character)
+    {
+        return {'&':'&amp;', '<':'&lt;', '>':'&gt;', '\"':'&quot;', "'":'&#39;'}[character];
+    });
+}
+
+var customerPackageOrder = [
+    'hours_1', 'hours_3', 'hours_5', 'hours_6', 'hours_12',
+    'hours_24', 'days_2', 'weekly_unlimited', 'days_30_450', 'data_100gb_30d'
+];
+
+function packageIcon(pkg)
+{
+    if (pkg.id === 'data_100gb_30d') return '◉';
+    if (pkg.id === 'days_2') return '2D';
+    if (pkg.id === 'weekly_unlimited') return '7D';
+    if (pkg.duration && pkg.duration.includes('hour')) return pkg.duration.split(' ')[0] + 'H';
+    return '∞';
+}
+
+function renderCustomerPackages(packages)
+{
+    var container = document.getElementById('customerPackageCatalog');
+    if (!container) return;
+
+    var byId = {};
+    packages.forEach(function(pkg) { byId[pkg.id] = pkg; });
+    var visiblePackages = customerPackageOrder.map(function(id) { return byId[id]; }).filter(Boolean);
+
+    container.innerHTML = visiblePackages.map(function(pkg)
+    {
+        var label = pkg.id === 'hours_24' ? 'MOST POPULAR' : pkg.id === 'days_30_450' ? 'MONTHLY UNLIMITED' : pkg.id === 'data_100gb_30d' ? 'DATA PLAN' : (pkg.label || '');
+        var period = pkg.id === 'data_100gb_30d' ? '100 GB • ' + pkg.duration : 'Unlimited Internet • ' + pkg.duration;
+        return '<button type="button" class="package-card ' + (pkg.id === 'hours_24' ? 'featured' : '') + '" data-package-id="' + escapePackageText(pkg.id) + '" data-available="false" aria-disabled="true">' +
+            '<div class="package-top"><div class="package-icon">' + escapePackageText(packageIcon(pkg)) + '</div>' +
+            (label ? '<span class="' + (label === 'MOST POPULAR' ? 'popular-tag' : 'package-label') + '">' + escapePackageText(label) + '</span>' : '') + '</div>' +
+            '<div class="package-name">' + escapePackageText(pkg.name) + '</div>' +
+            '<div class="package-price"><span>KSh</span> ' + escapePackageText(pkg.price) + '</div>' +
+            '<div class="package-period">' + escapePackageText(period) + '</div>' +
+            '<div class="package-cta">Checking availability...</div></button>';
+    }).join('');
+
+    visiblePackages.forEach(function(pkg)
+    {
+        var card = container.querySelector('[data-package-id="' + CSS.escape(pkg.id) + '"]');
+        if (card) card.addEventListener('click', function() { openPayment(pkg.name, String(pkg.price), pkg.id); });
+    });
+}
+
 async function loadPackageAvailability()
 {
     try
@@ -420,6 +471,7 @@ async function loadPackageAvailability()
         var result = await response.json();
         if (!response.ok || !Array.isArray(result.packages)) return;
 
+        renderCustomerPackages(result.packages);
         var availableCount = 0;
         result.packages.forEach(function(pkg)
         {
@@ -647,6 +699,8 @@ $(document).ready(function()
             </p>
 
         </div>
+
+        <div id="customerPackageCatalog" class="customer-package-catalog" aria-live="polite"></div>
 
 
 
