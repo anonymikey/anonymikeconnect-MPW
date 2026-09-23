@@ -420,6 +420,96 @@ function escapePackageText(value)
     });
 }
 
+var packageDiscoveryStorageKey = 'supaLanPackageDiscovery';
+var packageDiscoveryVersion = 1;
+var newPackageIds = {
+    hours_1: true,
+    hours_3: true,
+    hours_6: true,
+    hours_24: true,
+    days_2: true,
+    days_30_450: true,
+    data_100gb_30d: true
+};
+var packageDiscoveryState = {
+    version: packageDiscoveryVersion,
+    viewedPackages: {},
+    lastVisitAt: null,
+    lastOffersPopupAt: null
+};
+var packageDiscoverySessionShown = false;
+var packageDiscoveryLastFocus = null;
+
+function readPackageDiscoveryState()
+{
+    try
+    {
+        var saved = window.localStorage.getItem(packageDiscoveryStorageKey);
+        if (saved) packageDiscoveryState = Object.assign(packageDiscoveryState, JSON.parse(saved));
+    }
+    catch (error) {}
+    packageDiscoveryState.viewedPackages = packageDiscoveryState.viewedPackages || {};
+    packageDiscoveryState.version = packageDiscoveryVersion;
+}
+
+function savePackageDiscoveryState()
+{
+    try { window.localStorage.setItem(packageDiscoveryStorageKey, JSON.stringify(packageDiscoveryState)); }
+    catch (error) {}
+}
+
+function markPackageViewed(packageId)
+{
+    if (!packageId || !newPackageIds[packageId]) return;
+    packageDiscoveryState.viewedPackages[packageId] = true;
+    savePackageDiscoveryState();
+    var card = document.querySelector('[data-package-id="' + CSS.escape(packageId) + '"]');
+    if (card) { card.classList.remove('is-new'); var badge = card.querySelector('.package-new-badge'); if (badge) badge.remove(); }
+}
+
+function newBadgeFor(pkg)
+{
+    if (!newPackageIds[pkg.id] || packageDiscoveryState.viewedPackages[pkg.id]) return '';
+    return '<span class="package-new-badge" aria-label="New package">✦ NEW</span>';
+}
+
+function showOffersPopup(packages)
+{
+    var modal = document.getElementById('offersModal');
+    var list = document.getElementById('offersList');
+    if (!modal || !list || packageDiscoverySessionShown) return;
+    var offers = packages.filter(function(pkg) { return newPackageIds[pkg.id]; });
+    list.innerHTML = offers.map(function(pkg) { return '<li><span aria-hidden="true">✦</span><span>' + escapePackageText(pkg.name) + ' — <strong>KSh ' + escapePackageText(pkg.price) + '</strong></span></li>'; }).join('');
+    packageDiscoverySessionShown = true;
+    packageDiscoveryLastFocus = document.activeElement;
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('modal-open');
+    document.getElementById('offersExploreButton').focus();
+}
+
+function closeOffersPopup()
+{
+    var modal = document.getElementById('offersModal');
+    if (!modal) return;
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('modal-open');
+    packageDiscoveryState.lastOffersPopupAt = new Date().toISOString();
+    savePackageDiscoveryState();
+    if (packageDiscoveryLastFocus && typeof packageDiscoveryLastFocus.focus === 'function') packageDiscoveryLastFocus.focus();
+}
+
+function maybeShowOffersPopup(packages)
+{
+    var now = Date.now();
+    var lastVisit = packageDiscoveryState.lastVisitAt ? Date.parse(packageDiscoveryState.lastVisitAt) : 0;
+    var shouldShow = !lastVisit || now - lastVisit >= 96 * 60 * 60 * 1000;
+    packageDiscoveryState.lastVisitAt = new Date(now).toISOString();
+    savePackageDiscoveryState();
+    if (shouldShow) showOffersPopup(packages);
+}
+
 var customerPackageOrder = [
     'hours_1', 'hours_3', 'hours_5', 'hours_6', 'hours_12',
     'hours_24', 'days_2', 'weekly_unlimited', 'days_30_450', 'data_100gb_30d'
@@ -447,8 +537,8 @@ function renderCustomerPackages(packages)
     {
         var label = pkg.id === 'hours_24' ? 'MOST POPULAR' : pkg.id === 'days_30_450' ? 'MONTHLY UNLIMITED' : pkg.id === 'data_100gb_30d' ? 'DATA PLAN' : (pkg.label || '');
         var period = pkg.id === 'data_100gb_30d' ? '100 GB • ' + pkg.duration : 'Unlimited Internet • ' + pkg.duration;
-        return '<button type="button" class="package-card ' + (pkg.id === 'hours_24' ? 'featured' : '') + '" data-package-id="' + escapePackageText(pkg.id) + '" data-available="false" aria-disabled="true">' +
-            '<div class="package-top"><div class="package-icon">' + escapePackageText(packageIcon(pkg)) + '</div>' +
+        return '<button type="button" class="package-card ' + (pkg.id === 'hours_24' ? 'featured ' : '') + (newPackageIds[pkg.id] && !packageDiscoveryState.viewedPackages[pkg.id] ? 'is-new' : '') + '" data-package-id="' + escapePackageText(pkg.id) + '" data-available="false" aria-disabled="true">' +
+            '<div class="package-top"><div class="package-icon">' + escapePackageText(packageIcon(pkg)) + '</div>' + newBadgeFor(pkg) +
             (label ? '<span class="' + (label === 'MOST POPULAR' ? 'popular-tag' : 'package-label') + '">' + escapePackageText(label) + '</span>' : '') + '</div>' +
             '<div class="package-name">' + escapePackageText(pkg.name) + '</div>' +
             '<div class="package-price"><span>KSh</span> ' + escapePackageText(pkg.price) + '</div>' +
@@ -459,7 +549,7 @@ function renderCustomerPackages(packages)
     visiblePackages.forEach(function(pkg)
     {
         var card = container.querySelector('[data-package-id="' + CSS.escape(pkg.id) + '"]');
-        if (card) card.addEventListener('click', function() { openPayment(pkg.name, String(pkg.price), pkg.id); });
+        if (card) card.addEventListener('click', function() { markPackageViewed(pkg.id); openPayment(pkg.name, String(pkg.price), pkg.id); });
     });
 }
 
@@ -496,6 +586,8 @@ async function loadPackageAvailability()
             }
         });
 
+        maybeShowOffersPopup(result.packages);
+
         var availabilityStatus = document.getElementById('packageAvailabilityStatus');
         if (availabilityStatus)
         {
@@ -515,7 +607,9 @@ async function loadPackageAvailability()
 
 $(document).ready(function()
 {
+    readPackageDiscoveryState();
     loadPackageAvailability();
+    document.addEventListener('keydown', function(event) { if (event.key === 'Escape') closeOffersPopup(); });
 });
 
 
@@ -983,6 +1077,19 @@ $(document).ready(function()
     <h2>7-minute free access</h2>
     <p>Enter the active free-access voucher in the Wi-Fi login form first. After you connect successfully, the confirmation SMS form appears on the connected page.</p>
   </section>
+
+  <div id="offersModal" class="modal-overlay offers-overlay" style="display:none" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="offersTitle" onclick="if(event.target===this) closeOffersPopup();">
+    <section class="offers-modal">
+      <button type="button" class="modal-close" aria-label="Close new offers" onclick="closeOffersPopup();">×</button>
+      <div class="offers-sparkle" aria-hidden="true">✦</div>
+      <span class="eyebrow">NEW CUSTOMER OFFERS</span>
+      <h2 id="offersTitle">NEW SUPA LAN OFFERS</h2>
+      <p>We&apos;ve added new affordable unlimited packages. Explore what works for you.</p>
+      <ul id="offersList" class="offers-list"></ul>
+      <button type="button" id="offersExploreButton" class="offers-primary-button" onclick="closeOffersPopup(); document.getElementById('packages').scrollIntoView({behavior:'smooth', block:'start'});">Explore Packages</button>
+      <button type="button" class="offers-secondary-button" onclick="closeOffersPopup();">Maybe later</button>
+    </section>
+  </div>
 
   <!-- =====================================================
   PAYMENT MODAL
