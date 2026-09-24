@@ -1,10 +1,12 @@
-const CACHE_NAME = 'supa-lan-shell-v1';
+const CACHE_NAME = 'supa-lan-shell-v2';
 const APP_SHELL = [
   './login.html',
   './style.css',
   './install-banner.css',
   './install-banner.js',
-  './img/logo.png'
+  './img/logo.png',
+  './icons/supalan-192.png',
+  './icons/supalan-512.png'
 ];
 
 self.addEventListener('install', (event) => {
