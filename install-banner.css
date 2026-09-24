@@ -1,0 +1,24 @@
+#supa-lan-install-banner {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 58px;
+  padding: 8px max(14px, env(safe-area-inset-left)) 8px max(14px, env(safe-area-inset-right));
+  color: #effff7;
+  background: linear-gradient(100deg, #087f5b, #0ca678);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .24);
+  font: 600 13px/1.25 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+#supa-lan-install-banner[hidden] { display: none; }
+.supa-lan-install-icon { width: 36px; height: 36px; flex: 0 0 36px; object-fit: contain; border-radius: 10px; background: rgba(255,255,255,.14); }
+.supa-lan-install-copy { flex: 1; min-width: 0; }
+.supa-lan-install-button, .supa-lan-install-close { border: 0; cursor: pointer; font: inherit; }
+.supa-lan-install-button { flex: 0 0 auto; padding: 8px 13px; border-radius: 999px; color: #087f5b; background: #fff; font-size: 12px; font-weight: 800; }
+.supa-lan-install-close { flex: 0 0 30px; width: 30px; height: 30px; padding: 0; border-radius: 50%; color: #fff; background: transparent; font-size: 22px; line-height: 1; }
+.supa-lan-install-button:focus-visible, .supa-lan-install-close:focus-visible { outline: 3px solid rgba(255,255,255,.8); outline-offset: 2px; }
+.supa-lan-install-button:disabled { opacity: .7; cursor: wait; }
+@media (max-width: 420px) { #supa-lan-install-banner { font-size: 12px; gap: 8px; } .supa-lan-install-icon { width: 32px; height: 32px; flex-basis: 32px; } .supa-lan-install-button { padding-inline: 11px; } }
+@media (prefers-reduced-motion: reduce) { #supa-lan-install-banner { transition: none; } }

@@ -1,0 +1,24 @@
+{
+  "name": "ANONYMIKETECH SUPA LAN",
+  "short_name": "SUPA LAN",
+  "start_url": "login.html",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#06101d",
+  "background_color": "#06101d",
+  "description": "Fast access to SUPA LAN packages.",
+  "icons": [
+    {
+      "src": "img/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "img/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
