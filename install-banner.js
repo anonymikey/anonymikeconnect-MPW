@@ -12,7 +12,7 @@
     banner.id = 'supa-lan-install-banner';
     banner.hidden = true;
     banner.setAttribute('aria-label', 'Install SUPA LAN');
-    banner.innerHTML = '<img class="supa-lan-install-icon" src="img/logo.png" alt="SUPA LAN">' +
+    banner.innerHTML = '<img class="supa-lan-install-icon" src="/icons/supalan-192.png" alt="SUPA LAN">' +
       '<span class="supa-lan-install-copy">Install SUPA LAN for faster access</span>' +
       '<button class="supa-lan-install-button" type="button">Install</button>' +
       '<button class="supa-lan-install-close" type="button" aria-label="Dismiss install message">&times;</button>';
@@ -32,7 +32,7 @@
   }
 
   function start() {
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(function () {});
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function () {});
     if (isStandalone()) return;
     var banner = createBanner();
     window.addEventListener('beforeinstallprompt', function (event) {
@@ -44,7 +44,6 @@
       deferredPrompt = null;
       banner.hidden = true;
     });
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(function () {});
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
