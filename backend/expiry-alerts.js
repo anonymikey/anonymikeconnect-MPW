@@ -48,7 +48,12 @@ function renderExpiryTemplate(template, event, record) {
   return String(template).replace(/\{\{([a-z_]+)\}\}/g, (_, key) => values[key] ?? '');
 }
 function renderExpiryMessage(event, record, template = DEFAULT_EXPIRY_TEMPLATES[event.event_type]) { return renderExpiryTemplate(template, event, record); }
-async function getExpiryTemplate(db, eventType) { const result = await db.query('select template_text from expiry_message_templates where event_type=$1 and enabled=true', [eventType]); return result.rows[0]?.template_text || DEFAULT_EXPIRY_TEMPLATES[eventType]; }
+async function getExpiryTemplate(db, ruleId, eventType) {
+  const result = await db.query(`select template_text from expiry_message_templates where rule_id=$1 and event_type=$2 and enabled=true`, [ruleId, eventType]);
+  if (result.rows[0]?.template_text) return result.rows[0].template_text;
+  const legacy = await db.query('select template_text from expiry_message_templates where rule_id is null and event_type=$1 and enabled=true', [eventType]);
+  return legacy.rows[0]?.template_text || DEFAULT_EXPIRY_TEMPLATES[eventType];
+}
 
 async function createExpiryRecord({ db, order, packageInfo, voucherCode }) {
   const purchasedAt = order.paid_at || new Date();
@@ -64,13 +69,13 @@ async function createExpiryRecord({ db, order, packageInfo, voucherCode }) {
 }
 
 async function scheduleEvents(db, recordId) {
-  await db.query(`insert into expiry_events (expiry_record_id, order_reference, voucher_code, customer_phone, event_type, reminder_offset_minutes, scheduled_for, event_key)
-    select r.id, r.order_reference, r.voucher_code, r.customer_phone, rule.event_type, rule.offset_minutes,
+  await db.query(`insert into expiry_events (expiry_record_id, order_reference, voucher_code, customer_phone, rule_id, event_type, reminder_offset_minutes, scheduled_for, event_key)
+    select r.id, r.order_reference, r.voucher_code, r.customer_phone, rule.id, rule.event_type, rule.offset_minutes,
       r.expected_expires_at - make_interval(mins => rule.offset_minutes),
       rule.event_type || ':' || r.order_reference || ':' || rule.offset_minutes
     from expiry_records r cross join expiry_rules rule
     where r.id = $1 and rule.enabled = true
-    on conflict (event_key) do nothing`, [recordId]);
+    on conflict (event_key) do update set rule_id = excluded.rule_id`, [recordId]);
 }
 
 async function createAndScheduleExpiry({ db, order, packageInfo, voucherCode }) {
@@ -85,7 +90,7 @@ async function runExpiryScheduler(db) {
     await client.query('begin');
     const due = await client.query(`select e.*, r.package_name, r.expected_expires_at, r.status as expiry_status
       from expiry_events e join expiry_records r on r.id = e.expiry_record_id
-      join expiry_rules rule on rule.event_type = e.event_type and rule.offset_minutes = e.reminder_offset_minutes and rule.enabled = true
+      join expiry_rules rule on rule.id = e.rule_id and rule.enabled = true
       where e.status = 'SCHEDULED' and e.scheduled_for <= now() and e.scheduled_for > now() - interval '5 minutes' and r.status in ('ACTIVE','EXPIRING_SOON')
       order by e.scheduled_for asc limit 20 for update of e skip locked`);
     const events = [];
@@ -98,7 +103,7 @@ async function runExpiryScheduler(db) {
       const recordResult = await db.query('select * from expiry_records where id = $1', [event.expiry_record_id]);
       if (!recordResult.rowCount) continue;
       const record = recordResult.rows[0];
-      const message = event.status === 'FAILED' && event.message ? event.message : renderExpiryMessage(event, record, await getExpiryTemplate(db, event.event_type));
+      const message = event.status === 'FAILED' && event.message ? event.message : renderExpiryMessage(event, record, await getExpiryTemplate(db, event.rule_id, event.event_type));
       try {
         const sent = await sendTextSms({ phone: record.customer_phone, message });
         await db.query(`update expiry_events set status='SENT', message=$1, sent_at=now(), updated_at=now() where id=$2`, [message, event.id]);
