@@ -48,9 +48,15 @@ function renderExpiryTemplate(template, event, record) {
   return String(template).replace(/\{\{([a-z_]+)\}\}/g, (_, key) => values[key] ?? '');
 }
 function renderExpiryMessage(event, record, template = DEFAULT_EXPIRY_TEMPLATES[event.event_type]) { return renderExpiryTemplate(template, event, record); }
-async function getExpiryTemplate(db, eventType) {
-  const result = await db.query('select template_text from expiry_message_templates where event_type=$1 and enabled=true order by updated_at desc limit 1', [eventType]);
-  return result.rows[0]?.template_text || DEFAULT_EXPIRY_TEMPLATES[eventType];
+async function getExpiryTemplate(db, eventType, offsetMinutes) {
+  const result = await db.query(`select t.template_text
+    from expiry_message_templates t
+    join expiry_rules r on r.id = t.rule_id
+    where r.event_type=$1 and r.offset_minutes=$2 and t.enabled=true
+    limit 1`, [eventType, offsetMinutes]);
+  if (result.rows[0]?.template_text) return result.rows[0].template_text;
+  const legacy = await db.query('select template_text from expiry_message_templates where event_type=$1 and rule_id is null and enabled=true order by updated_at desc limit 1', [eventType]);
+  return legacy.rows[0]?.template_text || DEFAULT_EXPIRY_TEMPLATES[eventType];
 }
 
 async function createExpiryRecord({ db, order, packageInfo, voucherCode }) {
@@ -101,7 +107,7 @@ async function runExpiryScheduler(db) {
       const recordResult = await db.query('select * from expiry_records where id = $1', [event.expiry_record_id]);
       if (!recordResult.rowCount) continue;
       const record = recordResult.rows[0];
-      const message = event.status === 'FAILED' && event.message ? event.message : renderExpiryMessage(event, record, await getExpiryTemplate(db, event.event_type));
+      const message = event.status === 'FAILED' && event.message ? event.message : renderExpiryMessage(event, record, await getExpiryTemplate(db, event.event_type, event.reminder_offset_minutes));
       try {
         const sent = await sendTextSms({ phone: record.customer_phone, message });
         await db.query(`update expiry_events set status='SENT', message=$1, sent_at=now(), updated_at=now() where id=$2`, [message, event.id]);
