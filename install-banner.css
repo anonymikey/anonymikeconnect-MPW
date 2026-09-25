@@ -8,7 +8,7 @@
   min-height: 58px;
   padding: 8px max(14px, env(safe-area-inset-left)) 8px max(14px, env(safe-area-inset-right));
   color: #effff7;
-  background: linear-gradient(100deg, #087f5b, #0ca678);
+  background: linear-gradient(100deg, #064e3b, #0f766e 58%, #0d9488);
   box-shadow: 0 8px 24px rgba(0, 0, 0, .24);
   font: 600 13px/1.25 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
