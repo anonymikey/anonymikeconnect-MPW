@@ -1763,7 +1763,22 @@ body.modal-open {
 
 }
 
-/* SUPA LAN brand refinement: retain the deep navy platform while making teal the active brand color. */
+  .payment-processing-backdrop { position: fixed; inset: 0; z-index: 10001; display: grid; place-items: center; padding: 20px; background: rgba(2, 10, 18, .72); backdrop-filter: blur(5px); animation: processing-fade-in .2s ease-out both; }
+  .payment-processing-backdrop[hidden] { display: none; }
+  .payment-processing-dialog { width: min(100%, 360px); padding: 28px 24px 23px; text-align: center; color: #f8fafc; background: linear-gradient(145deg, rgba(15, 38, 52, .97), rgba(5, 21, 34, .98)); border: 1px solid rgba(45, 212, 191, .34); border-radius: 20px; box-shadow: 0 24px 70px rgba(0, 0, 0, .48), 0 0 34px rgba(20, 184, 166, .12); animation: processing-dialog-in .2s ease-out both; }
+  .payment-processing-spinner { width: 34px; height: 34px; margin: 0 auto 17px; border: 3px solid rgba(94, 234, 212, .2); border-top-color: #34d399; border-right-color: #2dd4bf; border-radius: 50%; animation: processing-spin 1s linear infinite; }
+  .payment-processing-kicker { display: block; margin-bottom: 7px; color: #5eead4; font-size: 9px; font-weight: 900; letter-spacing: 1.1px; }
+  .payment-processing-dialog h2 { margin: 0; font-size: 20px; }
+  .payment-processing-dialog p { margin: 10px auto 0; max-width: 290px; color: #b6c8d5; font-size: 12px; line-height: 1.55; }
+  .payment-processing-summary { display: flex; justify-content: space-between; gap: 14px; margin-top: 17px; padding: 11px 13px; text-align: left; color: #b9cad6; background: rgba(255, 255, 255, .045); border: 1px solid rgba(255, 255, 255, .09); border-radius: 11px; font-size: 11px; }
+  .payment-processing-summary strong { color: #60a5fa; font-size: 16px; }
+  .payment-processing-note { font-size: 10px !important; color: #5eead4 !important; }
+  @keyframes processing-fade-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes processing-dialog-in { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: scale(1); } }
+  @keyframes processing-spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .payment-processing-backdrop, .payment-processing-dialog, .payment-processing-spinner { animation: none; } }
+
+  /* SUPA LAN brand refinement: retain the deep navy platform while making teal the active brand color. */
 .background-hotspot,
 .brand-logo {
     background-image: url("icons/supalan-192.png");
