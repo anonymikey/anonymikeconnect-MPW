@@ -119,6 +119,29 @@ var selectedPrice = "";
 var selectedPackageId = "";
 var paymentProcessing = false;
 
+function showPaymentProcessing()
+{
+    var dialog = document.getElementById("paymentProcessingModal");
+    if (!dialog) return;
+    document.getElementById("processingPackage").textContent = selectedPackage;
+    document.getElementById("processingPrice").textContent = "KSh " + selectedPrice;
+    dialog.hidden = false;
+    dialog.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+}
+
+function hidePaymentProcessing()
+{
+    var dialog = document.getElementById("paymentProcessingModal");
+    if (!dialog) return;
+    dialog.hidden = true;
+    dialog.setAttribute("aria-hidden", "true");
+    if (document.getElementById("paymentModal").style.display !== "flex")
+    {
+        document.body.classList.remove("modal-open");
+    }
+}
+
 
 /*
    Open payment modal
@@ -132,6 +155,7 @@ function openPayment(packageName, price, packageId)
     document.getElementById("selectedPackage").textContent = packageName;
     document.getElementById("selectedPrice").textContent = "KSh " + price;
     paymentProcessing = false;
+    hidePaymentProcessing();
     document.getElementById("phoneNumber").value = "";
     document.getElementById("payButton").disabled = false;
     document.getElementById("paymentProgress").hidden = true;
@@ -209,6 +233,7 @@ async function payWithMPEsa()
         paymentProgress.innerHTML = '<span class="payment-spinner" aria-hidden="true"></span><span>Processing M-Pesa</span>';
     }
     status.textContent = "STK prompt sent to your phone.\nCheck your phone and enter your M-Pesa PIN.\nPlease wait - do not press the button again.";
+    showPaymentProcessing();
 
     try
     {
@@ -251,6 +276,7 @@ async function payWithMPEsa()
     catch (err)
     {
         paymentProcessing = false;
+        hidePaymentProcessing();
         if (paymentProgress) paymentProgress.hidden = true;
         status.textContent = "Payment request could not be started. Please try again.";
         button.disabled = false;
@@ -301,6 +327,7 @@ function pollForVoucher(orderId, status)
             if (order.status === "FAILED" || order.status === "EXPIRED")
             {
                 clearInterval(timer);
+                hidePaymentProcessing();
                 var paymentProgress = document.getElementById("paymentProgress");
                 if (paymentProgress) paymentProgress.hidden = true;
                 status.textContent = "Payment was not completed. Please try again.";
@@ -641,9 +668,9 @@ $(document).ready(function()
 </head>
 
 
-<body>
+  <body data-supa-lan-home="true">
 
-<div class="wrap">
+  <div class="wrap">
 
 
     <!-- =====================================================
@@ -1235,6 +1262,17 @@ $(document).ready(function()
 
         </div>
 
+    </div>
+
+    <div id="paymentProcessingModal" class="payment-processing-backdrop" hidden aria-hidden="true">
+        <div class="payment-processing-dialog" role="dialog" aria-modal="true" aria-labelledby="paymentProcessingTitle" aria-describedby="paymentProcessingMessage">
+            <div class="payment-processing-spinner" aria-hidden="true"></div>
+            <span class="payment-processing-kicker">M-PESA PAYMENT</span>
+            <h2 id="paymentProcessingTitle">Processing M-Pesa</h2>
+            <p id="paymentProcessingMessage">STK prompt sent to your phone. Check your phone and enter your M-Pesa PIN.</p>
+            <div class="payment-processing-summary"><span id="processingPackage"></span><strong id="processingPrice"></strong></div>
+            <p class="payment-processing-note" aria-live="polite">Please wait — do not press the payment button again.</p>
+        </div>
     </div>
 
 
