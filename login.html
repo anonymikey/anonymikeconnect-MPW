@@ -117,6 +117,7 @@ function VoucherAccountCheck()
 var selectedPackage = "";
 var selectedPrice = "";
 var selectedPackageId = "";
+var paymentProcessing = false;
 
 
 /*
@@ -130,7 +131,10 @@ function openPayment(packageName, price, packageId)
 
     document.getElementById("selectedPackage").textContent = packageName;
     document.getElementById("selectedPrice").textContent = "KSh " + price;
+    paymentProcessing = false;
     document.getElementById("phoneNumber").value = "";
+    document.getElementById("payButton").disabled = false;
+    document.getElementById("paymentProgress").hidden = true;
     document.getElementById("payStatus").textContent = "";
 
     var card = document.querySelector('[data-package-id="' + packageId + '"]');
@@ -179,6 +183,9 @@ async function payWithMPEsa()
     var phone = document.getElementById("phoneNumber").value.trim();
     var status = document.getElementById("payStatus");
     var button = document.getElementById("payButton");
+    var paymentProgress = document.getElementById("paymentProgress");
+
+    if (paymentProcessing) return;
 
     if (!selectedPackageId)
     {
@@ -192,8 +199,16 @@ async function payWithMPEsa()
         return;
     }
 
+    paymentProcessing = true;
     button.disabled = true;
-    status.textContent = "Sending STK Push test request...";
+    button.setAttribute("aria-disabled", "true");
+    button.innerHTML = '<span class="payment-button-spinner" aria-hidden="true"></span><span>Waiting for M-Pesa...</span>';
+    if (paymentProgress)
+    {
+        paymentProgress.hidden = false;
+        paymentProgress.innerHTML = '<span class="payment-spinner" aria-hidden="true"></span><span>Processing M-Pesa</span>';
+    }
+    status.textContent = "STK prompt sent to your phone.\nCheck your phone and enter your M-Pesa PIN.\nPlease wait - do not press the button again.";
 
     try
     {
@@ -235,8 +250,12 @@ async function payWithMPEsa()
     }
     catch (err)
     {
-        status.textContent = err.message || "Payment request failed.";
+        paymentProcessing = false;
+        if (paymentProgress) paymentProgress.hidden = true;
+        status.textContent = "Payment request could not be started. Please try again.";
         button.disabled = false;
+        button.removeAttribute("aria-disabled");
+        button.innerHTML = '<span>✓</span> Pay with M-PESA <span>→</span>';
     }
 }
 

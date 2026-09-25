@@ -578,8 +578,9 @@ body.modal-open {
    ========================================================= */
 
 #packages > .package-card{display:none}
-#customerPackageCatalog{display:grid;gap:10px}
-@media (min-width:700px){#customerPackageCatalog{grid-template-columns:repeat(2,minmax(0,1fr))}}
+#customerPackageCatalog{display:grid;gap:14px}
+@media (min-width:700px){#customerPackageCatalog{grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch}}
+@media (max-width:699px){#customerPackageCatalog{grid-template-columns:minmax(0,1fr)}}
 #customerPackageCatalog .package-card{display:block}
 .package-new-badge{display:inline-flex;align-items:center;gap:4px;padding:5px 8px;border:1px solid rgba(103,232,249,.45);border-radius:999px;color:#a5f3fc;background:rgba(8,145,178,.16);font-size:9px;font-weight:900;letter-spacing:.7px;box-shadow:0 0 18px rgba(34,211,238,.18);animation:discoveryPulse 2.4s ease-in-out infinite}
 .package-card.is-new .package-name{color:#f8fdff}
@@ -632,6 +633,8 @@ body.modal-open {
 
 .package-card {
     position: relative;
+    min-width: 0;
+    min-height: 218px;
     overflow: hidden;
     width: 100%;
 
@@ -1163,7 +1166,9 @@ body.modal-open {
 
 
 /* Login checkout hierarchy */
-.login-stk-card { margin-top: 14px; padding: 15px; border: 1px solid rgba(34, 211, 238, .28); border-radius: 16px; background: linear-gradient(145deg, rgba(8, 58, 78, .58), rgba(11, 28, 43, .92)); }
+.login-stk-card { margin-top: 14px; padding: 16px; border: 1px solid rgba(34, 211, 238, .34); border-radius: 18px; background: linear-gradient(145deg, rgba(8, 58, 78, .62), rgba(11, 28, 43, .94)); box-shadow: inset 0 1px 0 rgba(255,255,255,.05); }
+.login-stk-card.is-processing { opacity: .72; }
+.login-stk-card:has(.pay-button:disabled) { border-color: rgba(34, 211, 238, .48); }
 .login-method-heading { display: flex; align-items: center; gap: 10px; }
 .login-method-heading strong { display: block; color: #f8fafc; font-size: 13px; }
 .login-method-icon { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 10px; color: #082f49; background: #67e8f9; font-weight: 950; }
@@ -1181,7 +1186,12 @@ body.modal-open {
 .login-till-row strong { color: #f8fafc; font-size: 18px; letter-spacing: .8px; }
 .login-till-row button { padding: 6px 8px; border: 1px solid rgba(103, 232, 249, .2); border-radius: 8px; color: #a5f3fc; background: rgba(34, 211, 238, .08); font-size: 8px; font-weight: 850; cursor: pointer; }
 .login-transaction-input { margin-top: 12px; }
-.login-stk-button { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 46px; margin-top: 11px; border: 0; border-radius: 11px; color: #082f49; background: linear-gradient(135deg, #67e8f9, #38bdf8); font-weight: 900; cursor: pointer; }
+.login-stk-button { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 48px; margin-top: 11px; border: 0; border-radius: 12px; color: #062b3a; background: linear-gradient(135deg, #35c49a, #0d9488); font-weight: 900; cursor: pointer; transition: transform .2s ease, filter .2s ease, opacity .2s ease; }
+.login-stk-button:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.08); }
+.login-stk-button:active:not(:disabled) { transform: translateY(0); }
+.payment-button-spinner { width: 17px; height: 17px; border: 2px solid rgba(6,43,58,.28); border-top-color: #062b3a; border-radius: 50%; animation: voucher-spin .9s linear infinite; }
+.login-stk-button:disabled { color: #b9d7d2; background: linear-gradient(135deg, rgba(25,126,110,.82), rgba(18,91,92,.82)); opacity: .92; cursor: wait; }
+.login-stk-button:disabled .payment-button-spinner { border-color: rgba(185,215,210,.28); border-top-color: #b9d7d2; }
 .login-fallback-actions { display: flex; gap: 7px; margin-top: 11px; }
 .login-fallback-actions button { flex: 1; min-height: 32px; padding: 7px 8px; border: 0; border-radius: 8px; color: #fff; font-size: 9px; font-weight: 850; cursor: pointer; }
 .login-fallback-actions .whatsapp-button { background: #16a34a; }
@@ -1322,6 +1332,7 @@ body.modal-open {
 
 .pay-status {
   min-height: 25px;
+  white-space: pre-line;
 
     color: #a7f0ba;
 
