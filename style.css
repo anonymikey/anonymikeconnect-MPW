@@ -1752,6 +1752,24 @@ body.modal-open {
 
 }
 
+/* SUPA LAN brand refinement: retain the deep navy platform while making teal the active brand color. */
+.background-hotspot,
+.brand-logo {
+    background-image: url("icons/supalan-192.png");
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.online-badge { background: rgba(16, 185, 129, .12); border-color: rgba(45, 212, 191, .28); color: #86efac; }
+.online-dot { background: #34d399; box-shadow: 0 0 12px rgba(52, 211, 153, .95); }
+.brand-network, .eyebrow, .section-kicker { color: #5eead4; }
+.welcome-card, .package-card, .contact-card, .login-card { border-color: rgba(45, 212, 191, .18); }
+.welcome-card { background: linear-gradient(135deg, rgba(13, 148, 136, .18), rgba(255,255,255,.045)); }
+.welcome-icon { background: linear-gradient(145deg, #14b8a6, #047857); box-shadow: 0 12px 30px rgba(16, 185, 129, .28); }
+.package-card:hover, .package-card.featured { border-color: rgba(45, 212, 191, .48); }
+.package-cta, .pay-button, .connect-button, .login-stk-button { background: linear-gradient(135deg, #34d399, #0d9488); color: #042f2e; box-shadow: 0 12px 30px rgba(16, 185, 129, .22); }
+.package-cta:hover, .pay-button:hover, .connect-button:hover, .login-stk-button:hover { filter: brightness(1.08); }
 
 /* =========================================================
    VERY SMALL DEVICES
