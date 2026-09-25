@@ -1308,12 +1308,8 @@ app.get('/api/admin/expiry/summary', requireAdmin, async (req, res) => {
           and r.expected_expires_at > now()
         order by r.expected_expires_at asc`)
     ]);
-  const templates = await db.query('select event_type, template_text, enabled, updated_at from expiry_message_templates order by event_type, updated_at desc');
-  const templatesWithRuleIds = templates.rows.map((template) => ({
-    ...template,
-    rule_id: rules.rows.find((rule) => rule.event_type === template.event_type)?.id ?? null
-  }));
-  return res.json({ summary: summary.rows[0], records: records.rows, currentVouchers: currentVouchers.rows, rules: rules.rows, templates: templatesWithRuleIds, timeZone: 'Africa/Nairobi' });
+  const templates = await db.query('select rule_id, event_type, template_text, enabled, updated_at from expiry_message_templates order by rule_id nulls last, updated_at desc');
+  return res.json({ summary: summary.rows[0], records: records.rows, currentVouchers: currentVouchers.rows, rules: rules.rows, templates: templates.rows, timeZone: 'Africa/Nairobi' });
   } catch (error) { return res.status(500).json({ error: 'EXPIRY_SUMMARY_FAILED', message: error.message }); }
 });
 
@@ -1331,14 +1327,14 @@ app.patch('/api/admin/expiry/templates/:ruleId', requireAdmin, async (req, res) 
   if (malformed || unsupported.length) return res.status(400).json({ error: 'INVALID_PLACEHOLDER', message: unsupported.length ? `Unsupported placeholder: {{${unsupported[0]}}}` : 'Malformed placeholder syntax.' });
   try {
     const client = await db.connect(); await client.query('begin');
-    const rule = await client.query('select id, event_type from expiry_rules where id=$1 for update', [ruleId]);
-    if (!rule.rowCount) { await client.query('rollback'); client.release(); return res.status(404).json({ error: 'RULE_NOT_FOUND' }); }
-    const eventType = rule.rows[0].event_type;
-    const old = await client.query('select template_text from expiry_message_templates where event_type=$1 order by updated_at desc limit 1 for update', [eventType]);
-    const updated = await client.query(`update expiry_message_templates set template_text=$2, updated_by='admin', updated_at=now() where event_type=$1 returning template_text`, [eventType, template]);
-    if (!updated.rowCount) await client.query(`insert into expiry_message_templates (event_type, template_text, updated_by) values ($1,$2,'admin')`, [eventType, template]);
-    await client.query(`insert into expiry_audit_log (action, actor, details) values ('EXPIRY_TEMPLATE_CHANGED','admin',$1)`, [JSON.stringify({ ruleId, eventType, oldTemplate: old.rows[0]?.template_text || null, newTemplate: template })]);
-    await client.query('commit'); client.release(); return res.json({ rule_id: ruleId, event_type: eventType, template_text: template, message: 'Expiry message saved.' });
+  const rule = await client.query('select id, event_type, offset_minutes from expiry_rules where id=$1 for update', [ruleId]);
+  if (!rule.rowCount) { await client.query('rollback'); client.release(); return res.status(404).json({ error: 'RULE_NOT_FOUND' }); }
+  const { event_type: eventType, offset_minutes: offsetMinutes } = rule.rows[0];
+  const old = await client.query('select template_text from expiry_message_templates where rule_id=$1 for update', [ruleId]);
+  const updated = await client.query(`update expiry_message_templates set template_text=$2, event_type=$3, updated_by='admin', updated_at=now() where rule_id=$1 returning rule_id, event_type, template_text, updated_at`, [ruleId, template, eventType]);
+  const saved = updated.rows[0] || (await client.query(`insert into expiry_message_templates (rule_id, event_type, template_text, updated_by) values ($1,$2,$3,'admin') returning rule_id, event_type, template_text, updated_at`, [ruleId, eventType, template])).rows[0];
+  await client.query(`insert into expiry_audit_log (action, actor, details) values ('EXPIRY_TEMPLATE_CHANGED','admin',$1)`, [JSON.stringify({ ruleId, eventType, offsetMinutes, oldTemplate: old.rows[0]?.template_text || null, newTemplate: template })]);
+  await client.query('commit'); client.release(); return res.json({ ...saved, message: 'Expiry message saved.' });
   } catch (error) { return res.status(500).json({ error: 'EXPIRY_TEMPLATE_SAVE_FAILED', message: 'Could not save expiry message.' }); }
 });
 
