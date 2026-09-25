@@ -1797,3 +1797,261 @@ body.modal-open {
     }
 
 }
+
+/* =========================================================
+   SUPA LAN CUSTOMER PORTAL POLISH
+   ========================================================= */
+
+:root {
+    --portal-teal: #34d399;
+    --portal-cyan: #67e8f9;
+    --portal-navy: #071a2f;
+    --portal-muted: #91a8bb;
+}
+
+.wrap {
+    width: min(100% - 32px, 1080px);
+    padding: 28px 0 56px;
+}
+
+.hero {
+    min-height: 72px;
+    padding: 8px 2px 22px;
+}
+
+.brand-logo {
+    width: 60px;
+    height: 60px;
+    border-radius: 18px;
+    background-color: rgba(15, 118, 110, .16);
+    border-color: rgba(94, 234, 212, .24);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, .3), 0 0 26px rgba(20, 184, 166, .12), inset 0 1px 0 rgba(255,255,255,.1);
+}
+
+.welcome-card {
+    gap: 24px;
+    min-height: 180px;
+    padding: 32px;
+    border-radius: 22px;
+    background: linear-gradient(135deg, rgba(14, 116, 144, .25), rgba(10, 37, 64, .62) 58%, rgba(255,255,255,.035));
+    border-color: rgba(103, 232, 249, .2);
+    box-shadow: 0 22px 60px rgba(0,0,0,.25), 0 0 40px rgba(20, 184, 166, .08), inset 0 1px 0 rgba(255,255,255,.09);
+}
+
+.welcome-icon {
+    width: 66px;
+    height: 66px;
+    border-radius: 19px;
+    background: linear-gradient(145deg, #22c1dc, #0f766e 78%);
+    box-shadow: 0 14px 34px rgba(20, 184, 166, .28), 0 0 22px rgba(103, 232, 249, .16);
+}
+
+.welcome-content h1 {
+    font-size: clamp(28px, 3.2vw, 40px);
+    line-height: 1.08;
+    letter-spacing: -1.3px;
+}
+
+.welcome-content p {
+    max-width: 610px;
+    margin-top: 12px;
+    color: #b2c4d4;
+}
+
+.quick-actions {
+    gap: 14px;
+    margin-top: 16px;
+}
+
+.quick-btn {
+    min-height: 68px;
+    padding: 14px 16px;
+    border-radius: 17px;
+    background: linear-gradient(135deg, rgba(14, 54, 82, .72), rgba(255,255,255,.035));
+    border-color: rgba(103, 232, 249, .14);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+.quick-btn:hover,
+.quick-btn:focus-visible {
+    background: linear-gradient(135deg, rgba(15, 86, 103, .72), rgba(255,255,255,.06));
+    border-color: rgba(94, 234, 212, .42);
+    box-shadow: 0 10px 26px rgba(0,0,0,.18), 0 0 20px rgba(20,184,166,.08);
+}
+
+.quick-btn:focus-visible,
+.package-card:focus-visible,
+button:focus-visible {
+    outline: 2px solid var(--portal-cyan);
+    outline-offset: 3px;
+}
+
+.quick-icon {
+    background: rgba(14, 165, 233, .16);
+    color: var(--portal-cyan);
+}
+
+.packages-section {
+    margin-top: 32px;
+}
+
+.package-availability-status {
+    max-width: 100%;
+    margin-bottom: 18px;
+    padding: 9px 14px;
+    border-radius: 11px;
+    color: #8fdcc2;
+    background: rgba(16, 185, 129, .07);
+    border-color: rgba(52, 211, 153, .24);
+    box-shadow: 0 0 22px rgba(16, 185, 129, .06);
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.packages-heading {
+    margin-bottom: 22px;
+}
+
+.packages-heading h2 {
+    font-size: clamp(23px, 2.8vw, 30px);
+    letter-spacing: -.7px;
+}
+
+.packages-heading p {
+    margin-top: 8px;
+    color: var(--portal-muted);
+}
+
+#customerPackageCatalog,
+#packages > .package-card {
+    gap: 16px;
+}
+
+#customerPackageCatalog .package-card,
+#packages > .package-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 246px;
+    margin-bottom: 0;
+    padding: 21px;
+    border-radius: 20px;
+    background: linear-gradient(145deg, rgba(14, 53, 79, .82), rgba(7, 24, 43, .8) 68%, rgba(255,255,255,.035));
+    border-color: rgba(103, 232, 249, .17);
+    box-shadow: 0 14px 34px rgba(0,0,0,.16), inset 0 1px 0 rgba(255,255,255,.055);
+}
+
+#customerPackageCatalog .package-card:hover,
+#packages > .package-card:hover,
+#customerPackageCatalog .package-card.featured,
+#packages > .package-card.featured {
+    border-color: rgba(52, 211, 153, .54);
+    background: linear-gradient(145deg, rgba(15, 82, 94, .86), rgba(7, 29, 47, .86));
+    box-shadow: 0 18px 40px rgba(0,0,0,.24), 0 0 24px rgba(20,184,166,.1);
+}
+
+.package-top {
+    margin-bottom: 16px;
+}
+
+.package-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
+    color: var(--portal-cyan);
+    background: rgba(14, 165, 233, .14);
+    border: 1px solid rgba(103, 232, 249, .14);
+}
+
+.package-name {
+    font-size: 16px;
+    line-height: 1.35;
+}
+
+.package-price {
+    margin-top: 8px;
+    color: #f8fffe;
+    font-size: 32px;
+    line-height: 1.05;
+    letter-spacing: -.9px;
+}
+
+.package-price span {
+    color: #9fe6d0;
+    font-size: 12px;
+    letter-spacing: 0;
+}
+
+.package-period {
+    min-height: 18px;
+    margin-top: 8px;
+    color: #a2b8c8;
+    font-size: 11px;
+}
+
+.package-cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    margin-top: auto;
+    padding: 10px 14px;
+    border-radius: 12px;
+    color: #032f2a;
+    background: linear-gradient(135deg, #6ee7b7, #14b8a6 72%, #0d9488);
+    font-size: 12px;
+    font-weight: 900;
+    box-shadow: 0 10px 24px rgba(16, 185, 129, .18);
+    transition: transform .18s ease, filter .18s ease, box-shadow .18s ease;
+}
+
+.package-card:hover .package-cta {
+    transform: translateY(-1px);
+    filter: brightness(1.07);
+    box-shadow: 0 12px 28px rgba(16, 185, 129, .27);
+}
+
+.package-card:active .package-cta,
+.quick-btn:active {
+    transform: scale(.985);
+}
+
+.package-new-badge {
+    color: #a7f3d0;
+    background: rgba(16, 185, 129, .12);
+    border-color: rgba(110, 231, 183, .46);
+}
+
+.popular-tag {
+    color: #99f6e4;
+    background: rgba(20, 184, 166, .13);
+    border-color: rgba(94, 234, 212, .3);
+}
+
+@media (max-width: 699px) {
+    .wrap { width: min(100% - 32px, 620px); padding-top: 20px; }
+    .hero { padding-bottom: 18px; }
+    .welcome-card { align-items: flex-start; gap: 16px; padding: 24px 20px; }
+    .welcome-icon { width: 52px; height: 52px; border-radius: 16px; font-size: 24px; }
+    .welcome-content h1 { font-size: clamp(24px, 7vw, 32px); }
+    .welcome-content p { font-size: 12px; }
+}
+
+@media (max-width: 420px) {
+    .wrap { width: min(100% - 24px, 390px); }
+    .brand-logo { width: 52px; height: 52px; }
+    .brand-name { font-size: 14px; }
+    .brand-network { font-size: 10px; }
+    .welcome-card { padding: 21px 16px; }
+    .quick-actions { gap: 10px; }
+    .quick-btn { padding-inline: 12px; }
+    .quick-btn small { font-size: 8px; }
+    #customerPackageCatalog .package-card,
+    #packages > .package-card { min-height: 232px; padding: 18px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .quick-btn,
+    .package-card,
+    .package-cta { transition: none; }
+    .package-new-badge { animation: none; }
+}

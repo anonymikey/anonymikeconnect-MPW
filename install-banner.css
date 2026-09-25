@@ -4,21 +4,24 @@
   z-index: 9999;
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-height: 58px;
-  padding: 8px max(14px, env(safe-area-inset-left)) 8px max(14px, env(safe-area-inset-right));
+  gap: 11px;
+  min-height: 60px;
+  padding: 9px max(16px, env(safe-area-inset-right)) 9px max(16px, env(safe-area-inset-left));
   color: #effff7;
   background: linear-gradient(100deg, #064e3b, #0f766e 58%, #0d9488);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, .24);
+  border-bottom: 1px solid rgba(167, 243, 208, .2);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .27), 0 0 24px rgba(20, 184, 166, .1);
   font: 600 13px/1.25 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 #supa-lan-install-banner[hidden] { display: none; }
-.supa-lan-install-icon { width: 36px; height: 36px; flex: 0 0 36px; object-fit: contain; border-radius: 10px; background: rgba(255,255,255,.14); }
+.supa-lan-install-icon { width: 38px; height: 38px; flex: 0 0 38px; object-fit: contain; border-radius: 11px; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.16); }
 .supa-lan-install-copy { flex: 1; min-width: 0; }
 .supa-lan-install-button, .supa-lan-install-close { border: 0; cursor: pointer; font: inherit; }
-.supa-lan-install-button { flex: 0 0 auto; padding: 8px 13px; border-radius: 999px; color: #087f5b; background: #fff; font-size: 12px; font-weight: 800; }
-.supa-lan-install-close { flex: 0 0 30px; width: 30px; height: 30px; padding: 0; border-radius: 50%; color: #fff; background: transparent; font-size: 22px; line-height: 1; }
+.supa-lan-install-button { flex: 0 0 auto; min-height: 36px; padding: 8px 15px; border-radius: 999px; color: #064e3b; background: linear-gradient(135deg, #d1fae5, #fff); font-size: 12px; font-weight: 800; box-shadow: 0 5px 14px rgba(0,0,0,.14); transition: transform .18s ease, filter .18s ease; }
+.supa-lan-install-button:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.supa-lan-install-close { flex: 0 0 32px; width: 32px; height: 32px; padding: 0; border-radius: 50%; color: #fff; background: rgba(255,255,255,.08); font-size: 22px; line-height: 1; }
+.supa-lan-install-close:hover { background: rgba(255,255,255,.17); }
 .supa-lan-install-button:focus-visible, .supa-lan-install-close:focus-visible { outline: 3px solid rgba(255,255,255,.8); outline-offset: 2px; }
 .supa-lan-install-button:disabled { opacity: .7; cursor: wait; }
-@media (max-width: 420px) { #supa-lan-install-banner { font-size: 12px; gap: 8px; } .supa-lan-install-icon { width: 32px; height: 32px; flex-basis: 32px; } .supa-lan-install-button { padding-inline: 11px; } }
-@media (prefers-reduced-motion: reduce) { #supa-lan-install-banner { transition: none; } }
+@media (max-width: 420px) { #supa-lan-install-banner { font-size: 12px; gap: 8px; padding-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right)); } .supa-lan-install-icon { width: 34px; height: 34px; flex-basis: 34px; } .supa-lan-install-button { padding-inline: 12px; } }
+@media (prefers-reduced-motion: reduce) { #supa-lan-install-banner, .supa-lan-install-button { transition: none; } }
