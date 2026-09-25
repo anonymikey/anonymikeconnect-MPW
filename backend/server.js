@@ -25,6 +25,55 @@ const db = new Pool({
     : false
 });
 
+async function ensureExpirySchema() {
+  const client = await db.connect();
+  try {
+    await client.query('begin');
+    await client.query(`
+      alter table expiry_message_templates
+        add column if not exists rule_id bigint references expiry_rules(id) on delete cascade;
+      alter table expiry_events
+        add column if not exists rule_id bigint references expiry_rules(id) on delete set null;
+      alter table expiry_message_templates
+        drop constraint if exists expiry_message_templates_event_type_key;
+    `);
+    await client.query(`
+      update expiry_events e
+      set rule_id = r.id
+      from expiry_rules r
+      where e.rule_id is null
+        and e.event_type = r.event_type
+        and e.reminder_offset_minutes = r.offset_minutes
+    `);
+    await client.query(`
+      insert into expiry_message_templates (rule_id, event_type, template_text, enabled, updated_by)
+      select r.id, r.event_type,
+        case when r.event_type = 'EXPIRY_EXPIRED'
+          then 'SUPA LAN: Your {{package}} package has expired. Purchase another package to continue browsing.'
+          else 'SUPA LAN: Your {{package}} package expires in {{remaining_time}} at {{expiry_time}}. Renew your package to continue browsing.'
+        end,
+        true, 'schema-guard'
+      from expiry_rules r
+      where not exists (
+        select 1 from expiry_message_templates t where t.rule_id = r.id
+      )
+    `);
+    await client.query(`
+      create unique index if not exists idx_expiry_message_templates_rule_id
+        on expiry_message_templates(rule_id) where rule_id is not null;
+      create index if not exists idx_expiry_events_rule_id
+        on expiry_events(status, rule_id, scheduled_for)
+    `);
+    await client.query('commit');
+  } catch (error) {
+    await client.query('rollback').catch(() => {});
+    console.error('[EXPIRY SCHEMA]', error.message);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 const corsOrigins = (process.env.CORS_ORIGIN || '').split(',').map((origin) => origin.trim()).filter(Boolean);
 app.use(cors({ origin: (requestOrigin, callback) => {
   if (!corsOrigins.length) return callback(null, '*');
@@ -1402,10 +1451,18 @@ app.post('/api/admin/expiry/:id/send', requireAdmin, async (req, res) => {
   } catch (error) { return res.status(502).json({ error: 'EXPIRY_MANUAL_SEND_FAILED', message: error.message }); }
 });
 
-startFreeAccessSmsWorker(db);
-startExpiryScheduler(db);
+async function startServer() {
+  await ensureExpirySchema();
+  startFreeAccessSmsWorker(db);
+  startExpiryScheduler(db);
 
-app.listen(PORT, () => {
-  console.log(`ANONYMIKECONNECT Phase 1 test backend running on http://localhost:${PORT}`);
-  console.log(`TEST_MODE=${testMode}`);
+  app.listen(PORT, () => {
+    console.log(`ANONYMIKECONNECT Phase 1 test backend running on http://localhost:${PORT}`);
+    console.log(`TEST_MODE=${testMode}`);
+  });
+}
+
+startServer().catch((error) => {
+  console.error('[SERVER STARTUP]', error.message);
+  process.exitCode = 1;
 });
