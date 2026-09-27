@@ -1,4 +1,5 @@
 const { sendTextSms, normalizeKenyanPhone } = require('./textsms');
+const { findOrCreateCustomer } = require('./customer-contacts');
 
 const TIME_ZONE = 'Africa/Nairobi';
 const PORTAL_URL = process.env.MYPUBLICWIFI_PORTAL_URL || 'http://192.168.10.1/';
@@ -64,8 +65,9 @@ async function createExpiryRecord({ db, order, packageInfo, voucherCode }) {
   const duration = parseDuration(packageInfo.duration);
   const expiresAt = expiryDate(purchasedAt, duration);
   const phone = normalizeKenyanPhone(order.phone);
-  const inserted = await db.query(`insert into expiry_records (order_id, order_reference, voucher_code, customer_phone, package_name, package_price, duration_value, duration_unit, purchased_at, activation_reference_at, expected_expires_at)
-    values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$9,$10) on conflict (order_reference) do nothing returning *`, [order.id, order.reference, voucherCode, phone, packageInfo.name, packageInfo.price, duration.value, duration.unit, purchasedAt, expiresAt]);
+  const customer = await findOrCreateCustomer(db, { phone: order.phone, name: order.customer_name });
+  const inserted = await db.query(`insert into expiry_records (order_id, customer_id, order_reference, voucher_code, customer_phone, package_name, package_price, duration_value, duration_unit, purchased_at, activation_reference_at, expected_expires_at)
+    values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$10,$11) on conflict (order_reference) do nothing returning *`, [order.id, customer.id, order.reference, voucherCode, phone, packageInfo.name, packageInfo.price, duration.value, duration.unit, purchasedAt, expiresAt]);
   if (!inserted.rowCount) return { created: false, duplicate: true };
   const record = inserted.rows[0];
   await db.query(`insert into expiry_audit_log (expiry_record_id, action, actor, details) values ($1, 'EXPIRY_CREATED', 'system', $2)`, [record.id, JSON.stringify({ expectedExpiresAt: expiresAt, duration })]);
@@ -104,12 +106,13 @@ async function runExpiryScheduler(db) {
     }
     await client.query('commit');
     for (const event of events) {
-      const recordResult = await db.query('select * from expiry_records where id = $1', [event.expiry_record_id]);
+      const recordResult = await db.query(`select r.*, c.phone as customer_contact_phone
+        from expiry_records r left join customers c on c.id = r.customer_id where r.id = $1`, [event.expiry_record_id]);
       if (!recordResult.rowCount) continue;
       const record = recordResult.rows[0];
       const message = event.status === 'FAILED' && event.message ? event.message : renderExpiryMessage(event, record, await getExpiryTemplate(db, event.event_type, event.reminder_offset_minutes));
       try {
-        const sent = await sendTextSms({ phone: record.customer_phone, message });
+        const sent = await sendTextSms({ phone: record.customer_contact_phone || record.customer_phone, message });
         await db.query(`update expiry_events set status='SENT', message=$1, sent_at=now(), updated_at=now() where id=$2`, [message, event.id]);
         await db.query(`insert into sms_messages (recipient, message, message_type, status, provider, provider_message_id, event_key, network, created_by, source, order_reference, voucher_code, package_name, package_price, sent_at) values ($1,$2,$3,'SENT','TextSMS',$4,$5,'Safaricom','system','expiry-alerts',$6,$7,$8,$9,now()) on conflict (event_key) do nothing`, [record.customer_phone, message, event.event_type, sent.messageId, event.event_key, record.order_reference, record.voucher_code, record.package_name, record.package_price]);
         await db.query(`insert into expiry_audit_log (expiry_record_id,event_id,action,details) values ($1,$2,'EXPIRY_REMINDER_SENT',$3)`, [record.id, event.id, JSON.stringify({ recipient: maskPhone(record.customer_phone) })]);
