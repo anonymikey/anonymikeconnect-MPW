@@ -32,4 +32,25 @@
  let active=''; const dialog=section.querySelector('#expiryMessageDialog'), input=section.querySelector('#expiryTemplateInput'), length=section.querySelector('#expiryLength'); const update=()=>{const n=input.value.length;length.textContent=`Message length: ${n} characters · SMS length: ${Math.max(1,Math.ceil(n/160))} SMS part${n>160?'s':''}`;length.className=n>420?'sub bad':'sub'}; input.addEventListener('input',update); section.addEventListener('click',e=>{const p=e.target.closest('[data-preview-message]');if(p){alert(`MESSAGE PREVIEW\\n\\nSAMPLE DATA\\nVoucher: HIGHH\\nPackage: 5 Hours Unlimited\\nExpiry: 9:00 PM\\n\\n${render(p.dataset.previewMessage)}\\n\\nThis is only a preview and does not send an SMS.`)} const edit=e.target.closest('[data-edit-message]');if(edit){active=edit.dataset.editMessage;input.value=templates[active]?.template_text||'';update();dialog.classList.remove('hidden');input.focus()} if(e.target.closest('[data-close-message]'))dialog.classList.add('hidden'); const ph=e.target.closest('[data-placeholder]');if(ph){input.setRangeText(ph.dataset.placeholder,input.selectionStart,input.selectionEnd,'end');update()}}); section.querySelector('#saveExpiryTemplate').addEventListener('click',async()=>{const button=section.querySelector('#saveExpiryTemplate');button.disabled=true;button.textContent='Saving...';try{const r=await api(`/api/admin/expiry/templates/${active}`,{method:'PATCH',body:JSON.stringify({template_text:input.value})});const result=await r.json();if(!r.ok)throw new Error(result.message||'Could not save expiry message.');const savedTemplate=result.template_text;templates[active]={...templates[active],template_text:savedTemplate};const copy=section.querySelector(`[data-edit-message="${active}"]`)?.closest('.message-rule')?.querySelector('.message-copy');if(copy)copy.textContent=savedTemplate;input.value=savedTemplate;dialog.classList.add('hidden');alert(result.message||'Expiry message saved.')}catch(error){alert(error.message)}finally{button.disabled=false;button.textContent='Save Message'}});
  }; api('/api/admin/expiry/summary').then(r=>r.json()).then(mount).catch(()=>{});
 })();
-</script><style>.message-rule{border-top:1px solid var(--border);padding:16px 0}.message-copy{color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere}.modal{position:fixed;inset:0;background:#0009;display:grid;place-items:center;padding:18px;z-index:5}.modal.hidden{display:none}.modal-card{width:min(680px,100%);max-height:90vh;overflow:auto;background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:20px}.modal textarea{width:100%;resize:vertical;margin:14px 0}.placeholder{border:0;background:none;color:var(--accent);padding:2px;cursor:pointer}.modal .sub span{display:inline-block;margin:4px 8px 4px 0}</style></body></html>
+</script><style>.message-rule{border-top:1px solid var(--border);padding:16px 0}.message-copy{color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere}.modal{position:fixed;inset:0;background:#0009;display:grid;place-items:center;padding:18px;z-index:5}.modal.hidden{display:none}.modal-card{width:min(680px,100%);max-height:90vh;overflow:auto;background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:20px}.modal textarea{width:100%;resize:vertical;margin:14px 0}.placeholder{border:0;background:none;color:var(--accent);padding:2px;cursor:pointer}.modal .sub span{display:inline-block;margin:4px 8px 4px 0}</style><script>
+(function () {
+  const panel = document.createElement('section');
+  panel.className = 'panel';
+  panel.innerHTML = '<h2>Manual purchase customer contact</h2><p>Save the customer contact before recording a manual purchase. Phone is required; name is optional.</p><form id="customer-contact-form" style="display:grid;gap:12px;max-width:520px"><label>Customer phone<input name="phone" required inputmode="tel" placeholder="0712345678"></label><label>Customer name <span style="color:var(--muted)">(optional)</span><input name="name" placeholder="Customer name"></label><button type="submit">Save customer contact</button><output id="customer-contact-status" aria-live="polite"></output></form>';
+  const root = document.querySelector('main') || document.body;
+  root.insertBefore(panel, root.firstChild);
+  panel.querySelector('form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const status = panel.querySelector('#customer-contact-status');
+    status.textContent = 'Saving…';
+    try {
+      const response = await fetch('/api/admin/customers', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(Object.fromEntries(new FormData(form))) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || 'Unable to save customer contact.');
+      status.textContent = `Saved ${result.customer.phone}.`;
+      form.reset();
+    } catch (error) { status.textContent = error.message; }
+  });
+})();
+</script></body></html>

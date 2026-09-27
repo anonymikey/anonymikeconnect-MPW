@@ -1,4 +1,5 @@
 const { sendTextSms, normalizeKenyanPhone } = require('./textsms');
+const { upsertCustomer } = require('./customers');
 
 const TIME_ZONE = 'Africa/Nairobi';
 const PORTAL_URL = process.env.MYPUBLICWIFI_PORTAL_URL || 'http://192.168.10.1/';
@@ -64,8 +65,10 @@ async function createExpiryRecord({ db, order, packageInfo, voucherCode }) {
   const duration = parseDuration(packageInfo.duration);
   const expiresAt = expiryDate(purchasedAt, duration);
   const phone = normalizeKenyanPhone(order.phone);
-  const inserted = await db.query(`insert into expiry_records (order_id, order_reference, voucher_code, customer_phone, package_name, package_price, duration_value, duration_unit, purchased_at, activation_reference_at, expected_expires_at)
-    values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$9,$10) on conflict (order_reference) do nothing returning *`, [order.id, order.reference, voucherCode, phone, packageInfo.name, packageInfo.price, duration.value, duration.unit, purchasedAt, expiresAt]);
+  const customer = await upsertCustomer(db, { phone, name: order.customer_name });
+  const inserted = await db.query(`insert into expiry_records (order_id, customer_id, order_reference, voucher_code, customer_phone, package_name, package_price, duration_value, duration_unit, purchased_at, activation_reference_at, expected_expires_at)
+    values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$10,$11) on conflict (order_reference) do nothing returning *`, [order.id, customer.id, order.reference, voucherCode, phone, packageInfo.name, packageInfo.price, duration.value, duration.unit, purchasedAt, expiresAt]);
+  if (inserted.rowCount) await db.query('update orders set customer_id = $1, updated_at = now() where id = $2', [customer.id, order.id]);
   if (!inserted.rowCount) return { created: false, duplicate: true };
   const record = inserted.rows[0];
   await db.query(`insert into expiry_audit_log (expiry_record_id, action, actor, details) values ($1, 'EXPIRY_CREATED', 'system', $2)`, [record.id, JSON.stringify({ expectedExpiresAt: expiresAt, duration })]);
@@ -74,11 +77,12 @@ async function createExpiryRecord({ db, order, packageInfo, voucherCode }) {
 
 async function scheduleEvents(db, recordId) {
   await db.query(`insert into expiry_events (expiry_record_id, order_reference, voucher_code, customer_phone, event_type, reminder_offset_minutes, scheduled_for, event_key)
-    select r.id, r.order_reference, r.voucher_code, r.customer_phone, rule.event_type, rule.offset_minutes,
+    select r.id, r.order_reference, r.voucher_code, coalesce(c.phone, r.customer_phone) as customer_phone, rule.event_type, rule.offset_minutes,
       r.expected_expires_at - make_interval(mins => rule.offset_minutes),
       rule.event_type || ':' || r.order_reference || ':' || rule.offset_minutes
-    from expiry_records r cross join expiry_rules rule
-    where r.id = $1 and rule.enabled = true
+from expiry_records r left join customers c on c.id = r.customer_id cross join expiry_rules rule
+  where r.id = $1 and rule.enabled = true
+
     on conflict (event_key) do update set event_type = excluded.event_type, reminder_offset_minutes = excluded.reminder_offset_minutes, scheduled_for = excluded.scheduled_for`, [recordId]);
 }
 

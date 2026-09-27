@@ -11,6 +11,7 @@ const { sendTextSms, normalizeKenyanPhone } = require('./textsms');
 const { sendPurchaseConfirmation, queueFreeAccessConfirmation, validateTemplate, validateFreeAccessTemplate, DEFAULT_TEMPLATE, EVENT_TYPE, FREE_ACCESS_EVENT_TYPE, FREE_ACCESS_DEFAULT_TEMPLATE } = require('./sms-notifications');
 const { startFreeAccessSmsWorker, runFreeAccessSmsWorker } = require('./free-access-sms-worker');
 const { createAndScheduleExpiry, startExpiryScheduler } = require('./expiry-alerts');
+const { upsertCustomer, associateOrderCustomer } = require('./customers');
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
@@ -30,6 +31,14 @@ async function ensureExpirySchema() {
   try {
     await client.query('begin');
     await client.query(`
+      create table if not exists customers (
+        id uuid primary key default gen_random_uuid(), phone text not null unique, name text,
+        created_at timestamptz not null default now(), updated_at timestamptz not null default now()
+      );
+      alter table orders add column if not exists customer_id uuid references customers(id) on delete set null;
+      alter table expiry_records add column if not exists customer_id uuid references customers(id) on delete set null;
+      create index if not exists idx_orders_customer_id on orders(customer_id);
+      create index if not exists idx_expiry_records_customer_id on expiry_records(customer_id);
       alter table expiry_message_templates
         add column if not exists rule_id bigint references expiry_rules(id) on delete cascade;
       alter table expiry_events
@@ -807,6 +816,11 @@ app.post('/api/webhooks/palpluss', async (req, res) => {
 
       if (assignedVoucherCode) {
         try {
+          await associateOrderCustomer(db, { orderId: order.id, phone: order.phone });
+        } catch (customerError) {
+          console.error('[CUSTOMER AUTOMATION] Customer association failed:', customerError.message);
+        }
+        try {
           const packageResult = await db.query('select name, duration from packages where id = $1 limit 1', [order.package_id]);
           const packageInfo = packageResult.rows[0] || {};
           await sendPurchaseConfirmation({
@@ -1411,6 +1425,16 @@ app.patch('/api/admin/expiry/rules/:id', requireAdmin, async (req, res) => {
     console.error('PATCH /api/admin/expiry/rules/:id error:', error.message);
     return res.status(500).json({ error: 'RULE_UPDATE_FAILED', message: 'Unable to update reminder rule.' });
   } finally { client.release(); }
+});
+
+app.post('/api/admin/customers', requireAdmin, async (req, res) => {
+  try {
+    const customer = await upsertCustomer(db, { phone: req.body.phone, name: req.body.name });
+    if (req.body.order_id) await db.query('update orders set customer_id = $1, updated_at = now() where id = $2', [customer.id, req.body.order_id]);
+    return res.status(201).json({ customer });
+  } catch (error) {
+    return res.status(400).json({ error: 'CUSTOMER_SAVE_FAILED', message: error.message });
+  }
 });
 
 app.post('/api/admin/expiry/:id/correct', requireAdmin, async (req, res) => {
