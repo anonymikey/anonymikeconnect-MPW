@@ -9,7 +9,7 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 dotenv.config({ path: path.join(__dirname, '..', '.env.development.local') });
 
 const { sendTextSms, normalizeKenyanPhone } = require('./textsms');
-const { sendPurchaseConfirmation, queueFreeAccessConfirmation, validateTemplate, validateFreeAccessTemplate, DEFAULT_TEMPLATE, EVENT_TYPE, FREE_ACCESS_EVENT_TYPE, FREE_ACCESS_DEFAULT_TEMPLATE } = require('./sms-notifications');
+const { sendPurchaseConfirmation, sendAdminPurchaseAlert, queueFreeAccessConfirmation, validateTemplate, validateFreeAccessTemplate, DEFAULT_TEMPLATE, EVENT_TYPE, FREE_ACCESS_EVENT_TYPE, FREE_ACCESS_DEFAULT_TEMPLATE } = require('./sms-notifications');
 const { startFreeAccessSmsWorker, runFreeAccessSmsWorker } = require('./free-access-sms-worker');
 const { createAndScheduleExpiry, startExpiryScheduler } = require('./expiry-alerts');
 const { associateOrderCustomer } = require('./customer-contacts');
@@ -67,6 +67,13 @@ async function ensureExpirySchema() {
       )
     `);
     await client.query(`
+      create table if not exists sms_admin_settings (
+        id boolean primary key default true,
+        admin_phone text,
+        updated_at timestamptz not null default now(),
+        updated_by text
+      );
+      insert into sms_admin_settings (id) values (true) on conflict (id) do nothing;
       create unique index if not exists idx_expiry_message_templates_rule_id
         on expiry_message_templates(rule_id) where rule_id is not null;
       create index if not exists idx_expiry_events_rule_id
@@ -850,13 +857,20 @@ app.post('/api/webhooks/palpluss', async (req, res) => {
         try {
           const packageResult = await db.query('select name, duration from packages where id = $1 limit 1', [order.package_id]);
           const packageInfo = packageResult.rows[0] || {};
-          await sendPurchaseConfirmation({
-            db,
-            order,
-            voucherCode: assignedVoucherCode,
-            packageName: packageInfo.name || order.package_id,
-            duration: packageInfo.duration
-          });
+  await sendPurchaseConfirmation({
+  db,
+  order,
+  voucherCode: assignedVoucherCode,
+  packageName: packageInfo.name || order.package_id,
+  duration: packageInfo.duration
+  });
+  await sendAdminPurchaseAlert({
+  db,
+  order,
+  voucherCode: assignedVoucherCode,
+  packageName: packageInfo.name || order.package_id,
+  duration: packageInfo.duration
+  });
         } catch (smsError) {
           console.error('[SMS AUTOMATION] Purchase confirmation failed:', smsError.message);
         }
@@ -1067,6 +1081,19 @@ app.get('/api/admin/bridge/remove-script', requireAdmin, (req, res) => {
   res.setHeader('content-type', 'application/octet-stream');
   res.setHeader('content-disposition', 'attachment; filename="remove-supa-lan-bridge-task.ps1"');
   return res.send(script);
+});
+
+app.get('/api/admin/sms/settings', requireAdmin, async (req, res) => {
+  const result = await db.query('select admin_phone, updated_at from sms_admin_settings where id = true');
+  return res.json({ adminPhone: result.rows[0]?.admin_phone || '', updatedAt: result.rows[0]?.updated_at || null });
+});
+
+app.put('/api/admin/sms/settings', requireAdmin, async (req, res) => {
+  try {
+    const adminPhone = req.body?.adminPhone ? normalizeKenyanPhone(req.body.adminPhone) : '';
+    const result = await db.query('update sms_admin_settings set admin_phone = $1, updated_at = now(), updated_by = $2 where id = true returning admin_phone, updated_at', [adminPhone || null, 'admin']);
+    return res.json({ adminPhone: result.rows[0]?.admin_phone || '', updatedAt: result.rows[0]?.updated_at || null });
+  } catch (error) { return res.status(400).json({ error: 'INVALID_ADMIN_PHONE', message: error.message }); }
 });
 
 app.get('/api/admin/sms/status', requireAdmin, (req, res) => {

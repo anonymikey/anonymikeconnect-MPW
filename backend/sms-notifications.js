@@ -39,6 +39,25 @@ async function getPurchaseTemplate(db) {
   return result.rows[0]?.template || DEFAULT_TEMPLATE;
 }
 
+async function sendAdminPurchaseAlert({ db, order, voucherCode, packageName, duration }) {
+  if (!(await isAutomationEnabled(db))) return { attempted: false, reason: 'SMS_AUTOMATION_DISABLED' };
+  const setting = await db.query('select admin_phone from sms_admin_settings where id = true limit 1');
+  const adminPhone = setting.rows[0]?.admin_phone;
+  if (!adminPhone) return { attempted: false, reason: 'ADMIN_PHONE_NOT_CONFIGURED' };
+  const message = `SUPA LAN sale: ${order.customer_name || 'Customer'} purchased ${packageName || 'package'} for KSh ${order.amount || ''}. Voucher: ${voucherCode}. Client: ${order.phone}.`;
+  const eventKey = `ADMIN_PURCHASE_ALERT:${order.id}`;
+  const existing = await db.query('select id, status, provider_message_id from sms_messages where event_key = $1 limit 1', [eventKey]);
+  if (existing.rowCount) return { attempted: false, duplicate: true, status: existing.rows[0].status };
+  try {
+    const result = await sendTextSms({ phone: adminPhone, message });
+    await db.query(`insert into sms_messages (recipient, message, message_type, status, provider, provider_message_id, event_key, network, created_by, source, order_reference, voucher_code, package_name, package_price, sent_at) values ($1, $2, 'ADMIN_PURCHASE_ALERT', 'SENT', 'TextSMS', $3, $4, 'Safaricom', 'system', 'purchase-fulfillment-admin', $5, $6, $7, $8, now())`, [result.phone, message, result.messageId, eventKey, order.reference, voucherCode, packageName, order.amount]);
+    return { attempted: true, status: 'SENT', messageId: result.messageId };
+  } catch (error) {
+    await db.query(`insert into sms_messages (recipient, message, message_type, status, provider, event_key, network, error_message, created_by, source, order_reference, voucher_code, package_name, package_price, failed_at) values ($1, $2, 'ADMIN_PURCHASE_ALERT', 'FAILED', 'TextSMS', $3, 'Safaricom', $4, 'system', 'purchase-fulfillment-admin', $5, $6, $7, $8, now()) on conflict (event_key) do nothing`, [adminPhone, message, eventKey, error.message, order.reference, voucherCode, packageName, order.amount]);
+    return { attempted: true, status: 'FAILED', error: error.message };
+  }
+}
+
 async function sendPurchaseConfirmation({ db, order, voucherCode, packageName, duration }) {
   if (!(await isAutomationEnabled(db))) return { attempted: false, reason: 'SMS_AUTOMATION_DISABLED' };
   if (!order?.phone || !voucherCode) return { attempted: false, reason: 'MISSING_RECIPIENT_OR_VOUCHER' };
@@ -97,4 +116,4 @@ async function queueFreeAccessConfirmation({ db, phone, voucherCode, eventKey })
   return { queued: true, duplicate: result.rowCount === 0, status: result.rows[0]?.status || 'QUEUED', messageId: result.rows[0]?.id || null };
 }
 
-module.exports = { sendPurchaseConfirmation, queueFreeAccessConfirmation, validateTemplate, validateFreeAccessTemplate, renderTemplate, DEFAULT_TEMPLATE, EVENT_TYPE, FREE_ACCESS_EVENT_TYPE, FREE_ACCESS_DEFAULT_TEMPLATE, SUPPORTED_PLACEHOLDERS };
+module.exports = { sendPurchaseConfirmation, sendAdminPurchaseAlert, queueFreeAccessConfirmation, validateTemplate, validateFreeAccessTemplate, renderTemplate, DEFAULT_TEMPLATE, EVENT_TYPE, FREE_ACCESS_EVENT_TYPE, FREE_ACCESS_DEFAULT_TEMPLATE, SUPPORTED_PLACEHOLDERS };
