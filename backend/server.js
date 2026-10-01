@@ -357,7 +357,6 @@ app.post('/api/payments/stk', async (req, res) => {
 app.post('/api/orders', async (req, res) => {
   const packageId = req.body.packageId || req.body.package_id || req.body.package;
   const phone = normalizePhone(req.body.phone);
-  const customerName = req.body.customerName || req.body.customer_name || null;
 
   if (!packageId || !phone) {
     return res.status(400).json({
@@ -401,12 +400,12 @@ app.post('/api/orders', async (req, res) => {
 
     const orderInsert = await db.query(
       `insert into orders
-        (reference, package_id, amount, phone, customer_name, status, payment_provider, provider_transaction_id, voucher_id, created_at, paid_at, updated_at)
+        (reference, package_id, amount, phone, status, payment_provider, provider_transaction_id, voucher_id, created_at, paid_at, updated_at)
        values
-        ($1, $2, $3, $4, $5, 'PENDING', $6, null, null, now(), null, now())
+        ($1, $2, $3, $4, 'PENDING', $5, null, null, now(), null, now())
        returning
-        id, reference, package_id, amount, phone, customer_name, status, payment_provider, provider_transaction_id, voucher_id, created_at, paid_at, updated_at`,
-      [reference, pkg.id, pkg.price, phone, customerName, provider]
+        id, reference, package_id, amount, phone, status, payment_provider, provider_transaction_id, voucher_id, created_at, paid_at, updated_at`,
+      [reference, pkg.id, pkg.price, phone, provider]
     );
 
     const order = orderInsert.rows[0];
