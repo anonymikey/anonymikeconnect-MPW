@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const { Pool } = require('pg');
 
 dotenv.config({ path: path.join(__dirname, '.env') });
+dotenv.config({ path: path.join(__dirname, '..', '.env.development.local') });
 
 const { sendTextSms, normalizeKenyanPhone } = require('./textsms');
 const { sendPurchaseConfirmation, queueFreeAccessConfirmation, validateTemplate, validateFreeAccessTemplate, DEFAULT_TEMPLATE, EVENT_TYPE, FREE_ACCESS_EVENT_TYPE, FREE_ACCESS_DEFAULT_TEMPLATE } = require('./sms-notifications');
@@ -19,10 +20,15 @@ const PORT = Number(process.env.PORT || 3000);
 const rootDir = path.join(__dirname, '..');
 const testMode = (process.env.TEST_MODE || 'true').toLowerCase() === 'true' || process.env.TEST_MODE === '1';
 const portalUrl = process.env.MYPUBLICWIFI_PORTAL_URL || 'http://192.168.10.1/';
+const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL;
+
+if (!databaseUrl) {
+  throw new Error('Database configuration is missing. Set DATABASE_URL, POSTGRES_URL, or POSTGRES_PRISMA_URL.');
+}
 
 const db = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL && process.env.DATABASE_URL.includes('supabase')
+  connectionString: databaseUrl,
+  ssl: databaseUrl.includes('supabase') || databaseUrl.includes('neon.tech')
     ? { rejectUnauthorized: false }
     : false
 });
