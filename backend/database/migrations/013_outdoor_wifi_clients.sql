@@ -2,7 +2,7 @@
 create table if not exists outdoor_wifi_clients (
   id uuid primary key default gen_random_uuid(),
   order_id uuid references orders(id) on delete set null,
-  package_id uuid references packages(id) on delete set null,
+  package_id text references packages(id) on delete set null,
   customer_name text,
   phone text not null,
   package_name text not null,
