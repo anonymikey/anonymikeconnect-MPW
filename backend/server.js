@@ -12,6 +12,7 @@ const { sendPurchaseConfirmation, queueFreeAccessConfirmation, validateTemplate,
 const { startFreeAccessSmsWorker, runFreeAccessSmsWorker } = require('./free-access-sms-worker');
 const { createAndScheduleExpiry, startExpiryScheduler } = require('./expiry-alerts');
 const { associateOrderCustomer } = require('./customer-contacts');
+const { normalizeMac, deriveStatus, processOutdoorWifiExpiry, STATUSES } = require('./outdoor-wifi');
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
@@ -90,6 +91,39 @@ app.get('/', (req, res) => {
 
 app.get('/admin/expiry', (req, res) => {
   res.sendFile(path.join(rootDir, 'admin-expiry.html'));
+});
+
+app.get('/admin/outdoor-wifi', (req, res) => {
+  res.sendFile(path.join(rootDir, 'admin-outdoor-wifi.html'));
+});
+
+app.get('/api/admin/outdoor-wifi/clients', requireAdmin, async (req, res) => {
+  try {
+    await processOutdoorWifiExpiry(db);
+    const result = await db.query(`select c.*, e.status as action_event_status, e.error_message as action_event_error from outdoor_wifi_clients c left join outdoor_wifi_action_events e on e.client_id=c.id and e.event_type='ACTION_REQUIRED' where c.status <> 'CANCELLED' order by c.expected_expiry_at asc`);
+    const clients = result.rows.map((row) => ({ ...row, status: deriveStatus(row) }));
+    const filter = String(req.query.status || '').toUpperCase();
+    const search = String(req.query.search || '').trim().toLowerCase();
+    const filtered = clients.filter((client) => (!STATUSES.has(filter) || client.status === filter) && (!search || [client.customer_name, client.phone, client.mac_address, client.voucher_code, client.order_reference].some((value) => String(value || '').toLowerCase().includes(search))));
+    return res.json({ clients: filtered, summary: Object.fromEntries([...STATUSES].map((status) => [status, clients.filter((client) => client.status === status).length])) });
+  } catch (error) { console.error('GET outdoor Wi-Fi clients:', error.message); return res.status(500).json({ error: 'OUTDOOR_WIFI_LIST_FAILED', message: 'Unable to load Outdoor Wi-Fi clients.' }); }
+});
+
+app.post('/api/admin/outdoor-wifi/clients', requireAdmin, async (req, res) => {
+  const body = req.body || {};
+  if (!body.package_name || !body.activation_at || !body.expected_expiry_at) return res.status(400).json({ error: 'VALIDATION_ERROR', message: 'Package, activation time, and expected expiry are required.' });
+  let phone; let mac;
+  try { phone = normalizeKenyanPhone(body.phone); mac = normalizeMac(body.mac_address); } catch (error) { return res.status(400).json({ error: 'VALIDATION_ERROR', message: error.message }); }
+  const activation = new Date(body.activation_at); const expiry = new Date(body.expected_expiry_at);
+  if (Number.isNaN(activation.getTime()) || Number.isNaN(expiry.getTime()) || expiry <= activation) return res.status(400).json({ error: 'INVALID_TIMING', message: 'Expected expiry must be after activation.' });
+  try {
+    const result = await db.query(`insert into outdoor_wifi_clients (order_id, package_id, customer_name, phone, package_name, package_price, voucher_code, order_reference, mac_address, wifi_credentials_issued, airtel_mac_rule_added, blacklist_enabled, activation_at, expected_expiry_at, status, notes) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) returning *`, [body.order_id || null, body.package_id || null, body.customer_name || null, phone, body.package_name, body.package_price || null, body.voucher_code || null, body.order_reference || null, mac, body.wifi_credentials_issued === true, body.airtel_mac_rule_added === true, body.blacklist_enabled === true, activation, expiry, body.blacklist_enabled === true ? 'BLACKLISTED' : deriveStatus({ expected_expiry_at: expiry, blacklist_enabled: false }), body.notes || null]);
+    return res.status(201).json({ client: result.rows[0] });
+  } catch (error) { if (error.code === '23505') return res.status(409).json({ error: 'DUPLICATE_MAC', message: 'An active client already uses this MAC address.' }); console.error('POST outdoor Wi-Fi client:', error.message); return res.status(500).json({ error: 'OUTDOOR_WIFI_CREATE_FAILED', message: 'Unable to create client.' }); }
+});
+
+app.post('/api/admin/outdoor-wifi/clients/:id/blacklist-enabled', requireAdmin, async (req, res) => {
+  try { const result = await db.query(`update outdoor_wifi_clients set blacklist_enabled=true, blacklist_enabled_at=now(), blacklist_enabled_by=$2, status='BLACKLISTED', updated_at=now() where id=$1 and status='ACTION_REQUIRED' returning *`, [req.params.id, req.body?.admin || 'admin']); if (!result.rowCount) return res.status(409).json({ error: 'NOT_ACTION_REQUIRED', message: 'Only expired clients awaiting action can be completed.' }); await db.query(`update outdoor_wifi_action_events set status='COMPLETED', completed_at=now() where client_id=$1 and event_type='ACTION_REQUIRED'`, [req.params.id]); return res.json({ client: result.rows[0] }); } catch (error) { return res.status(500).json({ error: 'BLACKLIST_CONFIRM_FAILED', message: 'Unable to record blacklist completion.' }); }
 });
 
 app.get('/api/config', (req, res) => {
@@ -1456,6 +1490,7 @@ async function startServer() {
   await ensureExpirySchema();
   startFreeAccessSmsWorker(db);
   startExpiryScheduler(db);
+  setInterval(() => processOutdoorWifiExpiry(db).catch((error) => console.error('[OUTDOOR_WIFI_EXPIRY]', error.message)), 60 * 1000);
 
   app.listen(PORT, () => {
     console.log(`ANONYMIKECONNECT Phase 1 test backend running on http://localhost:${PORT}`);
