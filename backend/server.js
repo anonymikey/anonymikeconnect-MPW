@@ -13,7 +13,7 @@ const { sendPurchaseConfirmation, sendAdminPurchaseAlert, queueFreeAccessConfirm
 const { startFreeAccessSmsWorker, runFreeAccessSmsWorker } = require('./free-access-sms-worker');
 const { createAndScheduleExpiry, startExpiryScheduler } = require('./expiry-alerts');
 const { associateOrderCustomer } = require('./customer-contacts');
-const { normalizeMac, deriveStatus, processOutdoorWifiExpiry, STATUSES } = require('./outdoor-wifi');
+const { normalizeMac, deriveStatus, processOutdoorWifiExpiry, logOutdoorWifiSmsConfig, STATUSES } = require('./outdoor-wifi');
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
@@ -1523,6 +1523,7 @@ async function startServer() {
   await ensureExpirySchema();
   startFreeAccessSmsWorker(db);
   startExpiryScheduler(db);
+  logOutdoorWifiSmsConfig(db).catch((error) => console.error('[OUTDOOR_WIFI_SMS_CONFIG]', error.message));
   setInterval(() => processOutdoorWifiExpiry(db).catch((error) => console.error('[OUTDOOR_WIFI_EXPIRY]', error.message)), 60 * 1000);
 
   app.listen(PORT, () => {

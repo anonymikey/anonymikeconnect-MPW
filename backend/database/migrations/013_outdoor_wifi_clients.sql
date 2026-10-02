@@ -25,6 +25,28 @@ create table if not exists outdoor_wifi_clients (
   constraint outdoor_wifi_clients_mac_format check (mac_address ~ '^[0-9A-F]{2}(:[0-9A-F]{2}){5}$'),
   constraint outdoor_wifi_clients_expiry_after_activation check (expected_expiry_at > activation_at)
 );
+alter table outdoor_wifi_clients add column if not exists order_id uuid;
+alter table outdoor_wifi_clients add column if not exists package_id text;
+alter table outdoor_wifi_clients add column if not exists customer_name text;
+alter table outdoor_wifi_clients add column if not exists phone text;
+alter table outdoor_wifi_clients add column if not exists package_name text;
+alter table outdoor_wifi_clients add column if not exists package_price numeric(12,2);
+alter table outdoor_wifi_clients add column if not exists voucher_code text;
+alter table outdoor_wifi_clients add column if not exists order_reference text;
+alter table outdoor_wifi_clients add column if not exists mac_address text;
+alter table outdoor_wifi_clients add column if not exists wifi_credentials_issued boolean not null default false;
+alter table outdoor_wifi_clients add column if not exists airtel_mac_rule_added boolean not null default false;
+alter table outdoor_wifi_clients add column if not exists blacklist_enabled boolean not null default false;
+alter table outdoor_wifi_clients add column if not exists activation_at timestamptz;
+alter table outdoor_wifi_clients add column if not exists expected_expiry_at timestamptz;
+alter table outdoor_wifi_clients add column if not exists status text not null default 'ACTIVE';
+alter table outdoor_wifi_clients add column if not exists notes text;
+alter table outdoor_wifi_clients add column if not exists action_required_at timestamptz;
+alter table outdoor_wifi_clients add column if not exists blacklist_enabled_at timestamptz;
+alter table outdoor_wifi_clients add column if not exists blacklist_enabled_by text;
+alter table outdoor_wifi_clients add column if not exists created_at timestamptz not null default now();
+alter table outdoor_wifi_clients add column if not exists updated_at timestamptz not null default now();
+
 create unique index if not exists idx_outdoor_wifi_clients_mac_active on outdoor_wifi_clients(mac_address) where status <> 'CANCELLED';
 create index if not exists idx_outdoor_wifi_clients_expiry on outdoor_wifi_clients(status, expected_expiry_at);
 create index if not exists idx_outdoor_wifi_clients_phone on outdoor_wifi_clients(phone);

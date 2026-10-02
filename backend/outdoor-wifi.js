@@ -24,16 +24,28 @@ function adminMessage(client) {
 
 function clientExpiryMessage(client, kind) {
   const expiry = new Date(client.expected_expiry_at).toLocaleString('en-KE', { timeZone: 'Africa/Nairobi' });
-  const ssid = process.env.OUTDOOR_WIFI_SSID || 'SUPA LAN';
-  const password = process.env.OUTDOOR_WIFI_PASSWORD || '';
-  const access = password ? ` Connect to Wi-Fi ${ssid} using password ${password}. Do not share the password.` : ` Connect to Wi-Fi ${ssid}. Do not share the password.`;
-  if (kind === 'EXPIRED') return `SUPA LAN: Your ${client.package_name} package expired at ${expiry}. Service may be disconnected until you renew.${access}`;
-  return `SUPA LAN: Reminder: your ${client.package_name} package expires in about 1 hour at ${expiry}. Renew now to avoid disconnection.${access}`;
+  if (kind === 'EXPIRED') return `SUPA LAN: Your ${client.package_name} package expired at ${expiry}. Service may be disconnected until you renew.`;
+  return `SUPA LAN: Reminder: your ${client.package_name} package expires in about 1 hour at ${expiry}. Renew now to avoid disconnection.`;
+}
+
+function maskPhone(phone) {
+  const value = String(phone || '');
+  return value.length > 5 ? `${value.slice(0, 6)}******${value.slice(-2)}` : '***';
 }
 
 async function smsSetting(db) {
   const result = await db.query('select admin_phone from sms_admin_settings where id = true limit 1').catch(() => ({ rows: [] }));
-  return result.rows[0]?.admin_phone || process.env.OUTDOOR_WIFI_ADMIN_PHONE || process.env.ADMIN_PHONE || null;
+  const configured = result.rows[0]?.admin_phone || process.env.OUTDOOR_WIFI_ADMIN_PHONE || process.env.ADMIN_PHONE || null;
+  if (!configured) return null;
+  try { return normalizeKenyanPhone(configured); } catch (error) { console.error('[OUTDOOR_WIFI_SMS_CONFIG] Admin alert number is invalid; SMS disabled for admin alerts.'); return null; }
+}
+
+async function logOutdoorWifiSmsConfig(db) {
+  const raw = await db.query('select admin_phone from sms_admin_settings where id = true limit 1').catch(() => ({ rows: [] }));
+  const configured = raw.rows[0]?.admin_phone || process.env.OUTDOOR_WIFI_ADMIN_PHONE || process.env.ADMIN_PHONE || null;
+  let normalized = null;
+  try { normalized = configured ? normalizeKenyanPhone(configured) : null; } catch (_) {}
+  console.info('[OUTDOOR_WIFI_SMS_CONFIG]', JSON.stringify({ adminAlertNumberConfigured: configured ? 'YES' : 'NO', normalizedMaskedNumber: normalized ? maskPhone(normalized) : null, outdoorWifiAdminSmsTargetConfigured: normalized ? 'YES' : 'NO' }));
 }
 
 async function sendOutdoorSms(db, client, eventType, recipient, message) {
@@ -98,4 +110,4 @@ async function processOutdoorWifiExpiryLegacy(db) {
   }
 }
 
-module.exports = { normalizeMac, normalizeKenyanPhone, deriveStatus, adminMessage, processOutdoorWifiExpiry, STATUSES };
+module.exports = { normalizeMac, normalizeKenyanPhone, deriveStatus, adminMessage, processOutdoorWifiExpiry, logOutdoorWifiSmsConfig, STATUSES };
