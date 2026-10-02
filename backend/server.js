@@ -13,7 +13,7 @@ const { sendPurchaseConfirmation, sendAdminPurchaseAlert, queueFreeAccessConfirm
 const { startFreeAccessSmsWorker, runFreeAccessSmsWorker } = require('./free-access-sms-worker');
 const { createAndScheduleExpiry, startExpiryScheduler } = require('./expiry-alerts');
 const { associateOrderCustomer } = require('./customer-contacts');
-const { normalizeMac, deriveStatus, clientCreatedMessage, sendOutdoorSms, processOutdoorWifiExpiry, logOutdoorWifiSmsConfig, STATUSES } = require('./outdoor-wifi');
+const { normalizeMac, deriveStatus, getOutdoorMessage, sendOutdoorSms, processOutdoorWifiExpiry, logOutdoorWifiSmsConfig, STATUSES, OUTDOOR_TEMPLATES } = require('./outdoor-wifi');
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
@@ -132,7 +132,7 @@ app.post('/api/admin/outdoor-wifi/clients', requireAdmin, async (req, res) => {
   try {
     const result = await db.query(`insert into outdoor_wifi_clients (order_id, package_id, customer_name, phone, package_name, package_price, voucher_code, order_reference, mac_address, wifi_credentials_issued, airtel_mac_rule_added, blacklist_enabled, activation_at, expected_expiry_at, status, notes) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) returning *`, [body.order_id || null, body.package_id || null, body.customer_name || null, phone, body.package_name, body.package_price || null, body.voucher_code || null, body.order_reference || null, mac, body.wifi_credentials_issued === true, body.airtel_mac_rule_added === true, body.blacklist_enabled === true, activation, expiry, body.blacklist_enabled === true ? 'BLACKLISTED' : deriveStatus({ expected_expiry_at: expiry, blacklist_enabled: false }), body.notes || null]);
     const client = result.rows[0];
-    const sms = await sendOutdoorSms(db, client, 'OUTDOOR_WIFI_CLIENT_CREATED', client.phone, clientCreatedMessage(client));
+    const sms = await sendOutdoorSms(db, client, 'OUTDOOR_WIFI_CLIENT_CREATED', client.phone, await getOutdoorMessage(db, 'OUTDOOR_WIFI_CLIENT_CREATED', client));
     return res.status(201).json({ client, sms });
   } catch (error) { if (error.code === '23505') { const existing = await db.query('select id, status from outdoor_wifi_clients where mac_address=$1 order by updated_at desc limit 1', [mac]); const current = existing.rows[0]; if (current) { const updated = await db.query(`update outdoor_wifi_clients set order_id=$2, package_id=$3, customer_name=$4, phone=$5, package_name=$6, package_price=$7, voucher_code=$8, order_reference=$9, wifi_credentials_issued=$10, airtel_mac_rule_added=$11, blacklist_enabled=false, blacklist_enabled_at=null, blacklist_enabled_by=null, activation_at=$12, expected_expiry_at=$13, status='ACTIVE', notes=$14, action_required_at=null, updated_at=now() where id=$1 returning *`, [current.id, body.order_id || null, body.package_id || null, body.customer_name || null, phone, body.package_name, body.package_price || null, body.voucher_code || null, body.order_reference || null, Boolean(body.wifi_credentials_issued), Boolean(body.airtel_mac_rule_added), activation, expiry, body.notes || null]); const client = updated.rows[0]; const sms = await sendOutdoorSms(db, client, 'OUTDOOR_WIFI_CLIENT_UPDATED', client.phone, clientCreatedMessage(client)); return res.status(200).json({ client, sms, updatedExisting: true, message: 'The existing client using this MAC address was updated.' }); } return res.status(409).json({ error: 'DUPLICATE_MAC', message: 'An active client already uses this MAC address.' }); } console.error('POST outdoor Wi-Fi client:', error.message); return res.status(500).json({ error: 'OUTDOOR_WIFI_CREATE_FAILED', message: 'Unable to create client.' }); }
 });
@@ -1116,6 +1116,20 @@ app.get('/api/admin/sms/status', requireAdmin, (req, res) => {
     partnerId: process.env.TEXTSMS_PARTNER_ID || null,
     reachability: 'unknown'
   });
+});
+
+app.get('/api/admin/outdoor-wifi/message-templates', requireAdmin, async (req, res) => {
+  const types = Object.keys(OUTDOOR_TEMPLATES);
+  const result = await db.query('select message_type, template, updated_at, updated_by from sms_message_templates where message_type = any($1) order by message_type', [types]);
+  return res.json({ templates: types.map(message_type => ({ message_type, template: result.rows.find(row => row.message_type === message_type)?.template || OUTDOOR_TEMPLATES[message_type] })) });
+});
+app.put('/api/admin/outdoor-wifi/message-templates/:messageType', requireAdmin, async (req, res) => {
+  const type = req.params.messageType;
+  if (!OUTDOOR_TEMPLATES[type]) return res.status(400).json({ error: 'UNSUPPORTED_MESSAGE_TYPE' });
+  const template = String(req.body?.template || '').trim();
+  if (!template || template.length > 480 || [...template.matchAll(/\\{\\{([^}]+)\\}\\}/g)].some(match => !['package','mac','expiry','customer','phone'].includes(match[1]))) return res.status(400).json({ error: 'INVALID_OUTDOOR_TEMPLATE', message: 'Use only {{package}}, {{mac}}, {{expiry}}, {{customer}}, and {{phone}}; maximum 480 characters.' });
+  const result = await db.query(`insert into sms_message_templates (message_type, template, updated_by) values ($1,$2,'admin') on conflict (message_type) do update set template=excluded.template, updated_at=now(), updated_by='admin' returning *`, [type, template]);
+  return res.json({ template: result.rows[0] });
 });
 
 app.get('/api/admin/sms/templates', requireAdmin, async (req, res) => {
