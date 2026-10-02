@@ -141,6 +141,16 @@ app.post('/api/admin/outdoor-wifi/clients/:id/blacklist-enabled', requireAdmin, 
   try { const result = await db.query(`update outdoor_wifi_clients set blacklist_enabled=true, blacklist_enabled_at=now(), blacklist_enabled_by=$2, status='BLACKLISTED', updated_at=now() where id=$1 and status='ACTION_REQUIRED' returning *`, [req.params.id, req.body?.admin || 'admin']); if (!result.rowCount) return res.status(409).json({ error: 'NOT_ACTION_REQUIRED', message: 'Only expired clients awaiting action can be completed.' }); await db.query(`update outdoor_wifi_action_events set status='COMPLETED', completed_at=now() where client_id=$1 and event_type='ACTION_REQUIRED'`, [req.params.id]); return res.json({ client: result.rows[0] }); } catch (error) { return res.status(500).json({ error: 'BLACKLIST_CONFIRM_FAILED', message: 'Unable to record blacklist completion.' }); }
 });
 
+app.get('/api/admin/outdoor-wifi/sms-status', requireAdmin, async (req, res) => {
+  try {
+    const result = await db.query(`select id, recipient, message_type, status, message, error_message, provider_message_id, created_at, sent_at, failed_at from sms_messages where source='outdoor-wifi' order by created_at desc limit 30`);
+    return res.json({ messages: result.rows });
+  } catch (error) {
+    console.error('GET outdoor Wi-Fi SMS status:', error.message);
+    return res.status(500).json({ error: 'OUTDOOR_WIFI_SMS_STATUS_FAILED', message: 'Unable to load Outdoor Wi-Fi SMS status.' });
+  }
+});
+
 app.get('/api/config', (req, res) => {
   return res.json({ portalUrl });
 });
