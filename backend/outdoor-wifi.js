@@ -93,10 +93,10 @@ if (remaining > 0 && remaining <= 60 * 60 * 1000) await sendOutdoorSms(db, clien
         const adminAlert = await getOutdoorMessage(db, 'OUTDOOR_WIFI_ACTION', client);
         const sent = await sendTextSms({ phone: adminPhone, message: adminAlert });
         await db.query(`update outdoor_wifi_action_events set status='SENT',provider_message_id=$2,sent_at=now() where id=$1`, [event.rows[0].id, sent.messageId]);
-        await db.query(`insert into sms_messages (recipient,message,message_type,status,provider,provider_message_id,network,created_by,source,sent_at) values ($1,$2,'OUTDOOR_WIFI_ACTION','SENT','TextSMS',$3,'Safaricom','system','outdoor-wifi',now())`, [sent.phone, adminMessage(client), sent.messageId]);
+        await db.query(`insert into sms_messages (recipient,message,message_type,status,provider,provider_message_id,network,created_by,source,sent_at) values ($1,$2,'OUTDOOR_WIFI_ACTION','SENT','TextSMS',$3,'Safaricom','system','outdoor-wifi',now())`, [sent.phone, adminAlert, sent.messageId]);
       } catch (error) {
         await db.query(`update outdoor_wifi_action_events set status='FAILED',error_message=$2 where id=$1`, [event.rows[0].id, error.message]);
-        await db.query(`insert into sms_messages (recipient,message,message_type,status,provider,network,error_message,created_by,source,failed_at) values ($1,$2,'OUTDOOR_WIFI_ACTION','FAILED','TextSMS','Safaricom',$3,'system','outdoor-wifi',now())`, [adminPhone, adminMessage(client), error.message]).catch(() => {});
+        await db.query(`insert into sms_messages (recipient,message,message_type,status,provider,network,error_message,created_by,source,failed_at) values ($1,$2,'OUTDOOR_WIFI_ACTION','FAILED','TextSMS','Safaricom',$3,'system','outdoor-wifi',now())`, [adminPhone, adminAlert, error.message]).catch(() => {});
       }
     }
   }
