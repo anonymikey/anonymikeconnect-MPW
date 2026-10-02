@@ -64,13 +64,18 @@ async function sendPurchaseConfirmation({ db, order, voucherCode, packageName, d
 
   const eventKey = `${EVENT_TYPE}:${order.id}`;
   const template = await getPurchaseTemplate(db);
-  const message = renderTemplate(template, {
+  const wifiSsid = process.env.OUTDOOR_WIFI_SSID;
+  const wifiPassword = process.env.OUTDOOR_WIFI_PASSWORD;
+  const accessInstructions = wifiSsid && wifiPassword
+    ? ` Wi-Fi: ${wifiSsid}. Password: ${wifiPassword}. Do not share this password.`
+    : '';
+  const message = `${renderTemplate(template, {
     voucher: voucherCode,
     package: packageName,
     duration: duration ? ` (${duration})` : '',
     portal_url: 'http://192.168.10.1/success',
     support: 'SUPA LAN support'
-  });
+  })}${accessInstructions}`;
   const existing = await db.query('select id, status, provider_message_id from sms_messages where event_key = $1 limit 1', [eventKey]);
   if (existing.rowCount) return { attempted: false, duplicate: true, status: existing.rows[0].status, messageId: existing.rows[0].provider_message_id };
 

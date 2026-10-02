@@ -27,8 +27,8 @@ function clientExpiryMessage(client, kind) {
   const ssid = process.env.OUTDOOR_WIFI_SSID || 'SUPA LAN';
   const password = process.env.OUTDOOR_WIFI_PASSWORD || '';
   const access = password ? ` Connect to Wi-Fi ${ssid} using password ${password}. Do not share the password.` : ` Connect to Wi-Fi ${ssid}. Do not share the password.`;
-  if (kind === 'EXPIRED') return `SUPA LAN: Your ${client.package_name} package has expired at ${expiry}. Please renew to continue browsing.${access}`;
-  return `SUPA LAN: Your ${client.package_name} package expires in about 1 hour at ${expiry}. Renew now to avoid disconnection.${access}`;
+  if (kind === 'EXPIRED') return `SUPA LAN: Your ${client.package_name} package expired at ${expiry}. Service may be disconnected until you renew.${access}`;
+  return `SUPA LAN: Reminder: your ${client.package_name} package expires in about 1 hour at ${expiry}. Renew now to avoid disconnection.${access}`;
 }
 
 async function smsSetting(db) {
