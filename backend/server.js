@@ -13,7 +13,7 @@ const { sendPurchaseConfirmation, sendAdminPurchaseAlert, queueFreeAccessConfirm
 const { startFreeAccessSmsWorker, runFreeAccessSmsWorker } = require('./free-access-sms-worker');
 const { createAndScheduleExpiry, startExpiryScheduler } = require('./expiry-alerts');
 const { associateOrderCustomer } = require('./customer-contacts');
-const { normalizeMac, deriveStatus, sendOutdoorSms, processOutdoorWifiExpiry, logOutdoorWifiSmsConfig, STATUSES } = require('./outdoor-wifi');
+const { normalizeMac, deriveStatus, clientCreatedMessage, sendOutdoorSms, processOutdoorWifiExpiry, logOutdoorWifiSmsConfig, STATUSES } = require('./outdoor-wifi');
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
