@@ -18,11 +18,11 @@ function deriveStatus(row, now = new Date()) {
 }
 
 const OUTDOOR_TEMPLATES = {
-  OUTDOOR_WIFI_CLIENT_CREATED: 'SUPA LAN 📶 Welcome! Your {{package}} Wi-Fi access is active ✅\nExpires: {{expiry}}\n\nWi-Fi: MONTHLY-450/- (UNLTD)-0113313240\nPassword: t.s@20202027\nPlease do not share the password.\n\nMonthly offers: 400/- | 2 devices: 750/-\nSupport: 0113313240\nOffers: supalan.anonymiketech.space',
-  OUTDOOR_WIFI_CLIENT_UPDATED: 'SUPA LAN 📶 Your {{package}} access was updated ✅\nNew expiry: {{expiry}}\n\nNeed help or a renewal? Support: 0113313240\nOffers: supalan.anonymiketech.space',
-  OUTDOOR_WIFI_EXPIRY_REMINDER: 'SUPA LAN ⏰ Your {{package}} access expires in about 1 hour.\nExpiry: {{expiry}}\n\nRenewal support: 0113313240\nOffers: supalan.anonymiketech.space',
-  OUTDOOR_WIFI_EXPIRY_CLIENT: 'SUPA LAN ⚠️ Your {{package}} access has expired.\nExpired: {{expiry}}\n\nPlease contact support to renew: 0113313240\nOffers: supalan.anonymiketech.space',
-  OUTDOOR_WIFI_ACTION: 'SUPA LAN ROUTER ALERT 🚨\nCustomer: {{customer}}\nPhone: {{phone}}\nPackage: {{package}}\nMAC address: {{mac}}\nExpired: {{expiry}}\n\nACTION REQUIRED: Add this MAC to the Airtel blacklist.\nRouter: http://192.168.1.1\nSupport: 0113313240'
+  OUTDOOR_WIFI_CLIENT_CREATED: 'SUPA LAN 📶 {{package}} active ✅ Exp: {{expiry}}. Wi-Fi: MONTHLY-450/- (UNLTD)-0113313240 | Pass: t.s@20202027. Do not share password. Offers: 400/-; 2 devices 750/-. Support 0113313240. supalan.anonymiketech.space',
+  OUTDOOR_WIFI_CLIENT_UPDATED: 'SUPA LAN 📶 {{package}} updated ✅ Exp: {{expiry}}. Support 0113313240. supalan.anonymiketech.space',
+  OUTDOOR_WIFI_EXPIRY_REMINDER: 'SUPA LAN ⏰ {{package}} expires soon: {{expiry}}. Renew: 0113313240. supalan.anonymiketech.space',
+  OUTDOOR_WIFI_EXPIRY_CLIENT: 'SUPA LAN ⚠️ {{package}} expired: {{expiry}}. Renew: 0113313240. supalan.anonymiketech.space',
+  OUTDOOR_WIFI_ACTION: 'SUPA LAN 🚨 ACTION: blacklist MAC {{mac}}. Customer {{customer}}, {{phone}}, {{package}}, expired {{expiry}}. Router http://192.168.1.1. Support 0113313240'
 };
 const OUTDOOR_PLACEHOLDERS = /\{\{(package|mac|expiry|customer|phone)\}\}/g;
 
@@ -67,11 +67,11 @@ async function sendOutdoorSms(db, client, eventType, recipient, message) {
   try {
     const sent = await sendTextSms({ phone: recipient, message });
     await db.query(`update outdoor_wifi_action_events set status='SENT',provider_message_id=$2,sent_at=now() where id=$1`, [event.rows[0].id, sent.messageId]);
-    await db.query(`insert into sms_messages (recipient,message,message_type,status,provider,provider_message_id,network,created_by,source,sent_at) values ($1,$2,$3,'SENT','TextSMS',$4,'Safaricom','system','outdoor-wifi',now())`, [sent.phone, message, eventType, sent.messageId]);
+    await db.query(`insert into sms_messages (recipient,message,message_type,status,provider,provider_message_id,network,created_by,source,order_reference,package_name,package_price,sent_at) values ($1,$2,$3,'SENT','TextSMS',$4,'Safaricom','system','outdoor-wifi',$5,$6,$7,now())`, [sent.phone, message, eventType, sent.messageId, client.order_reference || client.order_id || null, client.package_name || null, client.package_price || null]);
     return { attempted: true, status: 'SENT', messageId: sent.messageId };
   } catch (error) {
     await db.query(`update outdoor_wifi_action_events set status='FAILED',error_message=$2 where id=$1`, [event.rows[0].id, error.message]);
-    await db.query(`insert into sms_messages (recipient,message,message_type,status,provider,network,error_message,created_by,source,failed_at) values ($1,$2,$3,'FAILED','TextSMS','Safaricom',$4,'system','outdoor-wifi',now()) on conflict do nothing`, [recipient, message, eventType, error.message]).catch(() => {});
+    await db.query(`insert into sms_messages (recipient,message,message_type,status,provider,network,error_message,created_by,source,order_reference,package_name,package_price,failed_at) values ($1,$2,$3,'FAILED','TextSMS','Safaricom',$4,'system','outdoor-wifi',$5,$6,$7,now()) on conflict do nothing`, [recipient, message, eventType, error.message, client.order_reference || client.order_id || null, client.package_name || null, client.package_price || null]).catch(() => {});
     return { attempted: true, status: 'FAILED', error: error.message };
   }
 }
@@ -93,10 +93,10 @@ if (remaining > 0 && remaining <= 60 * 60 * 1000) await sendOutdoorSms(db, clien
       try {
         const sent = await sendTextSms({ phone: adminPhone, message: adminAlert });
         await db.query(`update outdoor_wifi_action_events set status='SENT',provider_message_id=$2,sent_at=now() where id=$1`, [event.rows[0].id, sent.messageId]);
-        await db.query(`insert into sms_messages (recipient,message,message_type,status,provider,provider_message_id,network,created_by,source,sent_at) values ($1,$2,'OUTDOOR_WIFI_ACTION','SENT','TextSMS',$3,'Safaricom','system','outdoor-wifi',now())`, [sent.phone, adminAlert, sent.messageId]);
+        await db.query(`insert into sms_messages (recipient,message,message_type,status,provider,provider_message_id,network,created_by,source,order_reference,package_name,package_price,sent_at) values ($1,$2,'OUTDOOR_WIFI_ACTION','SENT','TextSMS',$3,'Safaricom','system','outdoor-wifi',$4,$5,$6,now())`, [sent.phone, adminAlert, sent.messageId, client.order_reference || client.order_id || null, client.package_name || null, client.package_price || null]);
       } catch (error) {
         await db.query(`update outdoor_wifi_action_events set status='FAILED',error_message=$2 where id=$1`, [event.rows[0].id, error.message]);
-        await db.query(`insert into sms_messages (recipient,message,message_type,status,provider,network,error_message,created_by,source,failed_at) values ($1,$2,'OUTDOOR_WIFI_ACTION','FAILED','TextSMS','Safaricom',$3,'system','outdoor-wifi',now())`, [adminPhone, adminAlert, error.message]).catch(() => {});
+        await db.query(`insert into sms_messages (recipient,message,message_type,status,provider,network,error_message,created_by,source,order_reference,package_name,package_price,failed_at) values ($1,$2,'OUTDOOR_WIFI_ACTION','FAILED','TextSMS','Safaricom',$3,'system','outdoor-wifi',$4,$5,$6,now())`, [adminPhone, adminAlert, error.message, client.order_reference || client.order_id || null, client.package_name || null, client.package_price || null]).catch(() => {});
       }
     }
   }
