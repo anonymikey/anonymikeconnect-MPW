@@ -17,16 +17,28 @@ function deriveStatus(row, now = new Date()) {
   return 'ACTIVE';
 }
 
-function adminMessage(client) {
+const OUTDOOR_TEMPLATES = {
+  OUTDOOR_WIFI_CLIENT_CREATED: 'SUPA LAN: {{package}} is active. MAC: {{mac}}. Expires: {{expiry}}. Wi-Fi access has been recorded for your number.',
+  OUTDOOR_WIFI_CLIENT_UPDATED: 'SUPA LAN: Your {{package}} access was updated. MAC: {{mac}}. Expires: {{expiry}}.',
+  OUTDOOR_WIFI_EXPIRY_REMINDER: 'SUPA LAN: Reminder: your {{package}} package expires in about 1 hour at {{expiry}}. Renew now to avoid disconnection.',
+  OUTDOOR_WIFI_EXPIRY_CLIENT: 'SUPA LAN: Your {{package}} package expired at {{expiry}}. Service may be disconnected until you renew.',
+  OUTDOOR_WIFI_ACTION: 'SUPA LAN ADMIN ALERT: {{customer}} expired. Phone: {{phone}}. Package: {{package}}. MAC: {{mac}}. Expired: {{expiry}}. ACTION: Enable blacklist on the Airtel router.'
+};
+const OUTDOOR_PLACEHOLDERS = /\{\{(package|mac|expiry|customer|phone)\}\}/g;
+
+function renderOutdoorTemplate(template, client) {
   const expiry = new Date(client.expected_expiry_at).toLocaleString('en-KE', { timeZone: 'Africa/Nairobi' });
-  return `SUPA LAN ADMIN ALERT\nOutdoor Wi-Fi client expired.\nCustomer: ${client.customer_name || 'Not provided'}\nPhone: ${client.phone}\nPackage: ${client.package_name}\nMAC: ${client.mac_address}\nExpired: ${expiry}\nACTION: Enable blacklist for this MAC on the Airtel router.\nRouter: http://192.168.1.1`;
+  return String(template).replace(OUTDOOR_PLACEHOLDERS, (_, key) => ({ package: client.package_name || '', mac: client.mac_address || '', expiry, customer: client.customer_name || 'Not provided', phone: client.phone || '' }[key] || ''));
 }
 
-function clientExpiryMessage(client, kind) {
-  const expiry = new Date(client.expected_expiry_at).toLocaleString('en-KE', { timeZone: 'Africa/Nairobi' });
-  if (kind === 'EXPIRED') return `SUPA LAN: Your ${client.package_name} package expired at ${expiry}. Service may be disconnected until you renew.`;
-  return `SUPA LAN: Reminder: your ${client.package_name} package expires in about 1 hour at ${expiry}. Renew now to avoid disconnection.`;
+async function getOutdoorMessage(db, eventType, client) {
+  const result = await db.query('select template from sms_message_templates where message_type=$1 limit 1', [eventType]).catch(() => ({ rows: [] }));
+  return renderOutdoorTemplate(result.rows[0]?.template || OUTDOOR_TEMPLATES[eventType] || '', client);
 }
+
+function adminMessage(client) { return renderOutdoorTemplate(OUTDOOR_TEMPLATES.OUTDOOR_WIFI_ACTION, client); }
+function clientCreatedMessage(client) { return renderOutdoorTemplate(OUTDOOR_TEMPLATES.OUTDOOR_WIFI_CLIENT_CREATED, client); }
+function clientExpiryMessage(client, kind) { return renderOutdoorTemplate(OUTDOOR_TEMPLATES[kind === 'EXPIRED' ? 'OUTDOOR_WIFI_EXPIRY_CLIENT' : 'OUTDOOR_WIFI_EXPIRY_REMINDER'], client); }
 
 function maskPhone(phone) {
   const value = String(phone || '');
@@ -64,26 +76,22 @@ async function sendOutdoorSms(db, client, eventType, recipient, message) {
   }
 }
 
-function clientCreatedMessage(client) {
-  const expiry = new Date(client.expected_expiry_at).toLocaleString('en-KE', { timeZone: 'Africa/Nairobi' });
-  return `SUPA LAN: ${client.package_name} is active. MAC: ${client.mac_address}. Expires: ${expiry}. Wi-Fi access has been recorded for your number.`;
-}
-
 async function processOutdoorWifiExpiry(db) {
   const clients = await db.query(`select * from outdoor_wifi_clients where status not in ('CANCELLED','BLACKLISTED') and expected_expiry_at <= now() + interval '60 minutes' order by expected_expiry_at asc limit 100`);
   const adminPhone = await smsSetting(db);
   for (const client of clients.rows) {
     const remaining = new Date(client.expected_expiry_at).getTime() - Date.now();
-    if (remaining > 0 && remaining <= 60 * 60 * 1000) await sendOutdoorSms(db, client, 'OUTDOOR_WIFI_EXPIRY_REMINDER', client.phone, clientExpiryMessage(client, 'REMINDER'));
-    if (remaining <= 0) await sendOutdoorSms(db, client, 'OUTDOOR_WIFI_EXPIRY_CLIENT', client.phone, clientExpiryMessage(client, 'EXPIRED'));
+if (remaining > 0 && remaining <= 60 * 60 * 1000) await sendOutdoorSms(db, client, 'OUTDOOR_WIFI_EXPIRY_REMINDER', client.phone, await getOutdoorMessage(db, 'OUTDOOR_WIFI_EXPIRY_REMINDER', client));
+  if (remaining <= 0) await sendOutdoorSms(db, client, 'OUTDOOR_WIFI_EXPIRY_CLIENT', client.phone, await getOutdoorMessage(db, 'OUTDOOR_WIFI_EXPIRY_CLIENT', client));
   }
   const expiredClients = await db.query(`select * from outdoor_wifi_clients where status not in ('CANCELLED','BLACKLISTED') and expected_expiry_at <= now() order by expected_expiry_at asc limit 100`);
   for (const client of expiredClients.rows) {
-    const event = await db.query(`insert into outdoor_wifi_action_events (client_id, event_type, status, sms_recipient, sms_message) values ($1,'ACTION_REQUIRED',$2,$3,$4) on conflict (client_id,event_type) do nothing returning id`, [client.id, adminPhone ? 'PENDING' : 'FAILED', adminPhone, adminMessage(client)]);
+    const event = await db.query(`insert into outdoor_wifi_action_events (client_id, event_type, status, sms_recipient, sms_message) values ($1,'ACTION_REQUIRED',$2,$3,$4) on conflict (client_id,event_type) do nothing returning id`, [client.id, adminPhone ? 'PENDING' : 'FAILED', adminPhone, await getOutdoorMessage(db, 'OUTDOOR_WIFI_ACTION', client)]);
     await db.query(`update outdoor_wifi_clients set status='ACTION_REQUIRED', action_required_at=coalesce(action_required_at, now()), updated_at=now() where id=$1 and status not in ('BLACKLISTED','CANCELLED')`, [client.id]);
     if (event.rowCount && adminPhone) {
       try {
-        const sent = await sendTextSms({ phone: adminPhone, message: adminMessage(client) });
+        const adminAlert = await getOutdoorMessage(db, 'OUTDOOR_WIFI_ACTION', client);
+        const sent = await sendTextSms({ phone: adminPhone, message: adminAlert });
         await db.query(`update outdoor_wifi_action_events set status='SENT',provider_message_id=$2,sent_at=now() where id=$1`, [event.rows[0].id, sent.messageId]);
         await db.query(`insert into sms_messages (recipient,message,message_type,status,provider,provider_message_id,network,created_by,source,sent_at) values ($1,$2,'OUTDOOR_WIFI_ACTION','SENT','TextSMS',$3,'Safaricom','system','outdoor-wifi',now())`, [sent.phone, adminMessage(client), sent.messageId]);
       } catch (error) {
@@ -118,4 +126,4 @@ async function processOutdoorWifiExpiryLegacy(db) {
   }
 }
 
-module.exports = { normalizeMac, normalizeKenyanPhone, deriveStatus, adminMessage, clientCreatedMessage, sendOutdoorSms, processOutdoorWifiExpiry, logOutdoorWifiSmsConfig, STATUSES };
+module.exports = { normalizeMac, normalizeKenyanPhone, deriveStatus, adminMessage, getOutdoorMessage, sendOutdoorSms, processOutdoorWifiExpiry, logOutdoorWifiSmsConfig, STATUSES, OUTDOOR_TEMPLATES };
