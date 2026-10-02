@@ -18,11 +18,11 @@ function deriveStatus(row, now = new Date()) {
 }
 
 const OUTDOOR_TEMPLATES = {
-  OUTDOOR_WIFI_CLIENT_CREATED: 'SUPA LAN: {{package}} is active. MAC: {{mac}}. Expires: {{expiry}}. Wi-Fi access has been recorded for your number.',
-  OUTDOOR_WIFI_CLIENT_UPDATED: 'SUPA LAN: Your {{package}} access was updated. MAC: {{mac}}. Expires: {{expiry}}.',
-  OUTDOOR_WIFI_EXPIRY_REMINDER: 'SUPA LAN: Reminder: your {{package}} package expires in about 1 hour at {{expiry}}. Renew now to avoid disconnection.',
-  OUTDOOR_WIFI_EXPIRY_CLIENT: 'SUPA LAN: Your {{package}} package expired at {{expiry}}. Service may be disconnected until you renew.',
-  OUTDOOR_WIFI_ACTION: 'SUPA LAN ADMIN ALERT: {{customer}} expired. Phone: {{phone}}. Package: {{package}}. MAC: {{mac}}. Expired: {{expiry}}. ACTION: Enable blacklist on the Airtel router.'
+  OUTDOOR_WIFI_CLIENT_CREATED: 'SUPA LAN 📶: Your {{package}} access is active ✅\nMAC address: {{mac}}\nExpires: {{expiry}}\nThank you for choosing SUPA LAN.',
+  OUTDOOR_WIFI_CLIENT_UPDATED: 'SUPA LAN 📶: Your {{package}} access was updated ✅\nMAC address: {{mac}}\nNew expiry: {{expiry}}',
+  OUTDOOR_WIFI_EXPIRY_REMINDER: 'SUPA LAN ⏰: Your {{package}} access expires in about 1 hour.\nMAC address: {{mac}}\nExpiry: {{expiry}}\nPlease renew to avoid disconnection.',
+  OUTDOOR_WIFI_EXPIRY_CLIENT: 'SUPA LAN ⚠️: Your {{package}} access has expired.\nMAC address: {{mac}}\nExpired: {{expiry}}\nPlease renew to restore access.',
+  OUTDOOR_WIFI_ACTION: 'SUPA LAN ROUTER ALERT 🚨\nCustomer: {{customer}}\nPhone: {{phone}}\nPackage: {{package}}\nMAC address: {{mac}}\nExpired: {{expiry}}\nACTION REQUIRED: Add this MAC to the Airtel blacklist.\nRouter: http://192.168.1.1'
 };
 const OUTDOOR_PLACEHOLDERS = /\{\{(package|mac|expiry|customer|phone)\}\}/g;
 
