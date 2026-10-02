@@ -47,7 +47,8 @@ alter table outdoor_wifi_clients add column if not exists blacklist_enabled_by t
 alter table outdoor_wifi_clients add column if not exists created_at timestamptz not null default now();
 alter table outdoor_wifi_clients add column if not exists updated_at timestamptz not null default now();
 
-create unique index if not exists idx_outdoor_wifi_clients_mac_active on outdoor_wifi_clients(mac_address) where status <> 'CANCELLED';
+drop index if exists idx_outdoor_wifi_clients_mac_active;
+create unique index if not exists idx_outdoor_wifi_clients_mac_active on outdoor_wifi_clients(mac_address) where status not in ('CANCELLED','BLACKLISTED');
 create index if not exists idx_outdoor_wifi_clients_expiry on outdoor_wifi_clients(status, expected_expiry_at);
 create index if not exists idx_outdoor_wifi_clients_phone on outdoor_wifi_clients(phone);
 
