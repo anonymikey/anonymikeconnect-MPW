@@ -127,8 +127,13 @@ app.post('/api/admin/outdoor-wifi/clients', requireAdmin, async (req, res) => {
   if (!body.package_name || !body.activation_at || !body.expected_expiry_at) return res.status(400).json({ error: 'VALIDATION_ERROR', message: 'Package, activation time, and expected expiry are required.' });
   let phone; let mac;
   try { phone = normalizeKenyanPhone(body.phone); mac = normalizeMac(body.mac_address); } catch (error) { return res.status(400).json({ error: 'VALIDATION_ERROR', message: error.message }); }
-  const activation = new Date(body.activation_at); const expiry = new Date(body.expected_expiry_at);
-  if (Number.isNaN(activation.getTime()) || Number.isNaN(expiry.getTime()) || expiry <= activation) return res.status(400).json({ error: 'INVALID_TIMING', message: 'Expected expiry must be after activation.' });
+  const parseKenyaDateTime = (value) => {
+    const text = String(value || '').trim();
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(text)) return new Date(NaN);
+    return new Date(`${text}${text.length === 16 ? ':00' : ''}+03:00`);
+  };
+  const activation = parseKenyaDateTime(body.activation_at); const expiry = parseKenyaDateTime(body.expected_expiry_at);
+  if (Number.isNaN(activation.getTime()) || Number.isNaN(expiry.getTime()) || expiry <= activation) return res.status(400).json({ error: 'INVALID_TIMING', message: 'Enter valid Nairobi time values, with expected expiry after activation.' });
   try {
     const result = await db.query(`insert into outdoor_wifi_clients (order_id, package_id, customer_name, phone, package_name, package_price, voucher_code, order_reference, mac_address, wifi_credentials_issued, airtel_mac_rule_added, blacklist_enabled, activation_at, expected_expiry_at, status, notes) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) returning *`, [body.order_id || null, body.package_id || null, body.customer_name || null, phone, body.package_name, body.package_price || null, body.voucher_code || null, body.order_reference || null, mac, body.wifi_credentials_issued === true, body.airtel_mac_rule_added === true, body.blacklist_enabled === true, activation, expiry, body.blacklist_enabled === true ? 'BLACKLISTED' : deriveStatus({ expected_expiry_at: expiry, blacklist_enabled: false }), body.notes || null]);
     const client = result.rows[0];
