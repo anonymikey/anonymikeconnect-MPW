@@ -146,8 +146,8 @@
     .table-wrap { max-height: 52vh; }
   }
 </style>
-</head>
-<body>
+<style>.admin-nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 auto 22px;max-width:1240px;padding:0 20px}.admin-nav a{border:1px solid #243553;background:#131f33;color:#e8eef7;border-radius:10px;padding:10px 14px;text-decoration:none;font-weight:700}.admin-nav-toggle{display:none}@media(max-width:700px){.admin-nav{padding:0 12px}.admin-nav-toggle{display:block;margin-left:auto}.admin-nav-links{display:none;width:100%;flex-direction:column}.admin-nav-links.is-open{display:flex}.admin-nav a{width:100%;text-align:center}}</style></head>
+<body><nav class="admin-nav" aria-label="Admin navigation"><button class="btn admin-nav-toggle" type="button" aria-expanded="false" onclick="this.nextElementSibling.classList.toggle('is-open');this.setAttribute('aria-expanded',this.nextElementSibling.classList.contains('is-open'))">Menu</button><div class="admin-nav-links"><a href="/admin" aria-current="page">Voucher Admin</a><a href="/admin/expiry">Expiry</a><a href="/admin/outdoor-wifi">Outdoor Wi-Fi</a><a href="/admin/sms">SMS Center</a></div></nav>
 
 <!-- Token gate -->
 <div id="gate" class="card">
