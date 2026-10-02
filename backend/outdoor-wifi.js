@@ -18,11 +18,11 @@ function deriveStatus(row, now = new Date()) {
 }
 
 const OUTDOOR_TEMPLATES = {
-  OUTDOOR_WIFI_CLIENT_CREATED: 'SUPA LAN 📶: Your {{package}} access is active ✅\nMAC address: {{mac}}\nExpires: {{expiry}}\nThank you for choosing SUPA LAN.',
-  OUTDOOR_WIFI_CLIENT_UPDATED: 'SUPA LAN 📶: Your {{package}} access was updated ✅\nMAC address: {{mac}}\nNew expiry: {{expiry}}',
-  OUTDOOR_WIFI_EXPIRY_REMINDER: 'SUPA LAN ⏰: Your {{package}} access expires in about 1 hour.\nMAC address: {{mac}}\nExpiry: {{expiry}}\nPlease renew to avoid disconnection.',
-  OUTDOOR_WIFI_EXPIRY_CLIENT: 'SUPA LAN ⚠️: Your {{package}} access has expired.\nMAC address: {{mac}}\nExpired: {{expiry}}\nPlease renew to restore access.',
-  OUTDOOR_WIFI_ACTION: 'SUPA LAN ROUTER ALERT 🚨\nCustomer: {{customer}}\nPhone: {{phone}}\nPackage: {{package}}\nMAC address: {{mac}}\nExpired: {{expiry}}\nACTION REQUIRED: Add this MAC to the Airtel blacklist.\nRouter: http://192.168.1.1'
+  OUTDOOR_WIFI_CLIENT_CREATED: 'SUPA LAN 📶 Welcome! Your {{package}} Wi-Fi access is active ✅\nExpires: {{expiry}}\n\nWi-Fi: MONTHLY-450/- (UNLTD)-0113313240\nPassword: t.s@20202027\nPlease do not share the password.\n\nMonthly offers: 400/- | 2 devices: 750/-\nSupport: 0113313240\nOffers: supalan.anonymiketech.space',
+  OUTDOOR_WIFI_CLIENT_UPDATED: 'SUPA LAN 📶 Your {{package}} access was updated ✅\nNew expiry: {{expiry}}\n\nNeed help or a renewal? Support: 0113313240\nOffers: supalan.anonymiketech.space',
+  OUTDOOR_WIFI_EXPIRY_REMINDER: 'SUPA LAN ⏰ Your {{package}} access expires in about 1 hour.\nExpiry: {{expiry}}\n\nRenewal support: 0113313240\nOffers: supalan.anonymiketech.space',
+  OUTDOOR_WIFI_EXPIRY_CLIENT: 'SUPA LAN ⚠️ Your {{package}} access has expired.\nExpired: {{expiry}}\n\nPlease contact support to renew: 0113313240\nOffers: supalan.anonymiketech.space',
+  OUTDOOR_WIFI_ACTION: 'SUPA LAN ROUTER ALERT 🚨\nCustomer: {{customer}}\nPhone: {{phone}}\nPackage: {{package}}\nMAC address: {{mac}}\nExpired: {{expiry}}\n\nACTION REQUIRED: Add this MAC to the Airtel blacklist.\nRouter: http://192.168.1.1\nSupport: 0113313240'
 };
 const OUTDOOR_PLACEHOLDERS = /\{\{(package|mac|expiry|customer|phone)\}\}/g;
 
