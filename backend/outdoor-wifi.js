@@ -50,15 +50,23 @@ async function logOutdoorWifiSmsConfig(db) {
 
 async function sendOutdoorSms(db, client, eventType, recipient, message) {
   const event = await db.query(`insert into outdoor_wifi_action_events (client_id,event_type,status,sms_recipient,sms_message) values ($1,$2,'PENDING',$3,$4) on conflict (client_id,event_type) do nothing returning id`, [client.id, eventType, recipient, message]);
-  if (!event.rowCount || !recipient) return;
+  if (!event.rowCount) return { attempted: false, status: 'DUPLICATE' };
+  if (!recipient) return { attempted: false, status: 'FAILED', error: 'Client phone number is not configured.' };
   try {
     const sent = await sendTextSms({ phone: recipient, message });
     await db.query(`update outdoor_wifi_action_events set status='SENT',provider_message_id=$2,sent_at=now() where id=$1`, [event.rows[0].id, sent.messageId]);
     await db.query(`insert into sms_messages (recipient,message,message_type,status,provider,provider_message_id,network,created_by,source,sent_at) values ($1,$2,$3,'SENT','TextSMS',$4,'Safaricom','system','outdoor-wifi',now())`, [sent.phone, message, eventType, sent.messageId]);
+    return { attempted: true, status: 'SENT', messageId: sent.messageId };
   } catch (error) {
     await db.query(`update outdoor_wifi_action_events set status='FAILED',error_message=$2 where id=$1`, [event.rows[0].id, error.message]);
     await db.query(`insert into sms_messages (recipient,message,message_type,status,provider,network,error_message,created_by,source,failed_at) values ($1,$2,$3,'FAILED','TextSMS','Safaricom',$4,'system','outdoor-wifi',now()) on conflict do nothing`, [recipient, message, eventType, error.message]).catch(() => {});
+    return { attempted: true, status: 'FAILED', error: error.message };
   }
+}
+
+function clientCreatedMessage(client) {
+  const expiry = new Date(client.expected_expiry_at).toLocaleString('en-KE', { timeZone: 'Africa/Nairobi' });
+  return `SUPA LAN: ${client.package_name} is active. MAC: ${client.mac_address}. Expires: ${expiry}. Wi-Fi access has been recorded for your number.`;
 }
 
 async function processOutdoorWifiExpiry(db) {
@@ -110,4 +118,4 @@ async function processOutdoorWifiExpiryLegacy(db) {
   }
 }
 
-module.exports = { normalizeMac, normalizeKenyanPhone, deriveStatus, adminMessage, processOutdoorWifiExpiry, logOutdoorWifiSmsConfig, STATUSES };
+module.exports = { normalizeMac, normalizeKenyanPhone, deriveStatus, adminMessage, clientCreatedMessage, sendOutdoorSms, processOutdoorWifiExpiry, logOutdoorWifiSmsConfig, STATUSES };
