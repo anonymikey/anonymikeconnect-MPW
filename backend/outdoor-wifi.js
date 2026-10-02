@@ -86,11 +86,11 @@ if (remaining > 0 && remaining <= 60 * 60 * 1000) await sendOutdoorSms(db, clien
   }
   const expiredClients = await db.query(`select * from outdoor_wifi_clients where status not in ('CANCELLED','BLACKLISTED') and expected_expiry_at <= now() order by expected_expiry_at asc limit 100`);
   for (const client of expiredClients.rows) {
-    const event = await db.query(`insert into outdoor_wifi_action_events (client_id, event_type, status, sms_recipient, sms_message) values ($1,'ACTION_REQUIRED',$2,$3,$4) on conflict (client_id,event_type) do nothing returning id`, [client.id, adminPhone ? 'PENDING' : 'FAILED', adminPhone, await getOutdoorMessage(db, 'OUTDOOR_WIFI_ACTION', client)]);
+    const adminAlert = await getOutdoorMessage(db, 'OUTDOOR_WIFI_ACTION', client);
+    const event = await db.query(`insert into outdoor_wifi_action_events (client_id, event_type, status, sms_recipient, sms_message) values ($1,'ACTION_REQUIRED',$2,$3,$4) on conflict (client_id,event_type) do nothing returning id`, [client.id, adminPhone ? 'PENDING' : 'FAILED', adminPhone, adminAlert]);
     await db.query(`update outdoor_wifi_clients set status='ACTION_REQUIRED', action_required_at=coalesce(action_required_at, now()), updated_at=now() where id=$1 and status not in ('BLACKLISTED','CANCELLED')`, [client.id]);
     if (event.rowCount && adminPhone) {
       try {
-        const adminAlert = await getOutdoorMessage(db, 'OUTDOOR_WIFI_ACTION', client);
         const sent = await sendTextSms({ phone: adminPhone, message: adminAlert });
         await db.query(`update outdoor_wifi_action_events set status='SENT',provider_message_id=$2,sent_at=now() where id=$1`, [event.rows[0].id, sent.messageId]);
         await db.query(`insert into sms_messages (recipient,message,message_type,status,provider,provider_message_id,network,created_by,source,sent_at) values ($1,$2,'OUTDOOR_WIFI_ACTION','SENT','TextSMS',$3,'Safaricom','system','outdoor-wifi',now())`, [sent.phone, adminAlert, sent.messageId]);
