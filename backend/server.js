@@ -148,7 +148,7 @@ app.post('/api/admin/outdoor-wifi/clients/:id/blacklist-enabled', requireAdmin, 
 
 app.get('/api/admin/outdoor-wifi/sms-status', requireAdmin, async (req, res) => {
   try {
-    const result = await db.query(`select id, recipient, message_type, status, message, error_message, provider_message_id, created_at, sent_at, failed_at from sms_messages where source='outdoor-wifi' order by created_at desc limit 30`);
+    const result = await db.query(`select id, recipient, message_type, status, message, error_message, provider_message_id, order_reference, package_name, created_at, sent_at, failed_at from sms_messages where source='outdoor-wifi' order by created_at desc limit 30`);
     return res.json({ messages: result.rows });
   } catch (error) {
     console.error('GET outdoor Wi-Fi SMS status:', error.message);
