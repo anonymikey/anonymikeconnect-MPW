@@ -13,7 +13,7 @@ const { sendPurchaseConfirmation, sendAdminPurchaseAlert, queueFreeAccessConfirm
 const { startFreeAccessSmsWorker, runFreeAccessSmsWorker } = require('./free-access-sms-worker');
 const { createAndScheduleExpiry, startExpiryScheduler } = require('./expiry-alerts');
 const { associateOrderCustomer } = require('./customer-contacts');
-const { normalizeMac, deriveStatus, processOutdoorWifiExpiry, STATUSES } = require('./outdoor-wifi');
+const { normalizeMac, deriveStatus, processOutdoorWifiExpiry, logOutdoorWifiSmsConfig, STATUSES } = require('./outdoor-wifi');
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
@@ -132,7 +132,7 @@ app.post('/api/admin/outdoor-wifi/clients', requireAdmin, async (req, res) => {
   try {
     const result = await db.query(`insert into outdoor_wifi_clients (order_id, package_id, customer_name, phone, package_name, package_price, voucher_code, order_reference, mac_address, wifi_credentials_issued, airtel_mac_rule_added, blacklist_enabled, activation_at, expected_expiry_at, status, notes) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) returning *`, [body.order_id || null, body.package_id || null, body.customer_name || null, phone, body.package_name, body.package_price || null, body.voucher_code || null, body.order_reference || null, mac, body.wifi_credentials_issued === true, body.airtel_mac_rule_added === true, body.blacklist_enabled === true, activation, expiry, body.blacklist_enabled === true ? 'BLACKLISTED' : deriveStatus({ expected_expiry_at: expiry, blacklist_enabled: false }), body.notes || null]);
     return res.status(201).json({ client: result.rows[0] });
-  } catch (error) { if (error.code === '23505') return res.status(409).json({ error: 'DUPLICATE_MAC', message: 'An active client already uses this MAC address.' }); console.error('POST outdoor Wi-Fi client:', error.message); return res.status(500).json({ error: 'OUTDOOR_WIFI_CREATE_FAILED', message: 'Unable to create client.' }); }
+  } catch (error) { if (error.code === '23505') { const existing = await db.query('select id, customer_name, status from outdoor_wifi_clients where mac_address=$1 order by updated_at desc limit 1', [mac]); if (existing.rows[0]?.status === 'BLACKLISTED') { const updated = await db.query(`update outdoor_wifi_clients set order_id=$2, package_id=$3, customer_name=$4, phone=$5, package_name=$6, package_price=$7, voucher_code=$8, order_reference=$9, wifi_credentials_issued=$10, airtel_mac_rule_added=$11, blacklist_enabled=false, blacklist_enabled_at=null, blacklist_enabled_by=null, activation_at=$12, expected_expiry_at=$13, status='ACTIVE', notes=$14, action_required_at=null, updated_at=now() where id=$1 returning *`, [existing.rows[0].id, body.order_id || null, body.package_id || null, body.customer_name || null, phone, body.package_name, body.package_price || null, body.voucher_code || null, body.order_reference || null, Boolean(body.wifi_credentials_issued), Boolean(body.airtel_mac_rule_added), activation, expiry, body.notes || null]); return res.status(200).json({ client: updated.rows[0], reusedBlacklisted: true, message: 'This MAC belonged to a blacklisted client and was updated for the new package.' }); } return res.status(409).json({ error: 'DUPLICATE_MAC', message: 'An active client already uses this MAC address.' }); } console.error('POST outdoor Wi-Fi client:', error.message); return res.status(500).json({ error: 'OUTDOOR_WIFI_CREATE_FAILED', message: 'Unable to create client.' }); }
 });
 
 app.post('/api/admin/outdoor-wifi/clients/:id/blacklist-enabled', requireAdmin, async (req, res) => {
@@ -1523,6 +1523,7 @@ async function startServer() {
   await ensureExpirySchema();
   startFreeAccessSmsWorker(db);
   startExpiryScheduler(db);
+  logOutdoorWifiSmsConfig(db).catch((error) => console.error('[OUTDOOR_WIFI_SMS_CONFIG]', error.message));
   setInterval(() => processOutdoorWifiExpiry(db).catch((error) => console.error('[OUTDOOR_WIFI_EXPIRY]', error.message)), 60 * 1000);
 
   app.listen(PORT, () => {
